@@ -22,23 +22,20 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def underscore_word = text( """[a-zA-Z0-9]_+[a-zA-Z0-9]"""r )
 
-	def autolink = "(http|https|ftp|file)://".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ~ opt(":[0-9]+"r) ~
+	def url = "(http|https|ftp|file)://".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ~ opt(":[0-9]+"r) ~
 		opt("/" ~ opt(rep1sep("""(?:[-A-Za-z0-9._~!$&'()*+,;=:@]|%\p{XDigit}\p{XDigit})+"""r, "/") ~ opt("/"))) ^^
 		{case s ~ d ~ port ~ path =>
-			val link = s + d.mkString( "." ) + port.getOrElse( "" ) +
+			s + d.mkString( "." ) + port.getOrElse( "" ) +
 				path.map( {case s ~ p => s + p.map({case p ~ s => p.mkString("/") + s.getOrElse("")}).getOrElse("")} ).getOrElse( "" )
-			
-			<a href={link}>{link}</a>
 		}
+		
+	def autolink = (url | "<" ~> url <~ ">") ^^ {case link => <a href={link}>{link}</a>}
 	
 	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {case t => Text( f(t) )}
 
 	def backtick = text( "``", s => "`" )
 
-	def escaped =
-		text( """\\""", s => "\"" ) |
-		text( """\*""", s => "*" ) |
-		text( """\_""", s => "_" )
+	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!]"""r, s => s.charAt(1).toString )
 
 	def code_text = text( """[^\n`]+"""r )
 
