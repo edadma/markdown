@@ -51,7 +51,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def code = "`" ~> ((rep1sep(code_text, eol) <~ "`" ^^ {case es => <code>{concat(es)}</code>}) | success(Text( "`" )))
 
-	def double_code_text = text( """(?:[^\n]+(?=``|\n)|[^\n]*`(?= ``|\n))"""r )
+	def double_code_text = text( """(?:[^\n]*(?=` ``|\n)`|[^\n]+(?=``|\n))"""r )
 
 	def double_code = ("`` " ~ guard("`[^`]"r) | "``") ~> ((rep1sep(double_code_text, eol) <~ " ?``".r ^^ {case es => <code>{concat(es)}</code>}) | success(Text( "``" )))
 	

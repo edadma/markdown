@@ -55,7 +55,7 @@ object MarkdownTest extends App
 // 1 | 2 | 3
 // """
 
-	val s = """`` `asdf` ``"""
+	val s = """`` asdf ``"""
 	
 	println( Markdown(s) )
 //	println( headings )
