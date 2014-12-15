@@ -22,9 +22,11 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def underscore_word = text( """[a-zA-Z0-9]_+[a-zA-Z0-9]"""r )
 
-	def autolink = "(http|https|ftp|file)://".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ^^
-		{case s ~ h =>
-			val link = s + h.mkString( "." )
+	def autolink = "(http|https|ftp|file)://".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ~ opt(":[0-9]+"r) ~
+		opt("/" ~ opt(rep1sep("""(?:[-A-Za-z0-9._~!$&'()*+,;=:@]|%\p{XDigit}\p{XDigit})+"""r, "/") ~ opt("/"))) ^^
+		{case s ~ d ~ port ~ path =>
+			val link = s + d.mkString( "." ) + port.getOrElse( "" ) +
+				path.map( {case s ~ p => s + p.map({case p ~ s => p.mkString("/") + s.getOrElse("")}).getOrElse("")} ).getOrElse( "" )
 			
 			<a href={link}>{link}</a>
 		}
