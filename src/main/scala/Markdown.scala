@@ -43,8 +43,6 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {case t => Text( f(t) )}
 
-	def backtick = text( "``", s => "`" )
-
 	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!]"""r, s => s.charAt(1).toString )
 
 	def code_text = text( """[^\n`]+"""r )
@@ -53,9 +51,13 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def code = "`" ~> ((rep1sep(code_text, eol) <~ "`" ^^ {case es => <code>{concat(es)}</code>}) | success(Text( "`" )))
 
+	def double_code_text = text( """(?:[^\n]+(?=``|\n)|[^\n]*`(?= ``|\n))"""r )
+
+	def double_code = ("`` " ~ guard("`[^`]"r) | "``") ~> ((rep1sep(double_code_text, eol) <~ " ?``".r ^^ {case es => <code>{concat(es)}</code>}) | success(Text( "``" )))
+	
 	def link_text = text( """[^\n*_`\\\]!]+"""r )
 	
-	def link_inline: Parser[Node] = rep1(escaped | strong | em | backtick | code | image | link_text) ^^ {case l => Group( l )}
+	def link_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ {case l => Group( l )}
 	
 	private def ref( id: String ) =
 		if (refmap contains id)
@@ -109,7 +111,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def inline: Parser[Node] = inline_list ^^ {case l => Group( l )}
 
-	def inline_no_em_no_strong = backtick | code | image | link | underscore_word | autolink | space | plain
+	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | space | plain
 	
 	def inline_no_em_no_strong_allow( allow: String ) = inline_no_em_no_strong | text( allow )
 
@@ -142,7 +144,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 	val HEADING_TAIL_PATTERN = "(.*?)[ ]*#*"r
 
-	def heading_inline = rep1(escaped | strong | em | backtick | code | space | plain) ^^
+	def heading_inline = rep1(escaped | strong | em | double_code | code | space | plain) ^^
 		{case l =>
 			val (front, back) = l.splitAt( l.length - 1 )
 			val last =
@@ -241,7 +243,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
 
-	def table_inline: Parser[Node] = rep1(escaped | strong | em | backtick | code | image | link | autolink | space | table_plain) ^^
+	def table_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link | autolink | space | table_plain) ^^
 		{case l =>
 			val (front, back) = l.splitAt( l.length - 1 )
 			val last =
