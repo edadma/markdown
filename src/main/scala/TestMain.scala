@@ -56,9 +56,16 @@ object MarkdownTest extends App
 // """
 
 	val s =
-"""first
- _ _ _ 
-last"""
+"""
+*   Abacus
+    * answer
+*   Bubbles
+    1.  bunk
+    2.  bupkis
+        * BELITTLER
+    3. burper
+*   Cunning
+"""
 	
 	println( Markdown(s) )
 //	println( headings )
