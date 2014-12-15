@@ -55,7 +55,7 @@ object MarkdownTest extends App
 // 1 | 2 | 3
 // """
 
-	val s = """\\"""
+	val s = """<edadma@gmail.com>"""
 	
 	println( Markdown(s) )
 //	println( headings )

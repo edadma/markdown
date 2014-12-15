@@ -30,8 +30,16 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 			s + d + port.getOrElse( "" ) +
 				path.map( {case s ~ p => s + p.map({case p ~ s => p.mkString("/") + s.getOrElse("")}).getOrElse("")} ).getOrElse( "" )
 		}
-		
-	def autolink = (url | "<" ~> url <~ ">") ^^ {case link => <a href={link}>{link}</a>}
+
+	def local = rep1sep("""[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+"""r, ".") ^^ (_.mkString( "." ))
+	
+	def email = local ~ "@" ~ domain ^^ {case l ~ a ~ d => l + a + d}
+	
+	def autolink =
+		(url | "<" ~> url <~ ">") ^^
+			{case link => <a href={link}>{link}</a>} |
+		(email | "<" ~> email <~ ">") ^^
+			{case link => <a href={"mailto:" + link}>{link}</a>}
 	
 	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {case t => Text( f(t) )}
 
