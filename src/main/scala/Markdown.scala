@@ -22,10 +22,12 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def underscore_word = text( """[a-zA-Z0-9]_+[a-zA-Z0-9]"""r )
 
-	def url = "(http|https|ftp|file)://".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ~ opt(":[0-9]+"r) ~
+	def domain = """[a-zA-Z0-9-]+\.""".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ^^ {case host ~ root => host + root.mkString( "." )}
+	
+	def url = "(http|https|ftp|file)://".r ~ domain ~ opt(":[0-9]+"r) ~
 		opt("/" ~ opt(rep1sep("""(?:[-A-Za-z0-9._~!$&'()*+,;=:@]|%\p{XDigit}\p{XDigit})+"""r, "/") ~ opt("/"))) ^^
 		{case s ~ d ~ port ~ path =>
-			s + d.mkString( "." ) + port.getOrElse( "" ) +
+			s + d + port.getOrElse( "" ) +
 				path.map( {case s ~ p => s + p.map({case p ~ s => p.mkString("/") + s.getOrElse("")}).getOrElse("")} ).getOrElse( "" )
 		}
 		
