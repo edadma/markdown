@@ -19,12 +19,11 @@ class Emphasis extends FreeSpec with PropertyChecks with Matchers
 		Markdown( "_a*s*df_" ) shouldBe "<p><em>a*s*df</em></p>"
 		Markdown( "_a_ s*df_" ) shouldBe "<p><em>a</em> s*df_</p>"
 		Markdown( "*a_s*df_" ) shouldBe "<p><em>a_s</em>df_</p>"
-
 		Markdown( "_ a_" ) shouldBe "<p>_ a_</p>"
-		
-//		Markdown( "_a*s _df*" ) shouldBe "<p>_a<em>s _df</em></p>"
-//		Markdown( "_a*s _df_" ) shouldBe "<p><em>a*s _df</em></p>"
-//		Markdown( "_a _s*df_" ) shouldBe "<p><em>a _s*df</em></p>"
+		Markdown( "* a*" ) shouldBe "<ul><li>a*</li></ul>"
+		Markdown( "_a*s _df*" ) shouldBe "<p>_a<em>s _df</em></p>"
+		Markdown( "_a*s _df_" ) shouldBe "<p><em>a*s _df</em></p>"
+		Markdown( "_a _s*df_" ) shouldBe "<p><em>a _s*df</em></p>"
 	}
 
 	"underscore in word" in
@@ -51,10 +50,11 @@ class Emphasis extends FreeSpec with PropertyChecks with Matchers
 		Markdown( "__a**s**df__" ) shouldBe "<p><strong>a**s**df</strong></p>"
 		Markdown( "__a__ s**df__" ) shouldBe "<p><strong>a</strong> s**df__</p>"
 		Markdown( "**a__s**df__" ) shouldBe "<p><strong>a__s</strong>df__</p>"
-
-// 		Markdown( "__a**s __df**" ) shouldBe "<p><strong>a**s</strong> df**</p>"
-// 		Markdown( "__a**s __df__" ) shouldBe "<p><strong>a**s</strong> df__</p>"
-// 		Markdown( "__a __s**df__" ) shouldBe "<p><strong>a</strong> s**df__</p>"
+		Markdown( "__ a__" ) shouldBe "<p>__ a__</p>"
+		Markdown( "** a**" ) shouldBe "<p>** a**</p>"
+		Markdown( "__a**s __df**" ) shouldBe "<p>__a<strong>s __df</strong></p>"
+ 		Markdown( "__a**s __df__" ) shouldBe "<p><strong>a**s __df</strong></p>"
+ 		Markdown( "__a __s**df__" ) shouldBe "<p><strong>a __s**df</strong></p>"
 	}
 	
 	"mixing" in

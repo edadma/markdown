@@ -104,9 +104,11 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def inline_no_em_no_strong_allow( allow: String ) = inline_no_em_no_strong | text( allow )
 
-	def em_section( allow: String ) = rep1(escaped | strong_no_em | inline_no_em_no_strong_allow(allow)) ^^ {case l => Group( l )}
+	def space_delim( d: String ) = text( ("""[ \t]+\""" + d)r )
+	
+	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ {case l => Group( l )}
 
-	def _em( d: String, allow: String ) = d ~> not(" ") ~> em_section( allow ) <~ d ^^ {case e => <em>{e}</em>} | text( d )
+	def _em( d: String, allow: String ) = d ~> not(space) ~> em_section( d, allow ) <~ not(space) <~ d ^^ {case e => <em>{e}</em>} | text( d )
 
 	def em = _em( "*", "_" ) | _em( "_", "*" )
 	
@@ -117,9 +119,9 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def em_no_strong = _em_no_strong( "*" ) | _em_no_strong( "_" )
 	
-	def strong_section( allow: String ) = rep1(escaped | em_no_strong | inline_no_em_no_strong_allow(allow)) ^^ {case l => Group( l )}
+	def strong_section( d: String, allow: String ) = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ {case l => Group( l )}
 	
-	def _strong( d: String, allow: String ) = d ~> ((strong_section( allow ) <~ d ^^ {case e => <strong>{e}</strong>}) | success(Text( d )))
+	def _strong( d: String, allow: String ) = d ~> not(space) ~> strong_section( d, allow ) <~ not(space) <~ d ^^ {case e => <strong>{e}</strong>} | text( d )
 	
 	def strong: Parser[Node] = _strong( "**", "__" ) | _strong( "__", "**" )
 	

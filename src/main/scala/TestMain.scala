@@ -24,12 +24,12 @@ object MarkdownTest extends App
 // *   Bar
 // """
 
-	val s =
-"""
-Heading
-=======
-text
-"""
+// 	val s =
+// """
+// Heading
+// =======
+// text
+// """
 
 // 	val s =
 // """
@@ -55,7 +55,7 @@ text
 // 1 | 2 | 3
 // """
 
-//	val s = "visit http://asdf.com for info"
+	val s = "_a a _a _a _"
 	
 	println( Markdown(s) )
 //	println( headings )
