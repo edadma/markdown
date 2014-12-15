@@ -312,7 +312,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 				</table>
 		}
 	
-	def rule = """[ ]{0,3}(?:-{3,}|\*{3,}|_{3,})[ \t]*""".r ~ guard("""\n|\z"""r) ^^ {case _ => <hr />}
+	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})""".r ~ guard("""\n|\z"""r) ^^ {case _ => <hr />}
 
 	def quote_prefix = """[ ]{0,3}> ?"""r
 
@@ -340,7 +340,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
-	def block = (comment | ul | ol | quote | table | heading1 | heading2 | preformated | rule | reference | paragraph) <~ end_block
+	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | paragraph) <~ end_block
 	
 	def blocks = rep(block) ^^ (Group( _ ))
 	

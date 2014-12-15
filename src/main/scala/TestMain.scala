@@ -55,7 +55,10 @@ object MarkdownTest extends App
 // 1 | 2 | 3
 // """
 
-	val s = """`` asdf ``"""
+	val s =
+"""first
+ _ _ _ 
+last"""
 	
 	println( Markdown(s) )
 //	println( headings )
