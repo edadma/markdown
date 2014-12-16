@@ -212,7 +212,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 			Text( "" )
 		}
 
-	def paragraph = """[ ]{0,3}""".r ~> rep1sep(inline_list, """\n(?![ \t]*\n|#)"""r) ^^	//|[ ]{0,3}(?:\*|\d+\.) 
+	def paragraph = """[ ]{0,3}""".r ~> rep1sep(inline_list, """\n(?![ \t]*\n|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}))"""r) ^^
 		{case lines =>
 			val p = concat(
 				(lines dropRight 1 map
@@ -312,7 +312,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 				</table>
 		}
 	
-	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})""".r ~ guard("""\n|\z"""r) ^^ {case _ => <hr />}
+	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ (<hr/>)
 
 	def quote_prefix = """[ ]{0,3}> ?"""r
 
