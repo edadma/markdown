@@ -277,39 +277,26 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 				val aligns = buf.toList
 				
-				<table>
-					<thead>
-						<tr>
-						{
-							for ((i, a) <- head zip aligns)
+				<table><thead><tr>{
+					for ((i, a) <- head zip aligns)
+						yield
+							if (a == "left")
+								<th>{i}</th>
+							else
+								<th align={a}>{i}</th>
+					}</tr></thead>{
+					if (!body.isEmpty)
+						<tbody>{
+							for (i <- body)
 								yield
-									if (a == "left")
-										<th>{i}</th>
-									else
-										<th align={a}>{i}</th>
-						}
-						</tr>
-					</thead>
-					{
-						if (!body.isEmpty)
-							<tbody>
-							{
-								for (i <- body)
-									yield
-										<tr>
-										{
-											for ((j, a) <- i zip aligns)
-												yield
-													if (a == "left")
-														<td>{j}</td>
-													else
-														<td align={a}>{j}</td>
-										}
-										</tr>
-							}
-							</tbody>
-					}
-				</table>
+									<tr>{
+										for ((j, a) <- i zip aligns)
+											yield
+												if (a == "left")
+													<td>{j}</td>
+												else
+													<td align={a}>{j}</td>
+									}</tr>}</tbody>}</table>
 		}
 	
 	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ (<hr/>)
