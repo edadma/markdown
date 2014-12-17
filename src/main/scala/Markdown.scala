@@ -24,11 +24,17 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 	def domain = """[a-zA-Z0-9-]+\.""".r ~ rep1sep("[a-zA-Z0-9-]+"r, ".") ^^ {case host ~ root => host + root.mkString( "." )}
 	
+	def query_word = """[a-zA-Z0-9-*._]*"""r
+	
+	def query = "?" ~ rep1sep(query_word ~ "=" ~ query_word ^^ {case k ~ e ~ v => k + e + v}, "&") ^^
+		{case q ~ kvs => q + kvs.mkString( "&" )}
+
 	def url = "(http|https|ftp|file)://".r ~ domain ~ opt(":[0-9]+"r) ~
-		opt("/" ~ opt(rep1sep("""(?:[-A-Za-z0-9._~!$&'()*+,;=:@]|%\p{XDigit}\p{XDigit})+"""r, "/") ~ opt("/"))) ^^
-		{case s ~ d ~ port ~ path =>
+		opt("/" ~ opt(rep1sep("""(?:[-A-Za-z0-9._~!$&'()*+,;=:@]|%\p{XDigit}\p{XDigit})+"""r, "/") ~ opt("/"))) ~ opt(query) ^^
+		{case s ~ d ~ port ~ path ~ q =>
 			s + d + port.getOrElse( "" ) +
-				path.map( {case s ~ p => s + p.map({case p ~ s => p.mkString("/") + s.getOrElse("")}).getOrElse("")} ).getOrElse( "" )
+				path.map( {case s ~ p => s + p.map({case p ~ s => p.mkString("/") + s.getOrElse("")}).getOrElse("")} ).getOrElse( "" ) +
+				q.getOrElse( "" )
 		}
 
 	def local = rep1sep("""[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+"""r, ".") ^^ (_.mkString( "." ))
@@ -49,11 +55,11 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 	def eol = """\n(?![ \t]*\n)""".r
 	
-	def code = "`" ~> ((rep1sep(code_text, eol) <~ "`" ^^ {case es => <code>{concat(es)}</code>}) | success(Text( "`" )))
+	def code = "`" ~> ((rep1sep(code_text, eol) <~ "`" ^^ {case es => <code>{concat(es, Text("\n"))}</code>}) | success(Text( "`" )))
 
 	def double_code_text = text( """(?:[^\n]*(?=` ``|\n)`|[^\n]+(?=``|\n))"""r )
 
-	def double_code = ("`` " ~ guard("`[^`]"r) | "``") ~> ((rep1sep(double_code_text, eol) <~ " ?``".r ^^ {case es => <code>{concat(es)}</code>}) | success(Text( "``" )))
+	def double_code = ("`` " ~ guard("`[^`]"r) | "``") ~> ((rep1sep(double_code_text, eol) <~ " ?``".r ^^ {case es => <code>{concat(es, Text("\n"))}</code>}) | success(Text( "``" )))
 	
 	def link_text = text( """[^\n*_`\\\]!]+"""r )
 	
@@ -212,17 +218,9 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 			Text( "" )
 		}
 
-	def paragraph = """[ ]{0,3}""".r ~> rep1sep(inline_list, """\n(?![ \t]*\n|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}))"""r) ^^
-		{case lines =>
-			val p = concat(
-				(lines dropRight 1 map
-					{ln =>
-						ln.last match
-						{
-							case Text( t ) if t endsWith "  " => (ln dropRight 1) ++ List( Text(t.substring(0, t.length - 2)), <br/> )
-							case _ => ln
-						}
-					}) :+ lines.last map (Group))
+	def paragraph = """[ ]{0,3}""".r ~> rep1sep(inline_list, """\n(?![ \t]*\n|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)"""r) ^^
+		{lines =>
+			val p = concat(lines map (Group), <br/>)
 
 			if (p.toString == "")
 				Text( "" )
@@ -296,7 +294,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 													<td>{j}</td>
 												else
 													<td align={a}>{j}</td>
-									}</tr>}</tbody>}</table>
+										}</tr>}</tbody>}</table>
 		}
 	
 	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ (<hr/>)
@@ -333,7 +331,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def document = """(?:[ \t]*\n)*""".r ~> blocks
 	
-	def concat( es: List[Node] ) = es.reduce( (a: Node, b: Node) => Group(List(a, Text("\n"), b)) )
+	def concat( es: List[Node], sep: Node ) = es.reduce( (a: Node, b: Node) => Group(List(a, sep, b)) )
 }
 
 object Markdown

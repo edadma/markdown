@@ -22,6 +22,7 @@ class Inline extends FreeSpec with PropertyChecks with Matchers
 			"""<p>visit <a href="http://asdf.com/this/is/the/path">http://asdf.com/this/is/the/path</a> for info</p>"""
 		Markdown( "visit http://asdf.com/another/path/ for info" ) shouldBe
 			"""<p>visit <a href="http://asdf.com/another/path/">http://asdf.com/another/path/</a> for info</p>"""
+		Markdown( "visit http://asdf?key1=value1&key2=value2 for info" ) shouldBe """<p>visit http://asdf?key1=value1&amp;key2=value2 for info</p>"""
 	}
 	
 	"escapes" in
