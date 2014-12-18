@@ -5,7 +5,11 @@ object MarkdownTest extends App
 {
 	val s =
 """
-zxcv@asdf.com?a=b&q=w
+qwer
+
+``` not-Scala
+asdf
+```
 """
 
 	println( Markdown(s) )

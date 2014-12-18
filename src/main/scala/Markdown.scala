@@ -239,6 +239,13 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 				}</code></pre>
 			}
 
+	def triple_code = ("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ ("""(?:.|\n)+(?=\n```)""".r <~ "\n```") ^^
+		{case l ~ c =>
+			<pre><code>{
+				Text( c )
+			}</code></pre>
+		}
+
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
 
 	def table_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link | autolink | space | table_plain) ^^
@@ -325,7 +332,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
-	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | paragraph) <~ end_block
+	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | paragraph) <~ end_block
 	
 	def blocks = rep(block) ^^ (Group( _ ))
 	
