@@ -16,7 +16,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 	override def skipWhitespace = false
 
-	def plain = text( """[^\n*_`\\\[! \t]+"""r )
+	def plain = text( """[^\n~*_`\\\[! \t]+"""r )
 
 	def space = text( """[ \t]+"""r, _ => " " )
 	
@@ -113,23 +113,30 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 				<img src={h.addr} title={h.title.get} alt={a} />
 		}) | success(Text( "!" )))
 	
-	def inline_list: Parser[List[Node]] = rep1(escaped | strong | em | inline_no_em_no_strong)
+	def inline_element: Parser[Node] = escaped | strong | em | inline_no_em_no_strong
 	
-	def inline: Parser[Node] = inline_list ^^ {case l => Group( l )}
+	def inline_list: Parser[List[Node]] = rep1(inline_element)
+	
+	def inline: Parser[Node] = inline_list ^^ (Group( _ ))
 
-	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | space | plain
+	def strikethrough_inline: Parser[Node] = rep1(space_delim( "~~" ) | escaped | strong | em | double_code | code | image | link | underscore_word | autolink |
+		space | plain) ^^ (Group( _ ))
+	
+	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ {case t => <del>{t}</del>} | success(Text("~~")))
+
+	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | strikethrough | space | plain
 	
 	def inline_no_em_no_strong_allow( allow: String ) = inline_no_em_no_strong | text( allow )
 
 	def space_delim( d: String ) = text( ("""[ \t]+\""" + d)r )
 	
-	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ {case l => Group( l )}
+	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (Group( _ ))
 
 	def _em( d: String, allow: String ) = d ~> not(space) ~> em_section( d, allow ) <~ not(space) <~ d ^^ {case e => <em>{e}</em>} | text( d )
 
 	def em = _em( "*", "_" ) | _em( "_", "*" )
 	
-	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ {case l => Group( l )}
+	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ (Group( _ ))
 
 	def _em_no_strong( d: String ) =
 		(d ~ not(d)) ~> ((em_no_strong_section <~ (d ~ not(d)) ^^ {case e => <em>{e}</em>}) | success(Text( d )))
@@ -241,7 +248,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 	def triple_code = ("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ ("""(?:.|\n)+(?=\n```)""".r <~ "\n```") ^^
 		{case l ~ c =>
-			<pre><code>{
+			<pre><code class={l}>{
 				Text( c )
 			}</code></pre>
 		}
@@ -326,7 +333,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	
 	def item = inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
 	
-	def ul = rep1sep(li( """[ ]{0,3}\* +"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
+	def ul = rep1sep(li( """[ ]{0,3}[\*-] +"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
 	
 	def ol = rep1sep(li( """[ ]{0,3}\d+\. +"""r ), end_block) ^^ {case es => <ol>{es}</ol>}
 	
