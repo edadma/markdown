@@ -5,7 +5,7 @@ object TestMain extends App
 {
 	val s =
 """
-asdf <a class="hg">xcvb<b>klj<c/>iyou</b>khj</a> zxcv
+*asdf <!-- <b>khj</b>* --> zxcv
 """
 
 	println( GFM(s) )

@@ -330,11 +330,15 @@ class Markdown( features: String* ) extends RegexParsers
 	def xml_string: Parser[String] =
 		"<" ~ tag_name ~ "/>".r ^^ {case o ~ n ~ c => o + n + c} |	// should be [^/]*/> for closing regex
 		"<" ~ tag_name ~ "[^>]*>[^<]*".r ~ rep(xml_string) ~ "[^<]*</".r ~ tag_name ~ " ?>".r ^^
-			{case os ~ s ~ cs ~ el ~ oe ~ e ~ ce => os + s + cs + el.mkString + oe + e + ce}
-
+			{case os ~ s ~ cs ~ el ~ oe ~ e ~ ce => os + s + cs + el.mkString + oe + e + ce} |
+		"""<!--(?:.|\n)*-->""".r
+		
 	def xml: Parser[Node] = xml_string ^^
 		{s =>
-			Try( XML.loadString(s) ).getOrElse( Text(s) )
+			if (s startsWith "<!--")
+				Text( "" )
+			else
+				Try( XML.loadString(s) ).getOrElse( Text(s) )
 		}
 		
 	def quote_prefix = """[ ]{0,3}> ?"""r
