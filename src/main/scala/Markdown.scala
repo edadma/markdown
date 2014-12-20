@@ -6,9 +6,7 @@ import xml.{Elem, Node, Text, Group}
 import collection.mutable.{Buffer, ListBuffer, HashMap}
 
 
-case class Heading( level: Int, heading: Node )
-
-class Markdown( headings: Buffer[Heading] ) extends RegexParsers
+class Markdown(  ) extends RegexParsers
 {
 	private class Holder( var addr: String, var title: Option[String] )
 	
@@ -173,9 +171,6 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 		{case l ~ e =>
 			val level = l.count(_ == '#')
 
-			if (headings ne null)
-				headings += Heading( level, e )
-
 			level match
 			{
 				case 1 => <h1>{e}</h1>
@@ -190,9 +185,6 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	def heading2 = inline ~ """\n(?:-+|=+)[ \t]*(?=\n|\z)""".r ^^
 		{case e ~ l =>
 			val level = if (l.charAt(1) == '=') 1 else 2
-			
-			if (headings ne null)
-				headings += Heading( level, e )
 			
 			level match
 			{
@@ -307,7 +299,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 										}</tr>}</tbody>}</table>
 		}
 	
-	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ (<hr/>)
+	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ <hr/>
 
 	def quote_prefix = """[ ]{0,3}> ?"""r
 
@@ -315,7 +307,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 		quote_prefix ~>
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(quote_prefix) | success("")) ^^ {case c ~ s => c + s}), quote_prefix) ^^
 				{case es =>
-					<blockquote>{Markdown.asXML( es.reduce(_ + _) )}</blockquote>
+					<blockquote>{parseDocument( es.reduce(_ + _) )}</blockquote>
 				}
 
 	def indent = """\t|[ ]{1,4}"""r
@@ -324,7 +316,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 		start ~>
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(indent) | success("")) ^^ {case c ~ s => c + s}), indent) ^^
 				{case es =>
-					<li>{Markdown.item( es.reduce(_ + _) )}</li>
+					<li>{parseItem( es.reduce(_ + _) )}</li>
 				}
 	
 	def item = inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
@@ -342,62 +334,41 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 	def document = """(?:[ \t]*\n)*""".r ~> blocks
 	
 	def concat( es: List[Node], sep: Node ) = es.reduce( (a: Node, b: Node) => Group(List(a, sep, b)) )
+
+	def parseDocument( s: String ) =
+		parseAll( document, Markdown.stripReturns(s) ) match
+		{
+			case Success( result, _ ) => result
+			case Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
+			case Error( msg, _ ) => sys.error( msg )
+		}
+	
+	protected def parseItem( s: String ) =
+		parseAll( item, s ) match
+		{
+			case Success( result, _ ) => result
+			case Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
+			case Error( msg, _ ) => sys.error( msg )
+		}
 }
 
 object Markdown
 {
 	private def stripReturns( s: String ) = s.replace( "\r\n", "\n" ).replace( "\r", "\n" )
 
-	def withHeadings( s: String ) =
-	{
-	val headings = new ListBuffer[Heading]
-	val parser = new Markdown( headings )
-	
-		parser.parse( parser.phrase(parser.document), stripReturns(s) ) match
-		{
-			case parser.Success( result, _ ) => (result.toString, headings.toList)
-			case parser.Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
-			case parser.Error( msg, _ ) => sys.error( msg )
-		}
-	}
-	
-	def asXML( s: String ) =
-	{
-	val parser = new Markdown( null )
-	
-		parser.parse( parser.phrase(parser.document), stripReturns(s) ) match
-		{
-			case parser.Success( result, _ ) => result
-			case parser.Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
-			case parser.Error( msg, _ ) => sys.error( msg )
-		}
-	}
-	
-	def item( s: String ) =
-	{
-	val parser = new Markdown( null )
-	
-		parser.parse( parser.phrase(parser.item), s ) match
-		{
-			case parser.Success( result, _ ) => result
-			case parser.Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
-			case parser.Error( msg, _ ) => sys.error( msg )
-		}
-	}
-		
-	private def format( doc: Node ) =
+	private def normalize( doc: Node ) =
 	{
 		var level = 0
 		val buf = new StringBuilder
 		
-		def _formatNodes( ns: Seq[Node] )
+		def _normalizeNodes( ns: Seq[Node] )
 		{
-			ns foreach _format
+			ns foreach _normalize
 		}
 		
 		def nl = buf += '\n'
 		
-		def _format( n: Node )
+		def _normalize( n: Node )
 		{
 			n match
 			{
@@ -420,14 +391,14 @@ object Markdown
 					}
 
 					nl
-				case Group( s ) => _formatNodes( s )
+				case Group( s ) => _normalizeNodes( s )
 				case Text( t ) => buf append t
 			}
 		}
 
-		_format( doc )
+		_normalize( doc )
 		buf.toString
 	}
 
-	def apply( s: String ) = asXML( s ).toString
+	def apply( s: String ) = (new Markdown).parseDocument( s ).toString
 }
