@@ -5,9 +5,7 @@ object MarkdownTest extends App
 {
 	val s =
 """
-asdf
-- - -
-zxcv
+asdf`code`zxcv
 """
 
 	println( Markdown(s) )
