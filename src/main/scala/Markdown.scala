@@ -6,12 +6,23 @@ import xml.{Elem, Node, Text, Group}
 import collection.mutable.{Buffer, ListBuffer, HashMap}
 
 
-class Markdown(  ) extends RegexParsers
+class Markdown( features: String* ) extends RegexParsers
 {
 	private class Holder( var addr: String, var title: Option[String] )
 	
 	private val refmap = new HashMap[String, Holder]
-
+	
+	private var featureNewlineBreak = false
+	private var featureBackslashBreak = false
+	
+	for (f <- features)
+		f match
+		{
+			case "newline-break" => featureNewlineBreak = true
+			case "backslash-break" => featureBackslashBreak = true
+			case _ => sys.error( "unrecognized feature: " + f )
+		}
+	
 	override def skipWhitespace = false
 
 	def plain = text( """[^\n~*_`\\\[! \t]+"""r )
@@ -213,7 +224,10 @@ class Markdown(  ) extends RegexParsers
 			Text( "" )
 		}
 
-	def paragraph = """[ ]{0,3}""".r ~> rep1sep(inline_list, """\n(?![ \t]*\n|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)"""r) ^^
+	lazy val PARAGRAPH_SEP = ("""\n(?![ \t]*\n|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)""")r
+	
+	def paragraph = 
+		"""[ ]{0,3}""".r ~> rep1sep(inline_list, PARAGRAPH_SEP) ^^
 		{lines =>
 			val p = concat(lines map (Group), <br/>)
 
@@ -361,10 +375,7 @@ object Markdown
 		var level = 0
 		val buf = new StringBuilder
 		
-		def _normalizeNodes( ns: Seq[Node] )
-		{
-			ns foreach _normalize
-		}
+		def _normalizeNodes( ns: Seq[Node] ) = ns foreach _normalize
 		
 		def nl = buf += '\n'
 		
