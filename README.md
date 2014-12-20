@@ -1,5 +1,5 @@
-Scala markdown parser
-=====================
+Scala Github Flavored Markdown Processor
+========================================
 
 ## Usage
 
@@ -7,13 +7,13 @@ Add the following lines to your `build.sbt`
 
 	resolvers += "Hyperreal Repository" at "http://hyperreal.ca/maven2"
 
-	libraryDependencies += "ca.hyperreal" %% "markdown" % "0.1"
+	libraryDependencies += "ca.hyperreal" %% "__markdown__" % "0.2"
 
 ## Example
 
 The following code tests one of the examples given in the [Markdown Syntax Cheatsheet](http://daringfireball.net/projects/markdown/dingus).
 
-	import ca.hyperreal.markdown._
+	import ca.hyperreal.__markdown__._
 
 	object MarkdownTest extends App
 	{
