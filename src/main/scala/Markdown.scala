@@ -16,10 +16,14 @@ class Markdown( features: String* ) extends RegexParsers
 	private var featureBackslashBreak = false
 	
 	for (f <- features)
-		f match
+		f.toLowerCase match
 		{
 			case "newline-break" => featureNewlineBreak = true
 			case "backslash-break" => featureBackslashBreak = true
+			case "gfm" =>
+				featureNewlineBreak = true
+			case "commonmark" =>
+				featureBackslashBreak = true
 			case _ => sys.error( "unrecognized feature: " + f )
 		}
 	
@@ -411,4 +415,9 @@ object Markdown
 	}
 
 	def apply( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s ).toString
+}
+
+object GFM
+{
+	def apply( s: String, features: String* ) = (new Markdown( ("gfm" +: features): _* )).parseDocument( s ).toString
 }

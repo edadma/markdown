@@ -12,6 +12,6 @@ zxcv
 
 qwer  """
 
-	println( Markdown(s, "newline-break", "backslash-break") )
+	println( GFM(s) )
 //	println( headings )
 }
