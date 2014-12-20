@@ -2,8 +2,9 @@ package ca.hyperreal.__markdown__
 
 import util.parsing.combinator._
 import util.matching.Regex
-import xml.{Elem, Node, Text, Group}
+import xml.{Elem, Node, Text, Group, XML}
 import collection.mutable.{Buffer, ListBuffer, HashMap}
+import scala.util.{Try, Success, Failure}
 
 
 class Markdown( features: String* ) extends RegexParsers
@@ -72,7 +73,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def link_text = text( """[^\n*_`\\\]!]+"""r )
 	
-	def link_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ {case l => Group( l )}
+	def link_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ (Group( _ ))
 	
 	private def ref( id: String ) =
 		if (refmap contains id)
@@ -133,7 +134,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ {case t => <del>{t}</del>} | success(Text("~~")))
 
-	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | strikethrough | space | plain
+	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | strikethrough | space | xml | plain
 	
 	def inline_no_em_no_strong_allow( allow: String ) = inline_no_em_no_strong | text( allow )
 
@@ -152,13 +153,13 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def em_no_strong = _em_no_strong( "*" ) | _em_no_strong( "_" )
 	
-	def strong_section( d: String, allow: String ) = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ {case l => Group( l )}
+	def strong_section( d: String, allow: String ) = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (Group( _ ))
 	
 	def _strong( d: String, allow: String ) = d ~> not(space) ~> strong_section( d, allow ) <~ not(space) <~ d ^^ {case e => <strong>{e}</strong>} | text( d )
 	
 	def strong: Parser[Node] = _strong( "**", "__" ) | _strong( "__", "**" )
 	
-	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ {case l => Group( l )}
+	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ (Group( _ ))
 	
 	def _strong_no_em( d: String ) = d ~> ((strong_no_em_section <~ d ^^ {case e => <strong>{e}</strong>}) | success(Text( d )))
 
@@ -208,7 +209,7 @@ class Markdown( features: String* ) extends RegexParsers
 			}
 		}
 
-	def comment = """[ ]{0,3}/\*[^*]*\*+(?:[^*/][^*]*\*+)*/[ \t]*""".r ^^ (_ => Text( "" ))
+	def comment = """[ ]{0,3}/\*[^*]*\*+(?:[^*/][^*]*\*+)*/[ \t]*""".r ^^^ Text( "" )
 
 	def reference = 
 		"""[ ]{0,3}\[""".r ~>
@@ -324,6 +325,16 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ <hr/>
 
+	def xml_string: Parser[String] =
+		"""<[a-z]+/>""".r |
+		"""<[a-z]+>[^<]*""".r ~ rep(xml_string) ~ """.*?</[a-z]+>""".r ^^
+			{case s ~ b ~ e => s + b.mkString + e}
+
+	def xml: Parser[Node] = xml_string ^^
+		{s =>
+			Try( XML.loadString(s) ).getOrElse( Text(s) )
+		}
+		
 	def quote_prefix = """[ ]{0,3}> ?"""r
 
 	def quote: Parser[Node] =
@@ -419,5 +430,5 @@ object Markdown
 
 object GFM
 {
-	def apply( s: String, features: String* ) = (new Markdown( ("gfm" +: features): _* )).parseDocument( s ).toString
+	def apply( s: String, features: String* ) = Markdown( s, ("gfm" +: features): _* )
 }

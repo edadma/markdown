@@ -1,5 +1,5 @@
-Scala Github Flavored Markdown Processor
-========================================
+Markdown Processor for Java/Scala
+=================================
 
 ## Usage
 
