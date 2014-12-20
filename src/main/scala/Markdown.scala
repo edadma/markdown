@@ -224,18 +224,23 @@ class Markdown( features: String* ) extends RegexParsers
 			Text( "" )
 		}
 
-	lazy val PARAGRAPH_SEP = ("""\n(?![ \t]*\n|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)""")r
+	def paragraph_inline_element =
+		rep1(
+			"\\\n" ^^^ (if (featureBackslashBreak) <br/> else Text("\\\n")) |
+			"""  +\n""".r ^^^ <br/> |
+			"\n" ^^^ (if (featureNewlineBreak) <br/> else Text("\n")) |
+			inline_element) ^^
+			(Group( _ ))
 	
+	def alternative( cond: Boolean, p: Parser[Node], alt: Parser[Node] ) =
+		if (cond)
+			alt | p
+		else
+			p
+			
 	def paragraph = 
-		"""[ ]{0,3}""".r ~> rep1sep(inline_list, PARAGRAPH_SEP) ^^
-		{lines =>
-			val p = concat(lines map (Group), <br/>)
-
-			if (p.toString == "")
-				Text( "" )
-			else
-				<p>{p}</p>
-		}
+		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
+			{p => <p>{parseRule( paragraph_inline_element, p )}</p>}
 
 	def preformated_prefix = """[ ]{4}|[ ]{0,3}\t"""r
 
@@ -321,7 +326,7 @@ class Markdown( features: String* ) extends RegexParsers
 		quote_prefix ~>
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(quote_prefix) | success("")) ^^ {case c ~ s => c + s}), quote_prefix) ^^
 				{case es =>
-					<blockquote>{parseDocument( es.reduce(_ + _) )}</blockquote>
+					<blockquote>{parseRule( document, es.reduce(_ + _) )}</blockquote>
 				}
 
 	def indent = """\t|[ ]{1,4}"""r
@@ -330,7 +335,7 @@ class Markdown( features: String* ) extends RegexParsers
 		start ~>
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(indent) | success("")) ^^ {case c ~ s => c + s}), indent) ^^
 				{case es =>
-					<li>{parseItem( es.reduce(_ + _) )}</li>
+					<li>{parseRule( item, es.reduce(_ + _) )}</li>
 				}
 	
 	def item = inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
@@ -348,22 +353,16 @@ class Markdown( features: String* ) extends RegexParsers
 	def document = """(?:[ \t]*\n)*""".r ~> blocks
 	
 	def concat( es: List[Node], sep: Node ) = es.reduce( (a: Node, b: Node) => Group(List(a, sep, b)) )
-
-	def parseDocument( s: String ) =
-		parseAll( document, Markdown.stripReturns(s) ) match
-		{
-			case Success( result, _ ) => result
-			case Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
-			case Error( msg, _ ) => sys.error( msg )
-		}
 	
-	protected def parseItem( s: String ) =
-		parseAll( item, s ) match
+	protected def parseRule( rule: Parser[Node], s: String ) =
+		parseAll( rule, s ) match
 		{
 			case Success( result, _ ) => result
 			case Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
 			case Error( msg, _ ) => sys.error( msg )
 		}
+
+	def parseDocument( s: String ) = parseRule( document, Markdown.stripReturns(s) )
 }
 
 object Markdown
@@ -411,5 +410,5 @@ object Markdown
 		buf.toString
 	}
 
-	def apply( s: String ) = (new Markdown).parseDocument( s ).toString
+	def apply( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s ).toString
 }
