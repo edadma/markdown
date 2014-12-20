@@ -1,4 +1,4 @@
-package ca.hyperreal.markdown
+package ca.hyperreal.superMarkdown
 
 
 object MarkdownTest extends App

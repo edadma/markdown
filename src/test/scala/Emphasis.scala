@@ -1,4 +1,4 @@
-package ca.hyperreal.markdown
+package ca.hyperreal.superMarkdown
 
 import org.scalatest._
 import prop.PropertyChecks

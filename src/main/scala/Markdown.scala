@@ -1,4 +1,4 @@
-package ca.hyperreal.markdown
+package ca.hyperreal.superMarkdown
 
 import util.parsing.combinator._
 import util.matching.Regex
