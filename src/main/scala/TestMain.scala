@@ -1,12 +1,10 @@
-package ca.hyperreal.superMarkdown
+package ca.hyperreal.__markdown__
 
 
 object MarkdownTest extends App
 {
 	val s =
-"""
-asdf`code`zxcv
-"""
+"""asdf ``Roses are red, `Violets` are blue.`` zxcv"""
 
 	println( Markdown(s) )
 //	println( headings )

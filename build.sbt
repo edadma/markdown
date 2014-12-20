@@ -3,7 +3,7 @@ import AssemblyKeys._
 import LaikaKeys._
 
 
-name := "SuperMarkdown"
+name := "__markdown__"
 
 version := "0.2"
 
