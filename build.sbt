@@ -25,42 +25,18 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.1.3" % "test"
 
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.6"
-
 libraryDependencies ++= Seq(
-	"org.scala-lang.modules" %% "scala-swing" % "1.0.1",
 	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.2",
 	"org.scala-lang.modules" %% "scala-xml" % "1.0.2"
 	)
 
-//libraryDependencies += "org.scaloid" %% "scaloid" % "3.2-8"
-
-//libraryDependencies += "org.clapper" %% "argot" % "1.0.3"
-
-//libraryDependencies += "com.h2database" % "h2" % "1.3.148"
-
-libraryDependencies ++= Seq(
-//	"org.postgresql" % "postgresql" % "9.2-1004-jdbc4"
-//	"mysql" % "mysql-connector-java" % "5.1.29"
-//	"org.mongodb" %% "casbah" % "2.6.3"
-//	"org.antlr" % "stringtemplate" % "4.0.2"
-	)
-
-libraryDependencies ++= Seq(
-//	"local" %% "LOCAL_PROJECT" % "0.1"
-	)
-	
-//mainClass in (Compile, packageBin) := Some( "ca.hyperreal.myproject.Main" )
-
-//mainClass in (Compile, run) := Some( "ca.hyperreal.markdown.MarkdownParserTest" )
-
-//offline := true
+mainClass in (Compile, run) := Some( "ca.hyperreal.__markdown__.TestMain" )
 
 assemblySettings
 
 mainClass in assembly := Some( "ca.hyperreal.markdown.MarkdownParserTest" )
 
-jarName in assembly := "Markdown-" + version.value + ".jar"
+jarName in assembly := name.value + "-" + version.value + ".jar"
 
 
 LaikaPlugin.defaults

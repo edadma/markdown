@@ -1,10 +1,11 @@
 package ca.hyperreal.__markdown__
 
 
-object MarkdownTest extends App
+object TestMain extends App
 {
 	val s =
-"""asdf ``Roses are red, `Violets` are blue.`` zxcv"""
+"""`asdf
+zxcv`"""
 
 	println( Markdown(s) )
 //	println( headings )
