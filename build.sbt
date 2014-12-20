@@ -5,7 +5,7 @@ import LaikaKeys._
 
 name := "markdown"
 
-version := "0.1"
+version := "0.2"
 
 scalaVersion := "2.11.4"
 

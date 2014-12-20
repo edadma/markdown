@@ -191,7 +191,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 			}
 		}
 	
-	def heading2 = inline ~ """\n(?:-+|=+)[ \t]*""".r ^^
+	def heading2 = inline ~ """\n(?:-+|=+)[ \t]*(?=\n|\z)""".r ^^
 		{case e ~ l =>
 			val level = if (l.charAt(1) == '=') 1 else 2
 			
@@ -350,7 +350,7 @@ class Markdown( headings: Buffer[Heading] ) extends RegexParsers
 
 object Markdown
 {
-	private def stripReturns( s: String ) = s.replace( "\r", "" )
+	private def stripReturns( s: String ) = s.replace( "\r\n", "\n" ).replace( "\r", "\n" )
 
 	def withHeadings( s: String ) =
 	{
