@@ -14,6 +14,7 @@ class Markdown( features: String* ) extends RegexParsers
 	private val buf = new StringBuilder
 	private var featureNewlineBreak = false
 	private var featureBackslashBreak = false
+	private var tabSize = 4
 	
 	for (f <- features)
 		f.toLowerCase match
@@ -24,6 +25,11 @@ class Markdown( features: String* ) extends RegexParsers
 				featureNewlineBreak = true
 			case "commonmark" =>
 				featureBackslashBreak = true
+			case Markdown.TABSIZE_REGEX( s ) =>
+				tabSize = s.toInt
+				
+				if (tabSize > 0)
+					sys.error( "tab-size should be positive: " + tabSize )
 			case _ => sys.error( "unrecognized feature: " + f )
 		}
 	
@@ -242,7 +248,7 @@ class Markdown( features: String* ) extends RegexParsers
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(preformated_prefix) | success("")) ^^ {case c ~ s => c + s}), preformated_prefix) ^^
 			{case es =>
 				<pre><code>{
-					Text( es.reduce(_ + _) )
+					Text( Markdown.tabs2spaces(es.reduce(_ + _), tabSize) )
 				}</code></pre>
 			}
 
@@ -360,7 +366,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def item_inline =
 		rep1(
-			"""\n(?!\n)""".r ^^^ Text("\n") |
+			"""\n(?!(?:[ \n]*\n|[*+-]| *[0-9]+\.))""".r ^^^ Text("\n") |
 			inline_element) ^^
 			(Group( _ ))
 
@@ -408,7 +414,31 @@ class Markdown( features: String* ) extends RegexParsers
 
 object Markdown
 {
+	private val TABSIZE_REGEX = "tab-size *= *([0-9]+)"r
+	
 	private def stripReturns( s: String ) = s.replace( "\r\n", "\n" ).replace( "\r", "\n" )
+
+	private def tabs2spaces( s: String, size: Int ) =
+	{
+		require( size > 0 )
+		
+	val lines = s.split( "\n", -1 )
+	
+		for (i <- 0 until lines.length)
+		{
+		var index = 0
+		
+			while ({index = lines(i).indexOf( '\t', index ); index > -1})
+			{
+			val pad = size - (index % size)
+			
+				lines(i) = lines(i).substring( 0, index ) + " "*pad + lines(i).substring( index + 1 )
+				index += pad - 1
+			}
+		}
+		
+		lines.reduce( _ + "\n" + _ )
+	}
 
 	private def normalize( doc: Node ) =
 	{
