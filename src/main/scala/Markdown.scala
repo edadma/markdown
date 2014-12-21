@@ -2,7 +2,7 @@ package ca.hyperreal.__markdown__
 
 import util.parsing.combinator._
 import util.matching.Regex
-import xml.{Elem, Node, Text, Group, XML}
+import xml.{Elem, Node, Text, Group, XML, Utility}
 import collection.mutable.{Buffer, ListBuffer, HashMap}
 import scala.util.Try
 
@@ -12,7 +12,7 @@ class Markdown( features: String* ) extends RegexParsers
 	private class Holder( var addr: String, var title: Option[String] )
 	
 	private val refmap = new HashMap[String, Holder]
-	
+	private val buf = new StringBuilder
 	private var featureNewlineBreak = false
 	private var featureBackslashBreak = false
 	
@@ -30,7 +30,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	override def skipWhitespace = false
 
-	def plain = text( """[^\n~*_`\\\[! \t]+"""r )
+	def plain = text( """[^\n~*_`\\\[! \t&]+"""r )
 
 	def space = text( """[ \t]+"""r, _ => " " )
 	
@@ -134,7 +134,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ {case t => <del>{t}</del>} | success(Text("~~")))
 
-	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | strikethrough | space | xml | plain
+	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | strikethrough | space | xml | entity | plain
 	
 	def inline_no_em_no_strong_allow( allow: String ) = inline_no_em_no_strong | text( allow )
 
@@ -325,6 +325,17 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def rule = """[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})(?=\n|\z)""".r ^^^ <hr/>
 
+	def entity: Parser[Node] = "&" ~> ("[a-zA-Z]+".r ~ ";" ^^
+		{case n ~ s =>
+			buf.clear
+			
+			Utility.unescape( n, buf ) match
+			{
+				case null => Text( '&' + n + s )
+				case _ => Text( buf.toString )
+			}
+		} | success(Text( "&" )))
+	
 	def tag_name = "[:_A-Za-z][:_A-Za-z0-9.-]*"r
 	
 	def xml_string: Parser[String] =

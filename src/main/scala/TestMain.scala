@@ -5,7 +5,8 @@ object TestMain extends App
 {
 	val s =
 """
-*asdf <!-- <b>khj</b>* --> zxcv
+Here's a [link] [1] with an ampersand in the URL.
+[1]: http://example.com/?foo=1&bar=2
 """
 
 	println( GFM(s) )
