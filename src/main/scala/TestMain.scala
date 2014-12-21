@@ -5,27 +5,110 @@ object TestMain extends App
 {
 	val s =
 """
-AT&T has an ampersand in their name.
+These should all get escaped:
 
-AT&amp;T is another way to write it.
+Backslash: \\
 
-This & that.
+Backtick: \`
 
-4 < 5.
+Asterisk: \*
 
-6 > 5.
+Underscore: \_
 
-Here's a [link] [1] with an ampersand in the URL.
+Left brace: \{
 
-Here's a link with an amersand in the link text: [AT&T] [2].
+Right brace: \}
 
-Here's an inline [link](/script?foo=1&bar=2).
+Left bracket: \[
 
-Here's an inline [link](</script?foo=1&bar=2>).
+Right bracket: \]
+
+Left paren: \(
+
+Right paren: \)
+
+Greater-than: \>
+
+Hash: \#
+
+Period: \.
+
+Bang: \!
+
+Plus: \+
+
+Minus: \-
 
 
-[1]: http://example.com/?foo=1&bar=2
-[2]: http://att.com/  "AT&T"
+
+These should not, because they occur within a code block:
+
+	Backslash: \\
+
+	Backtick: \`
+
+	Asterisk: \*
+
+	Underscore: \_
+
+	Left brace: \{
+
+	Right brace: \}
+
+	Left bracket: \[
+
+	Right bracket: \]
+
+	Left paren: \(
+
+	Right paren: \)
+
+	Greater-than: \>
+
+	Hash: \#
+
+	Period: \.
+
+	Bang: \!
+
+	Plus: \+
+
+	Minus: \-
+
+
+Nor should these, which occur in code spans:
+
+Backslash: `\\`
+
+Backtick: `` \` ``
+
+Asterisk: `\*`
+
+Underscore: `\_`
+
+Left brace: `\{`
+
+Right brace: `\}`
+
+Left bracket: `\[`
+
+Right bracket: `\]`
+
+Left paren: `\(`
+
+Right paren: `\)`
+
+Greater-than: `\>`
+
+Hash: `\#`
+
+Period: `\.`
+
+Bang: `\!`
+
+Plus: `\+`
+
+Minus: `\-`
 """
 
 	println( GFM(s) )

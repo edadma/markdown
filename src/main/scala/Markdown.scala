@@ -62,7 +62,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {case t => Text( f(t) )}
 
-	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!]"""r, s => s.charAt(1).toString )
+	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!>]"""r, s => s.charAt(1).toString )
 
 	def eol = """\n(?![ \t]*\n)""".r
 	
