@@ -353,14 +353,20 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def li( start: Regex ): Parser[Node] =
 		start ~>
-			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(indent) | success("")) ^^ {case c ~ s => c + s}), indent) ^^
+			rep1sep(("""[^\n]*""".r ~ ("""\n(?:[ \t]*\n)*""".r <~ guard(indent) | success("")) ^^ {case c ~ s => c + s}), indent) ^^
 				{case es =>
 					<li>{parseRule( item, es.reduce(_ + _) )}</li>
 				}
 	
-	def item = inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
+	def item_inline =
+		rep1(
+			"""\n(?!\n)""".r ^^^ Text("\n") |
+			inline_element) ^^
+			(Group( _ ))
+
+	def item = item_inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
 	
-	def ul = rep1sep(li( """[ ]{0,3}[*-](?: +|\t)"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
+	def ul = rep1sep(li( """[ ]{0,3}[*+-](?: +|\t)"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
 	
 	def ol = rep1sep(li( """[ ]{0,3}\d+\.(?: +|\t)"""r ), end_block) ^^ {case es => <ol>{es}</ol>}
 	
