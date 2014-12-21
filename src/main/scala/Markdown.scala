@@ -83,7 +83,7 @@ class Markdown( features: String* ) extends RegexParsers
 			("", None)
 		}
 
-	def link = "[" ~> ((link_inline ~ """][ \t]*\(""".r ~ """[^ \t)]+""".r ~ """[ \t]*""".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
+	def link = "[" ~> ((link_inline ~ """][ \t]*\(""".r ~ ("<" ~> """[^ \t>]+""".r <~ ">" | """[^ \t)]+""".r) ~ """[ \t]*""".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case text ~ _ ~ addr ~ _ ~ title =>
 			if (title == None)
 				<a href={addr}>{text}</a>
