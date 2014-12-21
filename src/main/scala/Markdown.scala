@@ -9,9 +9,8 @@ import scala.util.Try
 
 class Markdown( features: String* ) extends RegexParsers
 {
-	private class Holder( var addr: String, var title: Option[String] )
-	
-	private val refmap = new HashMap[String, Holder]
+	private val refmap = new HashMap[String, (String, Option[String])]
+	private var pass2 = false
 	private val buf = new StringBuilder
 	private var featureNewlineBreak = false
 	private var featureBackslashBreak = false
@@ -75,15 +74,13 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def link_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ (Group( _ ))
 	
-	private def ref( id: String ) =
+	private def ref( id: String ): (String, Option[String]) =
 		if (refmap contains id)
 			refmap(id)
 		else
 		{
-		val h1 = new Holder( null, null )
-
-			refmap(id) = h1
-			h1
+			pass2 = true
+			("", None)
 		}
 
 	def link = "[" ~> ((link_inline ~ """][ \t]*\(""".r ~ """[^ \t)]+""".r ~ """[ \t]*""".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
@@ -95,12 +92,12 @@ class Markdown( features: String* ) extends RegexParsers
 		}) |
 		(link_inline ~ """][ \t]*\[""".r ~ """[^ \t\]]+""".r <~ "]" ^^
 		{case text ~ _ ~ id =>
-			val h = ref( id )
+			val (addr, title) = ref( id )
 
-			if (h.title == None)
-				<a href={h.addr}>{text}</a>
+			if (title == None)
+				<a href={addr}>{text}</a>
 			else
-				<a href={h.addr} title={h.title.get}>{text}</a>
+				<a href={addr} title={title.get}>{text}</a>
 		}) | success(Text( "[" )))
 	
 	def image = "!" ~> ("[" ~> (opt(link_inline) ~ """][ \t]*\(""".r ~ """[^ )]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
@@ -115,12 +112,12 @@ class Markdown( features: String* ) extends RegexParsers
 		"[" ~> (opt(link_inline) ~ """][ \t]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
 		{case alt ~ _ ~ id =>
 			val a = alt getOrElse Text( "" )
-			val h = ref( id )
+			val (addr, title) = ref( id )
 
-			if (h.title == None)
-				<img src={h.addr} alt={a} />
+			if (title == None)
+				<img src={addr} alt={a} />
 			else
-				<img src={h.addr} title={h.title.get} alt={a} />
+				<img src={addr} title={title.get} alt={a} />
 		}) | success(Text( "!" )))
 	
 	def inline_element: Parser[Node] = escaped | strong | em | inline_no_em_no_strong
@@ -212,19 +209,10 @@ class Markdown( features: String* ) extends RegexParsers
 	def comment = """[ ]{0,3}/\*[^*]*\*+(?:[^*/][^*]*\*+)*/[ \t]*""".r ^^^ Text( "" )
 
 	def reference = 
-		"""[ ]{0,3}\[""".r ~>
-			"""[^\]\n]*""".r ~ "]:[ ]*".r ~ """[^ \n\t"]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ \t]*(?=\n|\z)""".r ^^
-		{case id ~ _ ~ addr ~ _ ~ title =>
-			if (refmap.contains( id ))
-				if (refmap(id).addr != null)
-					sys.error( "duplicate reference id: " + id )
-				else
-				{
-					refmap(id).addr = addr
-					refmap(id).title = title
-				}
-			else
-				refmap(id) = new Holder( addr, title )
+		("""[ ]{0,3}\[""".r ~>
+			"""[^\]\n]*""".r <~ "]:[ ]*".r) ~ """[^ \n\t"]+""".r ~ ("[ ]*".r ~> opt("\"" ~> """[^"\n]+""".r <~ "\"" <~ """[ \t]*(?=\n|\z)""".r)) ^^
+		{case id ~ addr ~ title =>
+			refmap(id) = (addr, title)
 
 			Text( "" )
 		}
@@ -387,14 +375,29 @@ class Markdown( features: String* ) extends RegexParsers
 	def concat( es: List[Node], sep: Node ) = es.reduce( (a: Node, b: Node) => Group(List(a, sep, b)) )
 	
 	protected def parseRule( rule: Parser[Node], s: String ) =
+	{
 		parseAll( rule, s ) match
 		{
 			case Success( result, _ ) => result
 			case Failure( msg, rest ) => sys.error( msg + " at " + rest.pos + "\n" + rest.pos.longString )
 			case Error( msg, _ ) => sys.error( msg )
 		}
-
-	def parseDocument( s: String ) = parseRule( document, Markdown.stripReturns(s) )
+	}
+	
+	def parseDocument( s: String ) =
+	{
+	val s1 = Markdown.stripReturns( s )
+	
+		pass2 = false
+		refmap.clear
+		
+	val result = parseRule( document, s1 )
+	
+		if (pass2)
+			parseRule( document, s1 )
+		else
+			result
+	}
 }
 
 object Markdown
