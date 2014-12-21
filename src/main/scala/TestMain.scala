@@ -5,18 +5,16 @@ object TestMain extends App
 {
 	val s =
 """
-* a
- * b
-"""
-// *   Abacus
-//     * answer
-// *   Bubbles
-//     1.  bunk
-//     2.  bupkis
-//         * BELITTLER
-//     3. burper
-// *   Cunning
+Just a [URL](/url/).
 
-	println( GFM(s) )
-//	println( headings )
+[URL and title](/url/ "title").
+
+[URL and title](/url/  "title preceded by two spaces").
+
+[URL and title](/url/	"title preceded by a tab").
+
+[Empty]().
+"""
+
+	println( Markdown(s) )
 }

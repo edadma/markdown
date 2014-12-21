@@ -89,7 +89,7 @@ class Markdown( features: String* ) extends RegexParsers
 			("", None)
 		}
 
-	def link = "[" ~> ((link_inline ~ """][ \t]*\(""".r ~ ("<" ~> """[^ \t>]+""".r <~ ">" | """[^ \t)]+""".r) ~ """[ \t]*""".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
+	def link = "[" ~> ((link_inline ~ """][ \t]*\(""".r ~ ("<" ~> """[^ \t>]*""".r <~ ">" | """[^ \t)]*""".r) ~ """[ \t]*""".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case text ~ _ ~ addr ~ _ ~ title =>
 			if (title == None)
 				<a href={addr}>{text}</a>
@@ -230,12 +230,6 @@ class Markdown( features: String* ) extends RegexParsers
 			"\n" ^^^ (if (featureNewlineBreak) <br/> else Text("\n")) |
 			inline_element) ^^
 			(Group( _ ))
-	
-	def alternative( cond: Boolean, p: Parser[Node], alt: Parser[Node] ) =
-		if (cond)
-			alt | p
-		else
-			p
 			
 	def paragraph = 
 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
@@ -337,8 +331,8 @@ class Markdown( features: String* ) extends RegexParsers
 		"<" ~ tag_name ~ "[^>]*>[^<]*".r ~ rep(xml_string) ~ "[^<]*</".r ~ tag_name ~ " ?>".r ^^
 			{case os ~ s ~ cs ~ el ~ oe ~ e ~ ce => os + s + cs + el.mkString + oe + e + ce} |
 		"""<!--(?:.|\n)*-->""".r
-		
-	def xml: Parser[Node] = xml_string ^^
+
+	def xml = xml_string ^^
 		{s =>
 			if (s startsWith "<!--")
 				Text( "" )
@@ -378,7 +372,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
-	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | paragraph) <~ end_block
+	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | xml | paragraph) <~ end_block
 	
 	def blocks = rep(block) ^^ (Group( _ ))
 	
