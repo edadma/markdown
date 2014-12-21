@@ -360,9 +360,9 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def item = inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
 	
-	def ul = rep1sep(li( """[ ]{0,3}[\*-] +"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
+	def ul = rep1sep(li( """[ ]{0,3}[*-](?: +|\t)"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
 	
-	def ol = rep1sep(li( """[ ]{0,3}\d+\. +"""r ), end_block) ^^ {case es => <ol>{es}</ol>}
+	def ol = rep1sep(li( """[ ]{0,3}\d+\.(?: +|\t)"""r ), end_block) ^^ {case es => <ol>{es}</ol>}
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
