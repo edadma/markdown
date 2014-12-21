@@ -5,15 +5,37 @@ object TestMain extends App
 {
 	val s =
 """
-Just a [URL](/url/).
+Foo [bar] [1].
 
-[URL and title](/url/ "title").
+Foo [bar][1].
 
-[URL and title](/url/  "title preceded by two spaces").
+Foo [bar]
+[1].
 
-[URL and title](/url/	"title preceded by a tab").
+[1]: /url/  "Title"
 
-[Empty]().
+
+With [embedded [brackets]] [b].
+
+
+Indented [once][].
+
+Indented [twice][].
+
+Indented [thrice][].
+
+Indented [four][] times.
+
+ [once]: /url
+
+  [twice]: /url
+
+   [thrice]: /url
+
+    [four]: /url
+
+
+[b]: /url/
 """
 
 	println( Markdown(s) )

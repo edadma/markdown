@@ -76,17 +76,26 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def double_code = "``" ~> (" *".r ~> text( """(?:.|\n)+?(?= *``)"""r ) <~ " *``".r ^^ {case c => <code>{c}</code>} | success(Text( "``" )))
 	
-	def link_text = text( """[^\n*_`\\\]!]+"""r )
+	def link_text = text( """[^\n*_`\\\[\]!]+|\[[^\n*_`\\\]!]*\]"""r )
 	
 	def link_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ (Group( _ ))
 	
-	private def ref( id: String ): (String, Option[String]) =
+	private def ref( id: String ): Option[(String, Option[String])] =
 		if (refmap contains id)
-			refmap(id)
+			Some( refmap(id) )
 		else
 		{
 			pass2 = true
-			("", None)
+			None
+		}
+
+	def reference = 
+		("""[ ]{0,3}\[""".r ~>
+			"""[^\]\n]*""".r <~ "]:[ ]*".r) ~ """[^ \n\t"]+""".r ~ ("[ ]*".r ~> opt("\"" ~> """[^"\n]+""".r <~ "\"" <~ """[ \t]*(?=\n|\z)""".r)) ^^
+		{case id ~ addr ~ title =>
+			refmap(id) = (addr, title)
+
+			Text( "" )
 		}
 
 	def link = "[" ~> ((link_inline ~ """][ \t]*\(""".r ~ ("<" ~> """[^ \t>]*""".r <~ ">" | """[^ \t)]*""".r) ~ """[ \t]*""".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
@@ -96,14 +105,17 @@ class Markdown( features: String* ) extends RegexParsers
 			else
 				<a href={addr} title={title.get}>{text}</a>
 		}) |
-		(link_inline ~ """][ \t]*\[""".r ~ """[^ \t\]]+""".r <~ "]" ^^
-		{case text ~ _ ~ id =>
-			val (addr, title) = ref( id )
-
-			if (title == None)
-				<a href={addr}>{text}</a>
-			else
-				<a href={addr} title={title.get}>{text}</a>
+		(link_inline ~ """][ \t\n]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
+		{case text ~ sep ~ id =>
+			ref( if (id isEmpty) text.toString else id ) match
+			{
+				case None => Text( "[" + text + sep + id + "]" )
+				case Some((addr, title)) =>
+					if (title == None)
+						<a href={addr}>{text}</a>
+					else
+						<a href={addr} title={title.get}>{text}</a>
+			}
 		}) | success(Text( "[" )))
 	
 	def image = "!" ~> ("[" ~> (opt(link_inline) ~ """][ \t]*\(""".r ~ """[^ )]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
@@ -116,14 +128,17 @@ class Markdown( features: String* ) extends RegexParsers
 				<img src={addr} title={title.get} alt={a} />
 		}) |
 		"[" ~> (opt(link_inline) ~ """][ \t]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
-		{case alt ~ _ ~ id =>
+		{case alt ~ sep ~ id =>
 			val a = alt getOrElse Text( "" )
-			val (addr, title) = ref( id )
-
-			if (title == None)
-				<img src={addr} alt={a} />
-			else
-				<img src={addr} title={title.get} alt={a} />
+			ref( id ) match
+			{
+				case None => Text( "![" + a + sep + id + "]" )
+				case Some((addr, title)) =>
+					if (title == None)
+						<img src={addr} alt={a} />
+					else
+						<img src={addr} title={title.get} alt={a} />
+			}
 		}) | success(Text( "!" )))
 	
 	def inline_element: Parser[Node] = escaped | strong | em | inline_no_em_no_strong
@@ -213,15 +228,6 @@ class Markdown( features: String* ) extends RegexParsers
 		}
 
 	def comment = """[ ]{0,3}/\*[^*]*\*+(?:[^*/][^*]*\*+)*/[ \t]*""".r ^^^ Text( "" )
-
-	def reference = 
-		("""[ ]{0,3}\[""".r ~>
-			"""[^\]\n]*""".r <~ "]:[ ]*".r) ~ """[^ \n\t"]+""".r ~ ("[ ]*".r ~> opt("\"" ~> """[^"\n]+""".r <~ "\"" <~ """[ \t]*(?=\n|\z)""".r)) ^^
-		{case id ~ addr ~ title =>
-			refmap(id) = (addr, title)
-
-			Text( "" )
-		}
 
 	def paragraph_inline_element =
 		rep1(
