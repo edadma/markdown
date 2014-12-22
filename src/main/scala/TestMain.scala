@@ -5,37 +5,13 @@ object TestMain extends App
 {
 	val s =
 """
-Foo [bar] [1].
+***This is strong and em.***
 
-Foo [bar][1].
+So is ***this*** word.
 
-Foo [bar]
-[1].
+___This is strong and em.___
 
-[1]: /url/  "Title"
-
-
-With [embedded [brackets]] [b].
-
-
-Indented [once][].
-
-Indented [twice][].
-
-Indented [thrice][].
-
-Indented [four][] times.
-
- [once]: /url
-
-  [twice]: /url
-
-   [thrice]: /url
-
-    [four]: /url
-
-
-[b]: /url/
+So is ___this___ word.
 """
 
 	println( Markdown(s) )

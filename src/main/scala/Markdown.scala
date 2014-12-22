@@ -167,7 +167,7 @@ class Markdown( features: String* ) extends RegexParsers
 	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ (Group( _ ))
 
 	def _em_no_strong( d: String ) =
-		(d ~ not(d)) ~> ((em_no_strong_section <~ (d ~ not(d)) ^^ {case e => <em>{e}</em>}) | success(Text( d )))
+		(d ~ not(d ~ not(d))) ~> ((em_no_strong_section <~ (d ~ not(d ~ not(d))) ^^ {case e => <em>{e}</em>}) | success(Text( d )))
 	
 	def em_no_strong = _em_no_strong( "*" ) | _em_no_strong( "_" )
 	
