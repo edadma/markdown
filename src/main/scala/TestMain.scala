@@ -14,5 +14,5 @@ ___This is strong and em.___
 So is ___this___ word.
 """
 
-	println( Markdown(s) )
+	println( GFM.asXML(s) )
 }

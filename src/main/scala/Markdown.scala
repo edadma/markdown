@@ -481,10 +481,14 @@ object Markdown
 		buf.toString
 	}
 
-	def apply( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s ).toString
+	def asXML( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s )
+	
+	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
 }
 
 object GFM
 {
-	def apply( s: String, features: String* ) = Markdown( s, ("gfm" +: features): _* )
+	def asXML( s: String, features: String* ) = (new Markdown( ("gfm" +: features): _* )).parseDocument( s )
+	
+	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
 }
