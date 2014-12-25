@@ -371,6 +371,19 @@ Indented [four][] times.
 """ ) shouldBe """<p>Foo <a href="/url/" title="Title">bar</a>.</p><p>Foo <a href="/url/" title="Title">bar</a>.</p><p>Foo <a href="/url/" title="Title">bar</a>.</p><p>With <a href="/url/">embedded [brackets]</a>.</p><p>Indented <a href="/url">once</a>.</p><p>Indented <a href="/url">twice</a>.</p><p>Indented <a href="/url">thrice</a>.</p><p>Indented [four][] times.</p><pre><code>[four]: /url</code></pre>"""
 	}
 
+	"Literal quotes in titles" in
+	{
+		Markdown(
+"""
+Foo [bar][].
+
+Foo [bar](/url/ "Title with "quotes" inside").
+
+
+  [bar]: /url/ "Title with "quotes" inside"
+""" ) shouldBe """<p>Foo <a href="/url/" title="Title with &quot;quotes&quot; inside">bar</a>.</p><p>Foo <a href="/url/" title="Title with &quot;quotes&quot; inside">bar</a>.</p>"""
+	}
+
 	"Nested blockquotes" in
 	{
 		Markdown(

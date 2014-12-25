@@ -5,13 +5,12 @@ object TestMain extends App
 {
 	val s =
 """
-***This is strong and em.***
+Foo [bar][].
 
-So is ***this*** word.
+Foo [bar](/url/ "Title with "quotes" inside").
 
-___This is strong and em.___
 
-So is ___this___ word.
+  [bar]: /url/ "Title with "quotes" inside"
 """
 
 	println( GFM.asXML(s) )
