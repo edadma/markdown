@@ -317,6 +317,34 @@ _ _ _
 """ ) shouldBe """<p>Dashes:</p><hr/><hr/><hr/><hr/><pre><code>---</code></pre><hr/><hr/><hr/><hr/><pre><code>- - -</code></pre><p>Asterisks:</p><hr/><hr/><hr/><hr/><pre><code>***</code></pre><hr/><hr/><hr/><hr/><pre><code>* * *</code></pre><p>Underscores:</p><hr/><hr/><hr/><hr/><pre><code>___</code></pre><hr/><hr/><hr/><hr/><pre><code>_ _ _</code></pre>"""
 	}
 
+    "Inline HTML (Advanced)" in
+    {
+        Markdown(
+"""
+Simple block on one line:
+
+<div>foo</div>
+
+And nested without indentation:
+
+<div>
+<div>
+<div>
+foo
+</div>
+</div>
+<div>bar</div>
+</div>
+""" ) shouldBe """<p>Simple block on one line:</p><div>foo</div><p>And nested without indentation:</p><div>
+<div>
+<div>
+foo
+</div>
+</div>
+<div>bar</div>
+</div>"""
+    }
+
     "Inline HTML (Simple)" in
     {
         Markdown(
@@ -394,6 +422,26 @@ Hr's:
         </div>
     </div>
 </div><p>This should just be an HTML comment:</p><p>Multiline:</p><p>Code block:</p><pre><code>&lt;!-- Comment --&gt;</code></pre><p>Just plain comment, with trailing spaces on the line:</p><p>Code:</p><pre><code>&lt;hr /&gt;</code></pre><p>Hr's:</p><hr/><hr/><hr/><hr/><hr id="bar" class="foo"/><hr id="bar" class="foo"/>"""
+    }
+
+    "Inline HTML comments" in
+    {
+        Markdown(
+"""
+Paragraph one.
+
+<!-- This is a simple comment -->
+
+<!--
+    This is another comment.
+-->
+
+Paragraph two.
+
+<!-- one comment block -- -- with two comments -->
+
+The end.
+""" ) shouldBe """<p>Paragraph one.</p><p>Paragraph two.</p><p>The end.</p>"""
     }
 
 	"Links, inline style" in

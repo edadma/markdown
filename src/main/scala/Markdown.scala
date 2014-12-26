@@ -335,9 +335,9 @@ class Markdown( features: String* ) extends RegexParsers
 	def tag_name = "[:_A-Za-z][:_A-Za-z0-9.-]*"r
 	
 	def xml_string: Parser[String] =
-		"<" ~ tag_name ~ "[^>]*/ *>[ \t]*".r ^^ {case o ~ n ~ c => o + n + c} |	// should be [^/]*/> for closing regex
-		"<" ~ tag_name ~ "[^>]*>[^<]*".r ~ rep(xml_string) ~ "[^<]*</".r ~ tag_name ~ " ?>[ \t]*".r ^^
-			{case os ~ s ~ cs ~ el ~ oe ~ e ~ ce => os + s + cs + el.mkString + oe + e + ce} |
+        "<" ~ tag_name ~ """.*?/ ?>[ \t]*""".r ^^ {case o ~ n ~ c => o + n + c} |    // should be [^/]*/> for closing regex
+        "<" ~ tag_name ~ "[^>]*>[^<]*".r ~ rep(xml_string ~ "[^<]*".r ^^ {case a ~ b => a + b}) ~ """</""".r ~ tag_name ~ """ ?>[ \t]*""".r ^^
+            {case os ~ s ~ cs ~ el ~ oe ~ e ~ ce => os + s + cs + el.mkString + oe + e + ce} |
 		"""<!--(?:.|\n)*?-->[ \t]*""".r
 
 	def xml = xml_string ^^
@@ -345,7 +345,7 @@ class Markdown( features: String* ) extends RegexParsers
 			if (s startsWith "<!--")
 				Text( "" )
 			else
-				Try( XML.loadString(s) ).getOrElse( Text(s) )
+				Try( {/*println( "===\n" + s + "\n===" ); */XML.loadString(s)} ).getOrElse( Text(s) )
 		}
 		
 	def quote_prefix = """[ ]{0,3}> ?"""r
