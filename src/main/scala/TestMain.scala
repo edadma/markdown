@@ -7,6 +7,6 @@ object TestMain extends App
 {
 	val w = new FileWriter( "test.html" )
 	
-	w write Markdown( io.Source.fromFile("test.text").mkString )
+//	w write Markdown( io.Source.fromFile("test.text").mkString )
 	w.close
 }
