@@ -1,16 +1,12 @@
 package ca.hyperreal.__markdown__
 
+import java.io._
+
 
 object TestMain extends App
 {
-    val s =
-"""
-<And nested without indentation:
-
-<div>bar</div>
-
-asdf
-"""
-
-    println( Markdown.asXML(s) )
+	val w = new FileWriter( "test.html" )
+	
+	w write Markdown( io.Source.fromFile("test.text").mkString )
+	w.close
 }

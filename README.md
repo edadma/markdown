@@ -7,7 +7,7 @@ Add the following lines to your `build.sbt`
 
 	resolvers += "Hyperreal Repository" at "http://hyperreal.ca/maven2"
 
-	libraryDependencies += "ca.hyperreal" %% "__markdown__" % "0.2"
+	libraryDependencies += "ca.hyperreal" %% "__markdown__" % "0.3"
 
 ## Example
 
