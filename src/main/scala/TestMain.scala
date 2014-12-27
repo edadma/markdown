@@ -9,4 +9,10 @@ object TestMain extends App
 	
 	w write Markdown( io.Source.fromFile("test.text").mkString )
 	w.close
+	
+// 	println( Markdown(
+// """
+// 
+// """
+// 	) )
 }

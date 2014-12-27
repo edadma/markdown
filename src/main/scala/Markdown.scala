@@ -240,8 +240,10 @@ class Markdown( features: String* ) extends RegexParsers
 			(Group( _ ))
 			
 	def paragraph = 
-		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
-			{p => <p>{parseRule( paragraph_inline_element, p )}</p>}
+// 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
+// 			{p => <p>{parseRule( paragraph_inline_element, p )}</p>}
+		rep1sep("""[ ]{0,3}""".r ~> """.+""".r, """\n(?!\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z)"""r) <~ " *".r ^^
+			{p => <p>{parseRule( paragraph_inline_element, p.reduce(_ + "\n" + _) )}</p>}
 
 	def preformated_prefix = """[ ]{4}|[ ]{0,3}\t"""r
 
