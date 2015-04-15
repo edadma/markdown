@@ -1,13 +1,11 @@
 import AssemblyKeys._
 
-import LaikaKeys._
-
 
 name := "__markdown__"
 
 version := "0.3"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.6"
 
 scalacOptions ++= Seq( "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:existentials" )
 
@@ -39,14 +37,11 @@ mainClass in assembly := Some( "ca.hyperreal.markdown.MarkdownParserTest" )
 jarName in assembly := name.value + "-" + version.value + ".jar"
 
 
-LaikaPlugin.defaults
-
-templateDirectives in Laika += LaikaExtension.bootstrapToc
-
+seq(bintraySettings:_*)
 
 publishMavenStyle := true
 
-publishTo := Some( Resolver.sftp( "private", "hyperreal.ca", "/var/www/hyperreal.ca/maven2" ) )
+//publishTo := Some( Resolver.sftp( "private", "hyperreal.ca", "/var/www/hyperreal.ca/maven2" ) )
 
 //{
 //  val nexus = "https://oss.sonatype.org/"
