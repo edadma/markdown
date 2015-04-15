@@ -5,9 +5,9 @@ Markdown Processor for Java/Scala
 
 Add the following lines to your `build.sbt`
 
-	resolvers += "Hyperreal Repository" at "http://hyperreal.ca/maven2"
+	resolvers += "Hyperreal Repository" at "https://dl.bintray.com/edadma/maven"
 
-	libraryDependencies += "ca.hyperreal" %% "__markdown__" % "0.3"
+	libraryDependencies += "ca.hyperreal" %% "scala-markdown" % "0.3"
 
 ## Example
 

@@ -1,7 +1,7 @@
 import AssemblyKeys._
 
 
-name := "__markdown__"
+name := "scala-markdown"
 
 version := "0.3"
 
