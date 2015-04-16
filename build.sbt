@@ -24,8 +24,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.1.3" % "test"
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
 
 libraryDependencies ++= Seq(
-	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.2",
-	"org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
+	"org.scala-lang.modules" %% "scala-xml" % "1.0.3"
 	)
 
 mainClass in (Compile, run) := Some( "ca.hyperreal.__markdown__.TestMain" )
