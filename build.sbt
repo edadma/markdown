@@ -1,11 +1,8 @@
-import AssemblyKeys._
-
-
 name := "scala-markdown"
 
 version := "0.3"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.8"
 
 scalacOptions ++= Seq( "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:existentials" )
 
@@ -19,25 +16,22 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 
 resolvers += "Hyperreal Repository" at "http://hyperreal.ca/maven2"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.1.3" % "test"
-
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
+libraryDependencies ++= Seq(
+	"org.scalatest" %% "scalatest" % "2.2.6" % "test",
+	"org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
+)
 
 libraryDependencies ++= Seq(
-	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
-	"org.scala-lang.modules" %% "scala-xml" % "1.0.3"
+	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
+	"org.scala-lang.modules" %% "scala-xml" % "1.0.5"
 	)
 
 mainClass in (Compile, run) := Some( "ca.hyperreal.__markdown__.TestMain" )
 
-assemblySettings
-
 mainClass in assembly := Some( "ca.hyperreal.markdown.MarkdownParserTest" )
 
-jarName in assembly := name.value + "-" + version.value + ".jar"
+assemblyJarName in assembly := name.value + "-" + version.value + ".jar"
 
-
-seq(bintraySettings:_*)
 
 publishMavenStyle := true
 
