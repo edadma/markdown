@@ -1,14 +1,12 @@
 name := "scala-markdown"
 
-version := "0.3"
+version := "0.3.1"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.6"
 
 scalacOptions ++= Seq( "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:existentials" )
 
-incOptions := incOptions.value.withNameHashing( true )
-
-organization := "ca.hyperreal"
+organization := "xyz.hyperreal"
 
 //resolvers += Resolver.sonatypeRepo( "snapshots" )
 
@@ -17,14 +15,14 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 resolvers += "Hyperreal Repository" at "http://hyperreal.ca/maven2"
 
 libraryDependencies ++= Seq(
-	"org.scalatest" %% "scalatest" % "2.2.6" % "test",
-	"org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 )
 
 libraryDependencies ++= Seq(
-	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
-	"org.scala-lang.modules" %% "scala-xml" % "1.0.5"
-	)
+	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0",
+  "org.scala-lang.modules" %% "scala-xml" % "1.1.0"
+)
 
 mainClass in (Compile, run) := Some( "ca.hyperreal.__markdown__.TestMain" )
 
@@ -49,11 +47,11 @@ publishArtifact in Test := false
 
 pomIncludeRepository := { _ => false }
 
-licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
+licenses := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
 
 homepage := Some(url("https://github.com/edadma/markdown"))
 
-pomExtra := (
+pomExtra :=
   <scm>
     <url>git@github.com:edadma/markdown.git</url>
     <connection>scm:git:git@github.com:edadma/markdown.git</connection>
@@ -64,4 +62,4 @@ pomExtra := (
       <name>Edward A. Maxedon, Sr.</name>
       <url>http://hyperreal.ca</url>
     </developer>
-  </developers>)
+  </developers>
