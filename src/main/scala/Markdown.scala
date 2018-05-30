@@ -3,7 +3,7 @@ package ca.hyperreal.__markdown__
 import util.parsing.combinator._
 import util.matching.Regex
 import xml.{Elem, Node, Text, Group, XML, Utility}
-import collection.mutable.{Buffer, ListBuffer, HashMap}
+import collection.mutable.{ListBuffer, HashMap}
 import scala.util.Try
 
 
