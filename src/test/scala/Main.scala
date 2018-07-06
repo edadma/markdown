@@ -5,7 +5,7 @@ import java.io._
 
 object TestMain extends App
 {
-  println( Markdown("`asdf`"))
+  println( Markdown(io.Source.fromFile("test.md").mkString) )
 //  val w = new FileWriter( "test.html" )
 //
 //  w write Markdown( io.Source.fromFile("test.md").mkString )

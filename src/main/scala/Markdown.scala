@@ -258,10 +258,11 @@ class Markdown( features: String* ) extends RegexParsers
 				}</code></pre>
 			}
 
-	def triple_code = ("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ ("""(?:.|\n)+(?=\n```)""".r <~ "\n```") ^^
+	def triple_code =
+		("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^
 		{case l ~ c =>
 			<pre><code class={l}>{
-				Text( c )
+				Text( c.mkString )
 			}</code></pre>
 		}
 
