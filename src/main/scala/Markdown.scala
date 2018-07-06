@@ -21,10 +21,8 @@ class Markdown( features: String* ) extends RegexParsers
 		{
 			case "newline-break" => featureNewlineBreak = true
 			case "backslash-break" => featureBackslashBreak = true
-			case "gfm" =>
-				featureNewlineBreak = true
-			case "commonmark" =>
-				featureBackslashBreak = true
+			case "gfm" => featureNewlineBreak = true
+			case "commonmark" => featureBackslashBreak = true
 			case Markdown.TABSIZE_REGEX( s ) =>
 				tabSize = s.toInt
 				
@@ -35,7 +33,9 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	override def skipWhitespace = false
 
-	def plain = text( """[^\n~*_`\\\[! \t&]+"""r )
+	val escapedRegex = """\\(.)"""r
+
+	def plain = text( """(?:\\.|[^\n~*_`\[! \t&])+"""r, s => escapedRegex.replaceAllIn(s, _.matched) )
 
 	def space = text( """[ \t]+"""r, _ => " " )
 	
@@ -66,15 +66,17 @@ class Markdown( features: String* ) extends RegexParsers
 		(email | "<" ~> email <~ ">") ^^
 			{case link => <a href={"mailto:" + link}>{link}</a>}
 	
-	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {case t => Text( f(t) )}
+	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {t => Text( f(t) )}
 
-	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!>]"""r, s => s.charAt(1).toString )
+	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!>]"""r, s => s.charAt(1).toString )//todo: maybe unnecessary, see def plain
 
 	def eol = """\n(?![ \t]*\n)""".r
 	
-	def code = "`" ~> (" *".r ~> text( """(?:.|\n)+?(?= *`)"""r ) <~ " *`".r ^^ {case c => <code>{c}</code>} | success(Text( "`" )))
+//	def code = "`" ~> (" *".r ~> text( """(?:.|\n)+?(?= *`)"""r ) <~ " *`".r ^^ {c => <code>{c}</code>} | success(Text( "`" )))//todo: removed whitespace matching so that ` ` would work
 
-	def double_code = "``" ~> (" *".r ~> text( """(?:.|\n)+?(?= *``)"""r ) <~ " *``".r ^^ {case c => <code>{c}</code>} | success(Text( "``" )))
+  def code = "`" ~> (text( """[^`]+"""r ) <~ "`" ^^ {c => <code>{c}</code>} | success(Text( "`" )))//todo: removed whitespace matching so that ` ` would work
+
+	def double_code = "``" ~> (" *".r ~> text( """(?:.|\n)+?(?= *``)"""r ) <~ " *``".r ^^ {c => <code>{c}</code>} | success(Text( "``" )))
 	
 	def link_text = text( """[^\n*_`\\\[\]!]+|\[[^\n*_`\\\]!]*\]"""r )
 	

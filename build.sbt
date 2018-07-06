@@ -24,9 +24,9 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.1.0"
 )
 
-mainClass in (Compile, run) := Some( "xyz.hyperreal.__markdown__.TestMain" )
+mainClass in (Compile, run) := Some( "xyz.hyperreal.__markdown__.Main" )
 
-mainClass in assembly := Some( "xyz.hyperreal.markdown.MarkdownParserTest" )
+mainClass in assembly := Some( "xyz.hyperreal.__markdown__.Main" )
 
 assemblyJarName in assembly := name.value + "-" + version.value + ".jar"
 
