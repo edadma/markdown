@@ -13,7 +13,7 @@ Add the following lines to your `build.sbt`
 
 The following code tests one of the examples given in the [Markdown Syntax Cheatsheet](http://daringfireball.net/projects/markdown/dingus).
 
-	import xyz.hyperreal.__markdown__._
+	import xyz.hyperreal.markdown._
 
 	object MarkdownTest extends App
 	{

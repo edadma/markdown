@@ -1,4 +1,4 @@
-package xyz.hyperreal.__markdown__
+package xyz.hyperreal.markdown
 
 import util.parsing.combinator._
 import util.matching.Regex
