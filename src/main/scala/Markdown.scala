@@ -382,15 +382,15 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def item = item_inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
 	
-	def ul = rep1sep(li( """[ ]{0,3}[*+-](?: +|\t)"""r ), end_block) ^^ {case es => <ul>{es}</ul>}
+	def ul = rep1sep(li( """[ ]{0,3}[*+-](?: +|\t)"""r ), end_block) ^^ {es => <ul>{es}</ul>}
 	
-	def ol = rep1sep(li( """[ ]{0,3}\d+\.(?: +|\t)"""r ), end_block) ^^ {case es => <ol>{es}</ol>}
+	def ol = rep1sep(li( """[ ]{0,3}\d+\.(?: +|\t)"""r ), end_block) ^^ {es => <ol>{es}</ol>}
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
 	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | xml | paragraph) <~ end_block
 	
-	def blocks = rep(block) ^^ (Group( _ ))
+	def blocks = rep(block) ^^ Group
 	
 	def document = """(?:[ \t]*\n)*""".r ~> blocks
 	
@@ -569,30 +569,7 @@ object Markdown
       doc match {
         case e@Elem( _, label, attribs, _, child @ _* ) =>
           label match {
-            case "h1"|"h2"|"h3"|"h4"|"h5"|"h6" =>
-              val level = label.substring( 1 ).toInt
-
-              if (level > trail.head.level) {
-                val sub = HeadingMutable( child.mkString, level, new ListBuffer[HeadingMutable] )
-
-                trail.head.subheadings += sub
-                trail = sub :: trail
-              } else if (level == trail.head.level) {
-                val sub = HeadingMutable( child.mkString, level, new ListBuffer[HeadingMutable] )
-
-                trail.tail.head.subheadings += sub
-                trail = sub :: trail.tail
-              } else {
-                val sub = HeadingMutable( child.mkString, level, new ListBuffer[HeadingMutable] )
-
-                do {
-                  trail = trail.tail
-                } while (trail.head.level >= level)
-
-                trail.head.subheadings += sub
-                trail = sub :: trail
-//                headings( doc )
-              }
+            case "h1"|"h2"|"h3"|"h4"|"h5"|"h6" => addHeading( e )
             case _ => child foreach headings
           }
         case Group( s ) => s foreach headings
