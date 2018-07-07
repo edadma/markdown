@@ -265,7 +265,7 @@ class Markdown( features: String* ) extends RegexParsers
 		("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^
 		{case l ~ c =>
 			<pre><code class={l}>{
-				Text( c.mkString )
+				Unparsed( c.mkString )//todo: This should be Text( c.mkString ) if there's no language given
 			}</code></pre>
 		}
 
@@ -573,7 +573,7 @@ object Markdown
             case _ => child foreach headings
           }
         case Group( s ) => s foreach headings
-        case Text( _ ) =>
+        case _ =>
       }
 
     def list( b: ListBuffer[HeadingMutable] ): List[Heading] =

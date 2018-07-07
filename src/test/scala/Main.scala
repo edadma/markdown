@@ -7,28 +7,9 @@ object TestMain extends App {
 
   println( Markdown.withHeadings(
     """
-      |1.
-      |==
-      |
-      |1.2.
-      |----
-      |
-      |2.
-      |==
-      |
-      |3.
-      |==
-      |
-      |3.1.
-      |----
-      |
-      |3.2.
-      |----
-      |
-      |### 3.2.1.
-      |
-      |4.
-      |==
+      |```
+      |<em>asdf</em>
+      |```
     """.stripMargin
   ) )
 
