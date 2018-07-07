@@ -1,10 +1,13 @@
+//@
 package xyz.hyperreal.markdown
 
 import util.parsing.combinator._
 import util.matching.Regex
-import xml.{Elem, Node, Text, Group, XML, Utility}
-import collection.mutable.{ListBuffer, HashMap}
+import xml._
+import collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable
 import scala.util.Try
+import scala.xml.transform.{RewriteRule, RuleTransformer}
 
 
 class Markdown( features: String* ) extends RegexParsers
@@ -498,6 +501,71 @@ object Markdown
     val buf = HeadingMutable( "", 0, new ListBuffer[HeadingMutable] )
     var trail: List[HeadingMutable] = List( buf )
 
+    def addHeading( n: Node ): Unit = {
+      val level = n.label.substring( 1 ).toInt
+
+      if (level > trail.head.level) {
+        val sub = HeadingMutable( n.child.mkString, level, new ListBuffer[HeadingMutable] )
+
+        trail.head.subheadings += sub
+        trail = sub :: trail
+      } else if (level == trail.head.level) {
+        val sub = HeadingMutable( n.child.mkString, level, new ListBuffer[HeadingMutable] )
+
+        trail.tail.head.subheadings += sub
+        trail = sub :: trail.tail
+      } else {
+        val sub = HeadingMutable( n.child.mkString, level, new ListBuffer[HeadingMutable] )
+
+        do {
+          trail = trail.tail
+        } while (trail.head.level >= level)
+
+        trail.head.subheadings += sub
+        trail = sub :: trail
+      }
+    }
+
+    val idmap = new mutable.HashMap[String, Int]
+    val idset = new mutable.HashSet[String]
+    val rule1 = new RewriteRule {
+      def id( s: String ) = {
+        val ids =
+          if (s isEmpty)
+            "_"
+          else
+            s.replace( ' ', '_' ).replace( '\t', '_' ).replace( '\r', '_' ).replace( '\n', '_' )
+
+        if (idset(ids))
+          idmap get ids match {
+            case None =>
+              val rid = s"$ids-1"
+
+              idset += rid
+              idmap(ids) = 2
+              rid
+            case Some( count ) =>
+              val rid = s"$ids-$count"
+
+              idset += rid
+              idmap(ids) = count + 1
+              rid
+          }
+        else {
+          idset += ids
+          idmap(ids) = 1
+          ids
+        }
+      }
+
+      override def transform(n: Node) = n match {
+        case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) =>
+          addHeading( n )
+          e.asInstanceOf[Elem] % Attribute(null, "id", id(e.child.mkString), Null)
+        case _ => n
+      }
+    }
+
     def headings( doc: Node ): Unit =
       doc match {
         case e@Elem( _, label, attribs, _, child @ _* ) =>
@@ -516,11 +584,15 @@ object Markdown
                 trail.tail.head.subheadings += sub
                 trail = sub :: trail.tail
               } else {
+                val sub = HeadingMutable( child.mkString, level, new ListBuffer[HeadingMutable] )
+
                 do {
                   trail = trail.tail
                 } while (trail.head.level >= level)
 
-                headings( doc )
+                trail.head.subheadings += sub
+                trail = sub :: trail
+//                headings( doc )
               }
             case _ => child foreach headings
           }
@@ -534,14 +606,14 @@ object Markdown
       else
         b map {case HeadingMutable( heading, level, subheadings ) => Heading( heading, level, list(subheadings) )} toList
 
-    headings( doc )
-    list( buf.subheadings )
+//    headings( doc )
+    (new RuleTransformer( rule1 ).transform( doc ).mkString, list( buf.subheadings ))
   }
 
 	def withHeadings( s: String ) = {
     val xml = asXML( s )
 
-    (xml.toString, headings( xml ))
+    headings( xml )
   }
 
 	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString

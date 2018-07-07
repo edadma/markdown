@@ -30,7 +30,7 @@ object TestMain extends App {
       |4.
       |==
     """.stripMargin
-  )._2) )
+  )._1) )
 
   def prettyPrint(a: Any, indentSize: Int = 2, maxElementWidth: Int = 30, depth: Int = 0): String = {
     val indent = " " * depth * indentSize
