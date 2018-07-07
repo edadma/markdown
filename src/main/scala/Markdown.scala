@@ -419,6 +419,8 @@ class Markdown( features: String* ) extends RegexParsers
 	}
 }
 
+case class Heading( heading: String, level: Int, subheadings: List[Heading] )
+
 object Markdown
 {
 	private val TABSIZE_REGEX = "tab-size *= *([0-9]+)"r
@@ -488,14 +490,13 @@ object Markdown
 		buf.toString
 	}
 
-  case class Heading( heading: String, level: Int, subheadings: List[Heading] )
+	def asXML( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s )
 
   def headings( doc: Node ) = {
     case class HeadingMutable( heading: String, level: Int, subheadings: ListBuffer[HeadingMutable] )
 
-    val buf = new ListBuffer[HeadingMutable]
-    var cur = 0
-    var trail: List[ListBuffer[HeadingMutable]] = List( buf )
+    val buf = HeadingMutable( "", 0, new ListBuffer[HeadingMutable] )
+    var trail: List[HeadingMutable] = List( buf )
 
     def headings( doc: Node ): Unit =
       doc match {
@@ -504,14 +505,23 @@ object Markdown
             case "h1"|"h2"|"h3"|"h4"|"h5"|"h6" =>
               val level = label.substring( 1 ).toInt
 
-              if (level <= cur)
-                trail = trail.tail
+              if (level > trail.head.level) {
+                val sub = HeadingMutable( child.mkString, level, new ListBuffer[HeadingMutable] )
 
-              val sub = new ListBuffer[HeadingMutable]
+                trail.head.subheadings += sub
+                trail = sub :: trail
+              } else if (level == trail.head.level) {
+                val sub = HeadingMutable( child.mkString, level, new ListBuffer[HeadingMutable] )
 
-              trail.head += HeadingMutable( child.mkString, level, sub )
-              trail = sub :: trail
-              cur = level
+                trail.tail.head.subheadings += sub
+                trail = sub :: trail.tail
+              } else {
+                do {
+                  trail = trail.tail
+                } while (trail.head.level >= level)
+
+                headings( doc )
+              }
             case _ => child foreach headings
           }
         case Group( s ) => s foreach headings
@@ -525,19 +535,13 @@ object Markdown
         b map {case HeadingMutable( heading, level, subheadings ) => Heading( heading, level, list(subheadings) )} toList
 
     headings( doc )
-    list( buf )
-  }
-
-	def asXML( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s )
-
-  def headings( doc: Node ) = {
-
+    list( buf.subheadings )
   }
 
 	def withHeadings( s: String ) = {
     val xml = asXML( s )
 
-
+    (xml.toString, headings( xml ))
   }
 
 	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
