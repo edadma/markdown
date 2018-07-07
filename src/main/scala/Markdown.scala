@@ -422,7 +422,7 @@ class Markdown( features: String* ) extends RegexParsers
 	}
 }
 
-case class Heading( heading: String, level: Int, subheadings: List[Heading] )
+case class Heading( heading: String, id: String, level: Int, subheadings: List[Heading] )
 
 object Markdown
 {
@@ -496,26 +496,26 @@ object Markdown
 	def asXML( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s )
 
   def headings( doc: Node ) = {
-    case class HeadingMutable( heading: String, level: Int, subheadings: ListBuffer[HeadingMutable] )
+    case class HeadingMutable( heading: String, id: String, level: Int, subheadings: ListBuffer[HeadingMutable] )
 
-    val buf = HeadingMutable( "", 0, new ListBuffer[HeadingMutable] )
+    val buf = HeadingMutable( "", "", 0, new ListBuffer[HeadingMutable] )
     var trail: List[HeadingMutable] = List( buf )
 
     def addHeading( n: Node ): Unit = {
       val level = n.label.substring( 1 ).toInt
 
       if (level > trail.head.level) {
-        val sub = HeadingMutable( n.child.mkString, level, new ListBuffer[HeadingMutable] )
+        val sub = HeadingMutable( n.child.mkString, n.attribute("id").get.mkString, level, new ListBuffer[HeadingMutable] )
 
         trail.head.subheadings += sub
         trail = sub :: trail
       } else if (level == trail.head.level) {
-        val sub = HeadingMutable( n.child.mkString, level, new ListBuffer[HeadingMutable] )
+        val sub = HeadingMutable( n.child.mkString, n.attribute("id").get.mkString, level, new ListBuffer[HeadingMutable] )
 
         trail.tail.head.subheadings += sub
         trail = sub :: trail.tail
       } else {
-        val sub = HeadingMutable( n.child.mkString, level, new ListBuffer[HeadingMutable] )
+        val sub = HeadingMutable( n.child.mkString, n.attribute("id").get.mkString, level, new ListBuffer[HeadingMutable] )
 
         do {
           trail = trail.tail
@@ -580,10 +580,12 @@ object Markdown
       if (b isEmpty)
         Nil
       else
-        b map {case HeadingMutable( heading, level, subheadings ) => Heading( heading, level, list(subheadings) )} toList
+        b map {case HeadingMutable( heading, id, level, subheadings ) => Heading( heading, id, level, list(subheadings) )} toList
 
-    headings( doc )
-    (new RuleTransformer( rule1 ).transform( doc ).mkString, list( buf.subheadings ))
+    val res = new RuleTransformer( rule1 ).transform( doc )
+
+    headings( new Group(res) )
+    (res.mkString, list( buf.subheadings ))
   }
 
 	def withHeadings( s: String ) = {
