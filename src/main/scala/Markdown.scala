@@ -488,8 +488,58 @@ object Markdown
 		buf.toString
 	}
 
+  case class Heading( heading: String, level: Int, subheadings: List[Heading] )
+
+  def headings( doc: Node ) = {
+    case class HeadingMutable( heading: String, level: Int, subheadings: ListBuffer[HeadingMutable] )
+
+    val buf = new ListBuffer[HeadingMutable]
+    var cur = 0
+    var trail: List[ListBuffer[HeadingMutable]] = List( buf )
+
+    def headings( doc: Node ): Unit =
+      doc match {
+        case e@Elem( _, label, attribs, _, child @ _* ) =>
+          label match {
+            case "h1"|"h2"|"h3"|"h4"|"h5"|"h6" =>
+              val level = label.substring( 1 ).toInt
+
+              if (level <= cur)
+                trail = trail.tail
+
+              val sub = new ListBuffer[HeadingMutable]
+
+              trail.head += HeadingMutable( child.mkString, level, sub )
+              trail = sub :: trail
+              cur = level
+            case _ => child foreach headings
+          }
+        case Group( s ) => s foreach headings
+        case Text( _ ) =>
+      }
+
+    def list( b: ListBuffer[HeadingMutable] ): List[Heading] =
+      if (b isEmpty)
+        Nil
+      else
+        b map {case HeadingMutable( heading, level, subheadings ) => Heading( heading, level, list(subheadings) )} toList
+
+    headings( doc )
+    list( buf )
+  }
+
 	def asXML( s: String, features: String* ) = (new Markdown( features: _* )).parseDocument( s )
-	
+
+  def headings( doc: Node ) = {
+
+  }
+
+	def withHeadings( s: String ) = {
+    val xml = asXML( s )
+
+
+  }
+
 	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
 }
 
