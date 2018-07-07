@@ -521,8 +521,7 @@ object Markdown
           trail = trail.tail
         } while (trail.head.level >= level)
 
-        trail.head.subheadings += sub
-        trail = sub :: trail
+        addHeading( n )
       }
     }
 
@@ -560,7 +559,7 @@ object Markdown
 
       override def transform(n: Node) = n match {
         case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) =>
-          addHeading( n )
+//          addHeading( n )
           e.asInstanceOf[Elem] % Attribute(null, "id", id(e.child.mkString), Null)
         case _ => n
       }
@@ -606,7 +605,7 @@ object Markdown
       else
         b map {case HeadingMutable( heading, level, subheadings ) => Heading( heading, level, list(subheadings) )} toList
 
-//    headings( doc )
+    headings( doc )
     (new RuleTransformer( rule1 ).transform( doc ).mkString, list( buf.subheadings ))
   }
 
