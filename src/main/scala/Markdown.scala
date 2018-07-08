@@ -563,7 +563,7 @@ object Markdown
       }
 
       override def transform(n: Node) = n match {
-        case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) =>
+        case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) if e attribute "id" isEmpty =>
           e.asInstanceOf[Elem] % Attribute(null, "id", id(e.child.mkString), Null)
         case _ => n
       }

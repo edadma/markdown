@@ -10,6 +10,9 @@ object TestMain extends App {
       |This is a test
       |==============
       |
+      |This is a test
+      |--------------
+      |
       |```HTML
       |<em>asdf</em>
       |```
