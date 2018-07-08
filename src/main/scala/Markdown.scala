@@ -262,12 +262,15 @@ class Markdown( features: String* ) extends RegexParsers
 			}
 
 	def triple_code =
-		("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^
-		{case l ~ c =>
-			<pre><code class={l}>{
-				Unparsed( c.mkString )//todo: This should be Text( c.mkString ) if there's no language given
+		("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^ {
+    case "" ~ c =>
+			<pre><code>{
+				Text( c.mkString )
 			}</code></pre>
-		}
+    case l ~ c =>
+			<pre><code class="highlight">{
+				Unparsed( c.mkString )
+			}</code></pre> }
 
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
 

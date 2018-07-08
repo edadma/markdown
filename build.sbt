@@ -24,6 +24,11 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.1.0"
 )
 
+libraryDependencies ++= Seq(
+  "xyz.hyperreal" %% "highlighter" % "0.1.1"
+//  "xyz.hyperreal" %% "yaml" % "0.1.4"
+)
+
 mainClass in (Compile, run) := Some( "xyz.hyperreal.markdown.Main" )
 
 mainClass in assembly := Some( "xyz.hyperreal.markdown.Main" )
