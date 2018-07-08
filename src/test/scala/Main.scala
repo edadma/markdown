@@ -7,7 +7,10 @@ object TestMain extends App {
 
   println( Markdown.withHeadings(
     """
-      |```
+      |This is a test
+      |==============
+      |
+      |```HTML
       |<em>asdf</em>
       |```
     """.stripMargin

@@ -9,6 +9,8 @@ import scala.collection.mutable
 import scala.util.Try
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
+import xyz.hyperreal.highlighter.Highlighters
+
 
 class Markdown( features: String* ) extends RegexParsers
 {
@@ -269,7 +271,7 @@ class Markdown( features: String* ) extends RegexParsers
 			}</code></pre>
     case l ~ c =>
 			<pre><code class="highlight">{
-				Unparsed( c.mkString )
+				Unparsed( Highlighters.supported(l).highlight(c.mkString) )
 			}</code></pre> }
 
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
@@ -562,7 +564,6 @@ object Markdown
 
       override def transform(n: Node) = n match {
         case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) =>
-//          addHeading( n )
           e.asInstanceOf[Elem] % Attribute(null, "id", id(e.child.mkString), Null)
         case _ => n
       }
