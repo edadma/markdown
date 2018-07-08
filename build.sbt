@@ -1,6 +1,6 @@
 name := "markdown"
 
-version := "0.3.2"
+version := "0.3.3"
 
 scalaVersion := "2.12.6"
 
@@ -65,6 +65,6 @@ pomExtra :=
     <developer>
       <id>edadma</id>
       <name>Edward A. Maxedon, Sr.</name>
-      <url>http://hyperreal.ca</url>
+      <url>http://hyperreal.xyz</url>
     </developer>
   </developers>
