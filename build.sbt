@@ -1,6 +1,6 @@
 name := "markdown"
 
-version := "0.3.3"
+version := "0.3.4"
 
 scalaVersion := "2.12.6"
 
@@ -25,7 +25,7 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "xyz.hyperreal" %% "highlighter" % "0.1.1"
+  "xyz.hyperreal" %% "highlighter" % "0.1.2"
 //  "xyz.hyperreal" %% "yaml" % "0.1.4"
 )
 
