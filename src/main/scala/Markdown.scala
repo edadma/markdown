@@ -271,7 +271,10 @@ class Markdown( features: String* ) extends RegexParsers
 			}</code></pre>
     case l ~ c =>
 			<pre><code class="highlight">{
-				Unparsed( Highlighters.supported(l).highlight(c.mkString) )
+				Highlighters.registered( l ) match {
+					case None => Text( c.mkString )
+					case Some( h ) => Unparsed( h.highlight(c.mkString) )
+				}
 			}</code></pre> }
 
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
