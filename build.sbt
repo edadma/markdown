@@ -1,6 +1,6 @@
 name := "markdown"
 
-version := "0.3.5"
+version := "0.3.6"
 
 scalaVersion := "2.12.6"
 
@@ -25,7 +25,7 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "xyz.hyperreal" %% "highlighter" % "0.1.3"
+  "xyz.hyperreal" %% "highlighter" % "0.1.4"
 )
 
 mainClass in (Compile, run) := Some( "xyz.hyperreal.markdown.Main" )
