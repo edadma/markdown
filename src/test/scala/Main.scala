@@ -5,7 +5,7 @@ import java.io._
 
 object TestMain extends App {
 
-  println( Markdown.withHeadings(
+  println( Markdown(
     """
       |This is a test
       |==============

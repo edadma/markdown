@@ -12,24 +12,24 @@ class Headings extends FreeSpec with PropertyChecks with Matchers
 			|Heading Text
 			|============
 			|text
-			|""".stripMargin ) shouldBe "<h1>Heading Text</h1><p>text</p>"
+			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
 		Markdown( """
 			|Heading Text
 			|============
 			|
 			|text
-			|""".stripMargin ) shouldBe "<h1>Heading Text</h1><p>text</p>"
+			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
 		Markdown( """
 			|Heading Text
 			|------------
 			|text
-			|""".stripMargin ) shouldBe "<h2>Heading Text</h2><p>text</p>"
+			|""".stripMargin ) shouldBe """<h2 id="Heading_Text">Heading Text</h2><p>text</p>"""
 		Markdown( """
 			|Heading Text
 			|------------
 			|
 			|text
-			|""".stripMargin ) shouldBe "<h2>Heading Text</h2><p>text</p>"
+			|""".stripMargin ) shouldBe """<h2 id="Heading_Text">Heading Text</h2><p>text</p>"""
 	}
 	
 	"hash" in
@@ -37,20 +37,20 @@ class Headings extends FreeSpec with PropertyChecks with Matchers
 		Markdown( """
 			|#Heading Text
 			|text
-			|""".stripMargin ) shouldBe "<h1>Heading Text</h1><p>text</p>"
+			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
 		Markdown( """
 			|#Heading Text
 			|
 			|text
-			|""".stripMargin ) shouldBe "<h1>Heading Text</h1><p>text</p>"
+			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
 		Markdown( """
 			|##Heading Text
 			|text
-			|""".stripMargin ) shouldBe "<h2>Heading Text</h2><p>text</p>"
+			|""".stripMargin ) shouldBe """<h2 id="Heading_Text">Heading Text</h2><p>text</p>"""
 		Markdown( """
 			|##Heading Text
 			|
 			|text
-			|""".stripMargin ) shouldBe "<h2>Heading Text</h2><p>text</p>"
+			|""".stripMargin ) shouldBe """<h2 id="Heading_Text">Heading Text</h2><p>text</p>"""
 	}
 }

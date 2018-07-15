@@ -1,6 +1,6 @@
 name := "markdown"
 
-version := "0.3.8"
+version := "0.3.9"
 
 scalaVersion := "2.12.6"
 

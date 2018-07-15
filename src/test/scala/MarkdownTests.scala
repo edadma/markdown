@@ -821,13 +821,13 @@ Output:
         &lt;p&gt;For example.&lt;/p&gt;
     &lt;/blockquote&gt;
     </code></pre>
-""" ) shouldBe """<h1>Markdown: Basics</h1><ul id="ProjectSubmenu">
+""" ) shouldBe """<h1 id="Markdown:_Basics">Markdown: Basics</h1><ul id="ProjectSubmenu">
     <li><a title="Markdown Project Page" href="/projects/markdown/">Main</a></li>
     <li><a title="Markdown Basics" class="selected">Basics</a></li>
     <li><a title="Markdown Syntax Documentation" href="/projects/markdown/syntax">Syntax</a></li>
     <li><a title="Pricing and License Information" href="/projects/markdown/license">License</a></li>
     <li><a title="Online Markdown Web Form" href="/projects/markdown/dingus">Dingus</a></li>
-</ul><h2>Getting the Gist of Markdown's Formatting Syntax</h2><p>This page offers a brief overview of what it's like to use Markdown.
+</ul><h2 id="Getting_the_Gist_of_Markdown's_Formatting_Syntax">Getting the Gist of Markdown's Formatting Syntax</h2><p>This page offers a brief overview of what it's like to use Markdown.
 The <a href="/projects/markdown/syntax" title="Markdown Syntax">syntax page</a> provides complete, detailed documentation for
 every feature, but Markdown should be very easy to pick up simply by
 looking at a few examples of it in action. The examples on this page
@@ -835,7 +835,7 @@ are written in a before/after style, showing example syntax and the
 HTML output produced by Markdown.</p><p>It's also helpful to simply try Markdown out; the <a href="/projects/markdown/dingus" title="Markdown Dingus">Dingus</a> is a
 web application that allows you type your own Markdown-formatted text
 and translate it to XHTML.</p><p><strong>Note:</strong> This document is itself written using Markdown; you
-can <a href="/projects/markdown/basics.text">see the source for it by adding '.text' to the URL</a>.</p><h2>Paragraphs, Headers, Blockquotes </h2><p>A paragraph is simply one or more consecutive lines of text, separated
+can <a href="/projects/markdown/basics.text">see the source for it by adding '.text' to the URL</a>.</p><h2 id="Paragraphs,_Headers,_Blockquotes_">Paragraphs, Headers, Blockquotes </h2><p>A paragraph is simply one or more consecutive lines of text, separated
 by one or more blank lines. (A blank line is any line that looks like a
 blank line -- a line containing nothing spaces or tabs is considered
 blank.) Normal paragraphs should not be intended with spaces or tabs.</p><p>Markdown offers two styles of headers: <em>Setext</em> and <em>atx</em>.
@@ -881,7 +881,7 @@ dog's back.&lt;/p&gt;
     &lt;p&gt;This is the second paragraph in the blockquote.&lt;/p&gt;
         
     &lt;h2&gt;This is an H2 in a blockquote&lt;/h2&gt;
-&lt;/blockquote&gt;</code></pre><h3>Phrase Emphasis </h3><p>Markdown uses asterisks and underscores to indicate spans of emphasis.</p><p>Markdown:</p><pre><code>Some of these words *are emphasized*.
+&lt;/blockquote&gt;</code></pre><h3 id="Phrase_Emphasis_">Phrase Emphasis </h3><p>Markdown uses asterisks and underscores to indicate spans of emphasis.</p><p>Markdown:</p><pre><code>Some of these words *are emphasized*.
 Some of these words _are emphasized also_.
     
 Use two asterisks for **strong emphasis**.
@@ -889,7 +889,7 @@ Or, if you prefer, __use two underscores instead__.</code></pre><p>Output:</p><p
 Some of these words &lt;em&gt;are emphasized also&lt;/em&gt;.&lt;/p&gt;
     
 &lt;p&gt;Use two asterisks for &lt;strong&gt;strong emphasis&lt;/strong&gt;.
-Or, if you prefer, &lt;strong&gt;use two underscores instead&lt;/strong&gt;.&lt;/p&gt;</code></pre><h2>Lists </h2><p>Unordered (bulleted) lists use asterisks, pluses, and hyphens (<code>*</code>,
+Or, if you prefer, &lt;strong&gt;use two underscores instead&lt;/strong&gt;.&lt;/p&gt;</code></pre><h2 id="Lists_">Lists </h2><p>Unordered (bulleted) lists use asterisks, pluses, and hyphens (<code>*</code>,
 <code>+</code>, and <code>-</code>) as list markers. These three markers are
 interchangable; this:</p><pre><code>*   Candy.
 *   Gum.
@@ -918,7 +918,7 @@ the paragraphs by 4 spaces or 1 tab:</p><pre><code>*   A list item.
 &lt;li&gt;&lt;p&gt;A list item.&lt;/p&gt;
 &lt;p&gt;With multiple paragraphs.&lt;/p&gt;&lt;/li&gt;
 &lt;li&gt;&lt;p&gt;Another item in the list.&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;</code></pre><h3>Links </h3><p>Markdown supports two styles for creating links: <em>inline</em> and
+&lt;/ul&gt;</code></pre><h3 id="Links_">Links </h3><p>Markdown supports two styles for creating links: <em>inline</em> and
 <em>reference</em>. With both styles, you use square brackets to delimit the
 text you want to turn into a link.</p><p>Inline-style links use parentheses immediately after the link text.
 For example:</p><pre><code>This is an [example link](http://example.com/).</code></pre><p>Output:</p><pre><code>&lt;p&gt;This is an &lt;a href=&quot;http://example.com/&quot;&gt;
@@ -937,9 +937,9 @@ numbers and spaces, but are <em>not</em> case sensitive:</p><pre><code>I start m
 [The New York Times][NY Times].
 
 [ny times]: http://www.nytimes.com/</code></pre><p>Output:</p><pre><code>&lt;p&gt;I start my morning with a cup of coffee and
-&lt;a href=&quot;http://www.nytimes.com/&quot;&gt;The New York Times&lt;/a&gt;.&lt;/p&gt;</code></pre><h3>Images </h3><p>Image syntax is very much like link syntax.</p><p>Inline (titles are optional):</p><pre><code>![alt text](/path/to/img.jpg &quot;Title&quot;)</code></pre><p>Reference-style:</p><pre><code>![alt text][id]
+&lt;a href=&quot;http://www.nytimes.com/&quot;&gt;The New York Times&lt;/a&gt;.&lt;/p&gt;</code></pre><h3 id="Images_">Images </h3><p>Image syntax is very much like link syntax.</p><p>Inline (titles are optional):</p><pre><code>![alt text](/path/to/img.jpg &quot;Title&quot;)</code></pre><p>Reference-style:</p><pre><code>![alt text][id]
 
-[id]: /path/to/img.jpg &quot;Title&quot;</code></pre><p>Both of the above examples produce the same output:</p><pre><code>&lt;img src=&quot;/path/to/img.jpg&quot; alt=&quot;alt text&quot; title=&quot;Title&quot; /&gt;</code></pre><h3>Code </h3><p>In a regular paragraph, you can create code span by wrapping text in
+[id]: /path/to/img.jpg &quot;Title&quot;</code></pre><p>Both of the above examples produce the same output:</p><pre><code>&lt;img src=&quot;/path/to/img.jpg&quot; alt=&quot;alt text&quot; title=&quot;Title&quot; /&gt;</code></pre><h3 id="Code_">Code </h3><p>In a regular paragraph, you can create code span by wrapping text in
 backtick quotes. Any ampersands (<code>&amp;</code>) and angle brackets (<code>&lt;</code> or
 <code>&gt;</code>) will automatically be translated into HTML entities. This makes
 it easy to use Markdown to write about HTML example code:</p><pre><code>I strongly recommend against using any `&lt;blink&gt;` tags.
