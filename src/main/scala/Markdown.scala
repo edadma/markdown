@@ -534,9 +534,17 @@ object Markdown
         }
       }
 
+      def text( n: Node ): String = {
+        n match {
+          case Group( ns ) => ns map text mkString
+          case Text( t ) => t
+          case e => e.child map text mkString
+        }
+      }
+
       override def transform(n: Node) = n match {
         case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) if e attribute "id" isEmpty =>
-          e.asInstanceOf[Elem] % Attribute(null, "id", id(e.child.mkString), Null)
+          e.asInstanceOf[Elem] % Attribute(null, "id", id(text(e)), Null)
         case _ => n
       }
     }
