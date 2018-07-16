@@ -428,8 +428,6 @@ class Markdown( features: String* ) extends RegexParsers
 	}
 }
 
-case class Heading( heading: String, id: String, level: Int, subheadings: List[Heading] )
-
 object Markdown
 {
 	private val TABSIZE_REGEX = "tab-size *= *([0-9]+)"r
