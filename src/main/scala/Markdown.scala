@@ -279,8 +279,8 @@ class Markdown( features: String* ) extends RegexParsers
     case "" ~ Some(cap) ~ c =>
 			<div class="card">
         <div class="card-header">{cap}</div>
-        <div class="card-body">
-          <div class="captioned-code"><pre><code>{
+        <div class="captioned-code"><div class="card-body">
+          <pre><code>{
             Text( c.mkString )
           }</code></pre></div>
         </div>
@@ -288,8 +288,8 @@ class Markdown( features: String* ) extends RegexParsers
     case l ~ Some(cap) ~ c =>
 			<div class="card">
         <div class="card-header">{cap}</div>
-        <div class="card-body">
-          <div class="captioned-code"><pre><code class="highlight">{
+        <div class="captioned-code"><div class="card-body">
+          <pre><code class="highlight">{
             Highlighters.registered( l ) match {
               case None => Text( c.mkString )
               case Some( h ) => Unparsed( h.highlight(c.mkString) )
