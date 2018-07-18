@@ -1,9 +1,9 @@
 //@
 package xyz.hyperreal.markdown
 
+import xml._
 import util.parsing.combinator._
 import util.matching.Regex
-import xml._
 import collection.mutable.{HashMap, ListBuffer}
 import scala.collection.mutable
 import scala.util.Try
@@ -71,7 +71,7 @@ class Markdown( features: String* ) extends RegexParsers
 		(email | "<" ~> email <~ ">") ^^
 			{case link => <a href={"mailto:" + link}>{link}</a>}
 	
-	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {t => Text( f(t) )}
+	def text( p: Parser[String], f: String => String = x => x ) = p ^^ {t => TextAST( f(t) )}
 
 	def escaped = text( """\\[-\\`\*_\{}\[\]()#\+.!>]"""r, s => s.charAt(1).toString )//todo: maybe unnecessary, see def plain
 
@@ -79,13 +79,13 @@ class Markdown( features: String* ) extends RegexParsers
 	
 //	def code = "`" ~> (" *".r ~> text( """(?:.|\n)+?(?= *`)"""r ) <~ " *`".r ^^ {c => <code>{c}</code>} | success(Text( "`" )))//todo: removed whitespace matching so that ` ` would work
 
-  def code = "`" ~> (text( """[^`]+"""r ) <~ "`" ^^ {c => <code>{c}</code>} | success(Text( "`" )))//todo: removed whitespace matching so that ` ` would work
+  def code = "`" ~> (text( """[^`]+"""r ) <~ "`" ^^ {c => <code>{c}</code>} | success(TextAST( "`" )))//todo: removed whitespace matching so that ` ` would work
 
-	def double_code = "``" ~> (" *".r ~> text( """(?:.|\n)+?(?= *``)"""r ) <~ " *``".r ^^ {c => <code>{c}</code>} | success(Text( "``" )))
+	def double_code = "``" ~> (" *".r ~> text( """(?:.|\n)+?(?= *``)"""r ) <~ " *``".r ^^ {c => <code>{c}</code>} | success(TextAST( "``" )))
 	
 	def link_text = text( """[^\n*_`\\\[\]!]+|\[[^\n*_`\\\]!]*\]"""r )
 	
-	def link_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ (Group( _ ))
+	def link_inline = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ (SeqAST( _ ))
 	
 	private def ref( id: String ): Option[(String, Option[String])] =
 		if (refmap contains id)
@@ -102,7 +102,7 @@ class Markdown( features: String* ) extends RegexParsers
 		{case id ~ addr ~ title =>
 			refmap(id) = (addr, title)
 
-			Text( "" )
+			TextAST( "" )
 		}
 
 	def link =
@@ -110,26 +110,26 @@ class Markdown( features: String* ) extends RegexParsers
 			"""[ \t]*""".r ~ opt("\"" ~> """(?:"(?! *\))|[^"\n])*""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case text ~ _ ~ addr ~ _ ~ title =>
 			if (title == None)
-				<a href={addr}>{text}</a>
+				LinkAST( addr.toString, None, text )
 			else
-				<a href={addr} title={title.get}>{text}</a>
+				LinkAST( addr.toString, Some(title.toString), text )
 		}) |
 		(link_inline ~ """][ \t\n]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
 		{case text ~ sep ~ id =>
 			ref( if (id isEmpty) text.toString else id ) match
 			{
-				case None => Text( "[" + text + sep + id + "]" )
+				case None => TextAST( "[" + text + sep + id + "]" )
 				case Some((addr, title)) =>
 					if (title == None)
-						<a href={addr}>{text}</a>
+						LinkAST( addr.toString, None, text )
 					else
-						<a href={addr} title={title.get}>{text}</a>
+						LinkAST( addr.toString, Some(title.toString), text )
 			}
-		}) | success(Text( "[" )))
+		}) | success(TextAST( "[" )))
 	
 	def image = "!" ~> ("[" ~> (opt(link_inline) ~ """][ \t]*\(""".r ~ """[^ )]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case alt ~ _ ~ addr ~ _ ~ title =>
-			val a = alt getOrElse Text( "" )
+			val a = alt getOrElse TextAST( "" )
 			
 			if (title == None)
 				<img src={addr} alt={a} />
@@ -138,28 +138,28 @@ class Markdown( features: String* ) extends RegexParsers
 		}) |
 		"[" ~> (opt(link_inline) ~ """][ \t]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
 		{case alt ~ sep ~ id =>
-			val a = alt getOrElse Text( "" )
+			val a = alt getOrElse TextAST( "" )
 			ref( id ) match
 			{
-				case None => Text( "![" + a + sep + id + "]" )
+				case None => TextAST( "![" + a + sep + id + "]" )
 				case Some((addr, title)) =>
 					if (title == None)
 						<img src={addr} alt={a} />
 					else
 						<img src={addr} title={title.get} alt={a} />
 			}
-		}) | success(Text( "!" )))
+		}) | success(TextAST( "!" )))
 	
-	def inline_element: Parser[Node] = escaped | strong | em | inline_no_em_no_strong
+	def inline_element = escaped | strong | em | inline_no_em_no_strong
 	
-	def inline_list: Parser[List[Node]] = rep1(inline_element)
+	def inline_list = rep1(inline_element)
 	
-	def inline: Parser[Node] = inline_list ^^ (Group( _ ))
+	def inline = inline_list ^^ (SeqAST( _ ))
 
-	def strikethrough_inline: Parser[Node] = rep1(space_delim( "~~" ) | escaped | strong | em | double_code | code | image | link | underscore_word | autolink |
-		space | plain) ^^ (Group( _ ))
+	def strikethrough_inline = rep1(space_delim( "~~" ) | escaped | strong | em | double_code | code | image | link | underscore_word | autolink |
+		space | plain) ^^ (SeqAST( _ ))
 	
-	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ {case t => <del>{t}</del>} | success(Text("~~")))
+	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ {case t => <del>{t}</del>} | success(TextAST("~~")))
 
 	def inline_no_em_no_strong = double_code | code | image | link | underscore_word | autolink | strikethrough | space/* | xml*/ | entity | plain
 	
@@ -167,30 +167,30 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def space_delim( d: String ) = text( ("""[ \t]+\""" + d)r )
 	
-	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (Group( _ ))
+	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (SeqAST( _ ))
 
 	def _em( d: String, allow: String ) = d ~> not(space) ~> em_section( d, allow ) <~ not(space) <~ d ^^ {case e => <em>{e}</em>} | text( d )
 
 	def em = _em( "*", "_" ) | _em( "_", "*" )
 	
-	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ (Group( _ ))
+	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ (SeqAST( _ ))
 
 	def _em_no_strong( d: String ) =
-		(d ~ not(d ~ not(d))) ~> ((em_no_strong_section <~ (d ~ not(d ~ not(d))) ^^ {case e => <em>{e}</em>}) | success(Text( d )))
+		(d ~ not(d ~ not(d))) ~> ((em_no_strong_section <~ (d ~ not(d ~ not(d))) ^^ { e => EmphasisAST( e )}) | success(text( d )))
 	
 	def em_no_strong = _em_no_strong( "*" ) | _em_no_strong( "_" )
 	
-	def strong_section( d: String, allow: String ) = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (Group( _ ))
+	def strong_section( d: String, allow: String ) = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (SeqAST( _ ))
 	
 	def _strong( d: String, allow: String ) = d ~> not(space) ~> strong_section( d, allow ) <~ not(space) <~ d ^^ {case e => <strong>{e}</strong>} | text( d )
 	
-	def strong: Parser[Node] = _strong( "**", "__" ) | _strong( "__", "**" )
+	def strong = _strong( "**", "__" ) | _strong( "__", "**" )
 	
-	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ (Group( _ ))
+	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ (SeqAST( _ ))
 	
-	def _strong_no_em( d: String ) = d ~> ((strong_no_em_section <~ d ^^ {case e => <strong>{e}</strong>}) | success(Text( d )))
+	def _strong_no_em( d: String ) = d ~> ((strong_no_em_section <~ d ^^ { e => StrongAST( e )}) | success(TextAST( d )))
 
-	def strong_no_em: Parser[Node] = _strong_no_em( "**" ) | _strong_no_em( "__" )
+	def strong_no_em = _strong_no_em( "**" ) | _strong_no_em( "__" )
 
 	val HEADING_TAIL_PATTERN = "(.*?)[ ]*#*"r
 
@@ -200,51 +200,39 @@ class Markdown( features: String* ) extends RegexParsers
 			val last =
 				back.head match
 				{
-					case Text( t ) =>
+					case TextAST( t ) =>
 						val HEADING_TAIL_PATTERN( s ) = t
 						
-						Text( s )
+						TextAST( s )
 					case item => item
 				}
 
-			Group( front :+ last )
+			SeqAST( front :+ last )
 		}
 
 	def heading1 = """#{1,6}[ \t]*""".r ~ heading_inline ^^
 		{case l ~ e =>
 			val level = l.count(_ == '#')
 
-			level match
-			{
-				case 1 => <h1>{e}</h1>
-				case 2 => <h2>{e}</h2>
-				case 3 => <h3>{e}</h3>
-				case 4 => <h4>{e}</h4>
-				case 5 => <h5>{e}</h5>
-				case 6 => <h6>{e}</h6>
-			}
+      HeadingAST( level, e )
 		}
 	
 	def heading2 = inline ~ """\n(?:-+|=+)[ \t]*(?=\n|\z)""".r ^^
 		{case e ~ l =>
 			val level = if (l.charAt(1) == '=') 1 else 2
 			
-			level match
-			{
-				case 1 => <h1>{e}</h1>
-				case 2 => <h2>{e}</h2>
-			}
+      HeadingAST( level, e )
 		}
 
-	def comment = """[ ]{0,3}/\*[^*]*\*+(?:[^*/][^*]*\*+)*/[ \t]*""".r ^^^ Text( "" )
+	def comment = """[ ]{0,3}/\*[^*]*\*+(?:[^*/][^*]*\*+)*/[ \t]*""".r ^^^ TextAST( "" )
 
 	def paragraph_inline_element =
 		rep1(
-			"\\\n" ^^^ (if (featureBackslashBreak) <br/> else Text("\\\n")) |
+			"\\\n" ^^^ (if (featureBackslashBreak) BreakAST else TextAST("\\\n")) |
 			"""  +\n""".r ^^^ <br/> |
-			"\n" ^^^ (if (featureNewlineBreak) <br/> else Text("\n")) |
+			"\n" ^^^ (if (featureNewlineBreak) BreakAST else TextAST("\n")) |
 			inline_element) ^^
-			(Group( _ ))
+			(SeqAST( _ ))
 			
 	def paragraph = 
 // 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
@@ -259,60 +247,42 @@ class Markdown( features: String* ) extends RegexParsers
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(preformated_prefix) | success("")) ^^ {case c ~ s => c + s}), preformated_prefix) ^^
 			{case es =>
 				<pre><code>{
-					Text( Markdown.tabs2spaces(es.reduce(_ + _), tabSize) )
+					TextAST( Markdown.tabs2spaces(es.reduce(_ + _), tabSize) )
 				}</code></pre>
 			}
 
 	def triple_code =
 		("""```[ \t]*""".r ~> "[^ \t\n]*".r ~ opt("""\s*"""".r ~> "[^\"]+".r <~ "\"") <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^ {
     case "" ~ None ~ c =>
-			<div class="normal-code"><pre><code>{
-				Text( c.mkString )
-			}</code></pre></div>
+      CodeBlockAST( c.mkString, None, None )
     case l ~ None ~ c =>
-			<div class="normal-code"><pre><code class="highlight">{
-				Highlighters.registered( l ) match {
-					case None => Text( c.mkString )
-					case Some( h ) => Unparsed( h.highlight(c.mkString) )
-				}
-			}</code></pre></div>
+      Highlighters.registered( l ) match {
+        case None => CodeBlockAST( c.mkString, None, None )
+        case Some( h ) => CodeBlockAST( h.highlight(c.mkString), Some(l), None )
+      }
     case "" ~ Some(cap) ~ c =>
-			<div class="card">
-        <div class="card-header">{cap}</div>
-        <div class="captioned-code"><div class="card-body">
-          <pre><code>{
-            Text( c.mkString )
-          }</code></pre></div>
-        </div>
-      </div>
+      CodeBlockAST( c.mkString, None, Some(cap) )
     case l ~ Some(cap) ~ c =>
-			<div class="card">
-        <div class="card-header">{cap}</div>
-        <div class="captioned-code"><div class="card-body">
-          <pre><code class="highlight">{
-            Highlighters.registered( l ) match {
-              case None => Text( c.mkString )
-              case Some( h ) => Unparsed( h.highlight(c.mkString) )
-            }
-          }</code></pre></div>
-        </div>
-      </div>
+      Highlighters.registered( l ) match {
+        case None => CodeBlockAST( c.mkString, None, Some(cap) )
+        case Some( h ) => CodeBlockAST( h.highlight(c.mkString), Some(l), Some(cap) )
+      }
     }
 
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
 
-	def table_inline: Parser[Node] =
+	def table_inline =
     rep1(escaped | strong | em | double_code | code | image | link | autolink | space | table_plain) ^^
 		{case l =>
 			val (front, back) = l.splitAt( l.length - 1 )
 			val last =
 				back.head match
 				{
-					case Text( t ) => Text( t.trim )
+					case TextAST( t ) => TextAST( t.trim )
 					case item => item
 				}
 
-			Group( front :+ last )
+			SeqAST( front :+ last )
 		}
 
 	def table_row =
@@ -366,10 +336,10 @@ class Markdown( features: String* ) extends RegexParsers
 			
 			Utility.unescape( n, buf ) match
 			{
-				case null => Text( '&' + n + s )
-				case _ => Text( buf.toString )
+				case null => TextAST( '&' + n + s )
+				case _ => TextAST( buf.toString )
 			}
-		} | success(Text( "&" )))
+		} | success(TextAST( "&" )))
 	
 	def tag_name = "[:_A-Za-z][:_A-Za-z0-9.-]*"r
 	
@@ -382,14 +352,14 @@ class Markdown( features: String* ) extends RegexParsers
 	def xml = xml_string ^^
 		{s =>
 			if (s startsWith "<!--")
-				Text( "" )
+				TextAST( "" )
 			else
-				Try( {/*println( "===\n" + s + "\n===" ); */XML.loadString(s)} ).getOrElse( Text(s) )
+				Try( {/*println( "===\n" + s + "\n===" ); */XML.loadString(s)} ).getOrElse( TextAST(s) )
 		}
 		
 	def quote_prefix = """[ ]{0,3}> ?"""r
 
-	def quote: Parser[Node] =
+	def quote =
 		quote_prefix ~>
 			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(quote_prefix) | success("")) ^^ {case c ~ s => c + s}), quote_prefix) ^^
 				{case es =>
@@ -398,7 +368,7 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def indent = """\t|[ ]{1,4}"""r
 	
-	def li( start: Regex ): Parser[Node] =
+	def li( start: Regex ) =
 		start ~>
 			rep1sep(("""[^\n]*""".r ~ ("""\n(?:[ \t]*\n)*""".r <~ guard(indent) | success("")) ^^ {case c ~ s => c + s}), indent) ^^
 				{case es =>
@@ -407,11 +377,11 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def item_inline =
 		rep1(
-			"""\n(?!(?:[ \n]*\n|[*+-]| *[0-9]+\.))""".r ^^^ Text("\n") |
+			"""\n(?!(?:[ \n]*\n|[*+-]| *[0-9]+\.))""".r ^^^ TextAST("\n") |
 			inline_element) ^^
-			(Group( _ ))
+			(SeqAST( _ ))
 
-	def item = item_inline ~ document ^^ {case i ~ b => Group( List(i, b) )} //guard("""[^\n]*\z"""r) ~> 
+	def item = item_inline ~ document ^^ {case i ~ b => SeqAST( List(i, b) )} //guard("""[^\n]*\z"""r) ~>
 	
 	def ul = rep1sep(li( """[ ]{0,3}[*+-](?: +|\t)"""r ), end_block) ^^ {es => <ul>{es}</ul>}
 	
@@ -421,11 +391,11 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def block = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | xml | paragraph) <~ end_block
 	
-	def blocks = rep(block) ^^ Group
+	def blocks = rep(block) ^^ SeqAST
 	
 	def document = """(?:[ \t]*\n)*""".r ~> blocks
 
-	protected def parseRule( rule: Parser[Node], s: String ) =
+	protected def parseRule( rule: Parser[AST], s: String ) =
 	{
 		parseAll( rule, s ) match
 		{
@@ -511,8 +481,8 @@ object Markdown
 					}
 
 					nl
-				case Group( s ) => _normalizeNodes( s )
-				case Text( t ) => buf append t
+				case SeqAST( s ) => _normalizeNodes( s )
+				case TextAST( t ) => buf append t
 			}
 		}
 
@@ -555,24 +525,24 @@ object Markdown
         }
       }
 
-      def text( n: Node ): String = {
+      def text( n: ElementAST ): String = {
         n match {
-          case Group( ns ) => ns map text mkString
-          case Text( t ) => t
-          case e => e.child map text mkString
+          case SeqAST( ns ) => ns map text mkString
+          case TextAST( t ) => t
+          case e => e.elements map text mkString
         }
       }
 
       override def transform(n: Node) = n match {
         case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) if e attribute "id" isEmpty =>
-          e.asInstanceOf[Elem] % Attribute(null, "id", id(text(e)), Null)
+          e.asInstanceOf[Elem] % Attribute(null, "id", id(TextAST(e)), Null)
         case _ => n
       }
     }
 
     val res = new RuleTransformer( rule1 ).transform( doc )
 
-		new Group(res)
+		new SeqAST(res)
 	}
 
 	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
