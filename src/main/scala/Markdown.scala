@@ -264,22 +264,45 @@ class Markdown( features: String* ) extends RegexParsers
 			}
 
 	def triple_code =
-		("""```[ \t]*""".r ~> "[^ \t\n]*".r <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^ {
-    case "" ~ c =>
-			<pre><code>{
+		("""```[ \t]*""".r ~> "[^ \t\n]*".r ~ opt("""\s*"""".r ~> "[^\"]+".r <~ "\"") <~ """[ \t]*\n""".r) ~ (rep(guard(not("\n```")) ~> elem("", ch => true)) <~ "\n```") ^^ {
+    case "" ~ None ~ c =>
+			<div class="normal-code"><pre><code>{
 				Text( c.mkString )
-			}</code></pre>
-    case l ~ c =>
-			<pre><code class="highlight">{
+			}</code></pre></div>
+    case l ~ None ~ c =>
+			<div class="normal-code"><pre><code class="highlight">{
 				Highlighters.registered( l ) match {
 					case None => Text( c.mkString )
 					case Some( h ) => Unparsed( h.highlight(c.mkString) )
 				}
-			}</code></pre> }
+			}</code></pre></div>
+    case "" ~ Some(cap) ~ c =>
+			<div class="card">
+        <div class="card-header">{cap}</div>
+        <div class="card-body">
+          <div class="captioned-code"><pre><code>{
+            Text( c.mkString )
+          }</code></pre></div>
+        </div>
+      </div>
+    case l ~ Some(cap) ~ c =>
+			<div class="card">
+        <div class="card-header">{cap}</div>
+        <div class="card-body">
+          <div class="captioned-code"><pre><code class="highlight">{
+            Highlighters.registered( l ) match {
+              case None => Text( c.mkString )
+              case Some( h ) => Unparsed( h.highlight(c.mkString) )
+            }
+          }</code></pre></div>
+        </div>
+      </div>
+    }
 
 	def table_plain = text( """[^\n*_`\\\[!|]+"""r )
 
-	def table_inline: Parser[Node] = rep1(escaped | strong | em | double_code | code | image | link | autolink | space | table_plain) ^^
+	def table_inline: Parser[Node] =
+    rep1(escaped | strong | em | double_code | code | image | link | autolink | space | table_plain) ^^
 		{case l =>
 			val (front, back) = l.splitAt( l.length - 1 )
 			val last =

@@ -7,8 +7,9 @@ object Main extends App {
 
   println( Markdown(
     """
-      |This *`is a` test*
-      |==================
+      |```html "caption"
+      |<p>this is a test</p>
+      |```
     """.trim.stripMargin
   ) )
 
