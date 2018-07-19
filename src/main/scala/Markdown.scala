@@ -443,17 +443,17 @@ object Markdown
 		lines.reduce( _ + "\n" + _ )
 	}
 
-  def asHTML( s: String, features: String* ) = {
-    val doc = apply( s, features: _* )
+  def asHTML( s: String, features: String* ) = apply( s, features: _* ).toString
+
+	def apply( s: String, features: String* ) = {
+    val doc = new Markdown( features: _* ).parseDocument( s )
 
     Util.headingIds( doc )
-    doc.toString
+    doc
   }
-
-	def apply( s: String, features: String* ): AST = (new Markdown( features: _* )).parseDocument( s )
 }
 
 object GFM
 {
-	def apply( s: String, features: String* ) = (new Markdown( ("gfm" +: features): _* )).parseDocument( s )
+	def apply( s: String, features: String* ) = Markdown( s, "gfm" +: features: _* )
 }
