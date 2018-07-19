@@ -50,3 +50,7 @@ case class EmphasisAST( contents: ElementAST ) extends InlineElementAST with Bra
 case class StrongAST( contents: ElementAST ) extends InlineElementAST with BranchElementAST
 
 case object BreakAST extends InlineElementAST with LeafElementAST
+
+case class TableCell( align: Option[String], item: ElementAST )
+
+case class TableAST( head: Seq[Seq[TableCell]]) extends BlockElementAST with LeafElementAST
