@@ -56,7 +56,7 @@ object Util {
     headingIds( ast )
   }
 
-  def html( doc: AST, tab: Int ) = {
+  def html( doc: AST, tab: Int, codeblock: (String, Option[String], Option[String]) => String = null ) = {
     val buf = new StringBuilder
 
     def tag( tag: String, contents: AST, attr: (String, String)* ) =
@@ -74,7 +74,11 @@ object Util {
         case HeadingAST( level, contents, Some(id) ) => tag( s"h$level", contents, "id" -> id )
         case HeadingAST( level, contents, None ) => tag( s"h$level", contents )
         case CodeInlineAST( c ) => leaf( "code", c )
-        case CodeBlockAST( c, highlighted, caption ) => leaf( "pre", leaf("code", c) )
+        case CodeBlockAST( c, highlighted, caption ) =>
+          if (codeblock eq null)
+            s"<pre><code>$c</code></pre>"
+          else
+            codeblock( c, highlighted, caption )
         case LinkAST( address, None, contents ) => tag( "a", contents, "href" -> address )
         case LinkAST( address, Some(title), contents ) => tag( "a", contents, "href" -> address, "title" -> title )
         case ListItemAST( contents ) => tag( "li", contents )
