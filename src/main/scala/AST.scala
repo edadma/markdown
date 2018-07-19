@@ -23,48 +23,50 @@ trait BranchAST extends AST {
 
 trait LeafAST extends AST {
   def elements = Nil
+
+  val text: String
 }
 
-trait BlockAST extends AST
+case class ParagraphAST( contents: AST ) extends BranchAST
 
-trait InlineAST extends AST
+case class BlockquoteAST( contents: AST ) extends BranchAST
 
-case class ParagraphAST( contents: AST ) extends BlockAST with BranchAST
+case class HeadingAST( level: Int, contents: AST, var id: Option[String] = None ) extends BranchAST
 
-case class BlockquoteAST( contents: AST ) extends BlockAST with BranchAST
+case class CodeInlineAST( text: String ) extends LeafAST
 
-case class HeadingAST( level: Int, contents: AST, var id: Option[String] = None ) extends BlockAST with BranchAST
+case class CodeBlockAST( text: String, highlighted: Option[String], caption: Option[String] ) extends LeafAST
 
-case class CodeInlineAST( text: String ) extends InlineAST with LeafAST
+case class TextAST( text: String ) extends LeafAST
 
-case class CodeBlockAST( text: String, highlighted: Option[String], caption: Option[String] ) extends BlockAST with LeafAST
+case class LinkAST( address: String, title: Option[String], contents: AST ) extends BranchAST
 
-case class TextAST( text: String ) extends InlineAST with LeafAST
+case class ListItemAST( contents: AST ) extends BranchAST
 
-case class RawAST( text: String ) extends InlineAST with LeafAST
+case class UnorderedListAST( contents: AST ) extends BranchAST
 
-case class LinkAST( address: String, title: Option[String], contents: AST ) extends InlineAST with BranchAST
+case class OrderedListAST( contents: AST ) extends BranchAST
 
-case class ListItemAST( contents: AST ) extends InlineAST with BranchAST
+case class ImageAST( address: String, title: Option[String], text: String ) extends LeafAST
 
-case class UnorderedListAST(list: Seq[ListItemAST] ) extends BlockAST with LeafAST
+case class EmphasisAST( contents: AST ) extends BranchAST
 
-case class OrderedListAST( list: Seq[ListItemAST] ) extends BlockAST with LeafAST
+case class StrongAST( contents: AST ) extends BranchAST
 
-case class ImageAST( address: String, title: Option[String], alt: String ) extends InlineAST with LeafAST
+case class StrikethroughAST( contents: AST ) extends BranchAST
 
-case class EmphasisAST( contents: AST ) extends InlineAST with BranchAST
+case object BreakAST extends LeafAST { val text = "\n" }
 
-case class StrongAST( contents: AST ) extends InlineAST with BranchAST
+case object RuleAST extends LeafAST { val text = "" }
 
-case class StrikethroughAST( contents: AST ) extends InlineAST with BranchAST
+case class TableCell( align: String, contents: AST ) extends BranchAST
 
-case object BreakAST extends InlineAST with LeafAST
+case class TableRow( contents: AST ) extends BranchAST
 
-case object RuleAST extends InlineAST with LeafAST
+case class TableHead( contents: AST ) extends BranchAST
 
-case class TableCell( align: String, item: AST )
+case class TableBody( contents: AST ) extends BranchAST
 
-case class TableAST( head: Seq[Seq[TableCell]], body: Seq[Seq[TableCell]] ) extends BlockAST with LeafAST
+case class TableAST( contents: AST ) extends BranchAST
 
-case class EntityAST( entity: String, text: String ) extends InlineAST with LeafAST
+case class EntityAST( entity: String, text: String ) extends LeafAST

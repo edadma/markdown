@@ -295,18 +295,25 @@ class Markdown( features: String* ) extends RegexParsers
 
 				val aligns = buf.toList
 				
-				TableAST( Seq(
-          for ((i, a) <- head zip aligns)
-						yield
-              TableCell( a, i )
-          ),
-          for (i <- body)
-            yield
-              {
-                for ((j, a) <- i zip aligns)
-                  yield
-                    TableCell( a, j )
-                }
+				TableAST(
+          seq(
+            Seq( TableHead( seq(
+              for ((i, a) <- head zip aligns)
+                yield
+                  TableCell( a, i )
+              ) ),
+            TableBody( seq(
+              for (i <- body)
+                yield
+                  {
+                    TableRow( seq(
+                      for ((j, a) <- i zip aligns)
+                        yield
+                          TableCell( a, j )
+                    ) )
+                  }
+            ) )
+          ) )
         )
 		}
 	
@@ -364,9 +371,9 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def item = item_inline ~ document ^^ {case i ~ b => SeqAST( List(i, b) )} //guard("""[^\n]*\z"""r) ~>
 	
-	def ul = rep1sep(li( """[ ]{0,3}[*+-](?: +|\t)"""r ), end_block) ^^ UnorderedListAST
+	def ul = rep1sep(li( """[ ]{0,3}[*+-](?: +|\t)"""r ), end_block) ^^ (l => UnorderedListAST( seq(l) ))
 	
-	def ol = rep1sep(li( """[ ]{0,3}\d+\.(?: +|\t)"""r ), end_block) ^^ OrderedListAST
+	def ol = rep1sep(li( """[ ]{0,3}\d+\.(?: +|\t)"""r ), end_block) ^^ (l => OrderedListAST( seq(l) ))
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
