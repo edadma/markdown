@@ -7,7 +7,7 @@ object Main extends App {
 
   println( Markdown(
     """
-      |`asdf`
+      |asdf
     """.trim.stripMargin
   ) )
 

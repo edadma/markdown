@@ -1,20 +1,18 @@
 package xyz.hyperreal.markdown
 
 
-trait AST
+trait AST {
+  def elements: Seq[AST]
+}
 
-case class SeqAST( seq: Seq[ElementAST] ) extends ElementAST {
+case class SeqAST( seq: Seq[AST] ) extends AST {
   val contents = null
 
   override def elements = seq
 }
 
-trait ElementAST extends AST {
-  def elements: Seq[ElementAST]
-}
-
-trait BranchElementAST extends ElementAST {
-  val contents: ElementAST
+trait BranchAST extends AST {
+  val contents: AST
 
   def elements =
     contents match {
@@ -23,34 +21,50 @@ trait BranchElementAST extends ElementAST {
     }
 }
 
-trait LeafElementAST extends ElementAST {
+trait LeafAST extends AST {
   def elements = Nil
 }
 
-trait BlockElementAST extends ElementAST
+trait BlockAST extends AST
 
-case class ParagraphAST( contents: SeqAST ) extends BlockElementAST with BranchElementAST
+trait InlineAST extends AST
 
-trait InlineElementAST extends ElementAST
+case class ParagraphAST( contents: AST ) extends BlockAST with BranchAST
 
-case class HeadingAST( level: Int, contents: ElementAST ) extends BlockElementAST with BranchElementAST
+case class BlockquoteAST( contents: AST ) extends BlockAST with BranchAST
 
-case class CodeInlineAST( text: String ) extends InlineElementAST with LeafElementAST
+case class HeadingAST( level: Int, contents: AST, var id: Option[String] = None ) extends BlockAST with BranchAST
 
-case class CodeBlockAST( text: String, highlighted: Option[String], caption: Option[String] ) extends BlockElementAST with LeafElementAST
+case class CodeInlineAST( text: String ) extends InlineAST with LeafAST
 
-case class TextAST( text: String ) extends InlineElementAST with LeafElementAST
+case class CodeBlockAST( text: String, highlighted: Option[String], caption: Option[String] ) extends BlockAST with LeafAST
 
-case class RawAST( text: String ) extends InlineElementAST with LeafElementAST
+case class TextAST( text: String ) extends InlineAST with LeafAST
 
-case class LinkAST( address: String, title: Option[String], contents: ElementAST ) extends InlineElementAST with BranchElementAST
+case class RawAST( text: String ) extends InlineAST with LeafAST
 
-case class EmphasisAST( contents: ElementAST ) extends InlineElementAST with BranchElementAST
+case class LinkAST( address: String, title: Option[String], contents: AST ) extends InlineAST with BranchAST
 
-case class StrongAST( contents: ElementAST ) extends InlineElementAST with BranchElementAST
+case class ListItemAST( contents: AST ) extends InlineAST with BranchAST
 
-case object BreakAST extends InlineElementAST with LeafElementAST
+case class UnorderedListAST(list: Seq[ListItemAST] ) extends BlockAST with LeafAST
 
-case class TableCell( align: Option[String], item: ElementAST )
+case class OrderedListAST( list: Seq[ListItemAST] ) extends BlockAST with LeafAST
 
-case class TableAST( head: Seq[Seq[TableCell]]) extends BlockElementAST with LeafElementAST
+case class ImageAST( address: String, title: Option[String], alt: String ) extends InlineAST with LeafAST
+
+case class EmphasisAST( contents: AST ) extends InlineAST with BranchAST
+
+case class StrongAST( contents: AST ) extends InlineAST with BranchAST
+
+case class StrikethroughAST( contents: AST ) extends InlineAST with BranchAST
+
+case object BreakAST extends InlineAST with LeafAST
+
+case object RuleAST extends InlineAST with LeafAST
+
+case class TableCell( align: String, item: AST )
+
+case class TableAST( head: Seq[Seq[TableCell]], body: Seq[Seq[TableCell]] ) extends BlockAST with LeafAST
+
+case class EntityAST( entity: String, text: String ) extends InlineAST with LeafAST
