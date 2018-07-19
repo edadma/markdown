@@ -127,11 +127,11 @@ class Markdown( features: String* ) extends RegexParsers
 			}
 		}) | success(TextAST( "[" )))
 	
-	def image: Parser[AST] = "!" ~> ("[" ~> "[^\\]]*".r ~ """][ \t]*\(""".r ~ """[^ )]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
+	def image: Parser[AST] = "!" ~> ("[" ~> ("[^\\]]*".r ~ """][ \t]*\(""".r ~ """[^ )]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case alt ~ _ ~ addr ~ _ ~ title =>
       ImageAST( addr, title, alt )
 		}) |
-		"[" ~> "[^\\]]*".r ~ """][ \t]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
+		"[" ~> ("[^\\]]*".r ~ """][ \t]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
 		{case alt ~ sep ~ id =>
 			ref( id ) match
 			{
@@ -139,16 +139,17 @@ class Markdown( features: String* ) extends RegexParsers
 				case Some((addr, title)) =>
           ImageAST( addr, title, alt )
 			}
-		} | success(TextAST( "!" ))
+		}) | success(TextAST( "!" )))
 	
 	def inline_element = escaped | strong | em | inline_no_em_no_strong
 	
 	def inline_list = rep1(inline_element)
 	
-	def inline = inline_list ^^ (SeqAST( _ ))
+	def inline = inline_list ^^ SeqAST
 
-	def strikethrough_inline = rep1(space_delim( "~~" ) | escaped | strong | em | double_code | code | image | link | underscore_word | autolink |
-		space | plain) ^^ (SeqAST( _ ))
+	def strikethrough_inline =
+    rep1(space_delim( "~~" ) | escaped | strong | em | double_code | code | image | link | underscore_word | autolink |
+		  space | plain) ^^ SeqAST
 	
 	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ { t => StrikethroughAST( t )} | success(TextAST("~~")))
 
@@ -158,7 +159,7 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def space_delim( d: String ) = text( ("""[ \t]+\""" + d)r )
 	
-	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ (SeqAST( _ ))
+	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ SeqAST
 
 	def _em( d: String, allow: String ) = d ~> not(space) ~> em_section( d, allow ) <~ not(space) <~ d ^^ { e => EmphasisAST( e )} | text( d )
 
@@ -177,7 +178,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def strong = _strong( "**", "__" ) | _strong( "__", "**" )
 	
-	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ (SeqAST( _ ))
+	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ SeqAST
 	
 	def _strong_no_em( d: String ) = d ~> ((strong_no_em_section <~ d ^^ { e => StrongAST( e )}) | success(TextAST( d )))
 
@@ -222,8 +223,7 @@ class Markdown( features: String* ) extends RegexParsers
 			"\\\n" ^^^ (if (featureBackslashBreak) BreakAST else TextAST("\\\n")) |
 			"""  +\n""".r ^^^ BreakAST |
 			"\n" ^^^ (if (featureNewlineBreak) BreakAST else TextAST("\n")) |
-			inline_element) ^^
-			(SeqAST( _ ))
+			inline_element) ^^ SeqAST
 			
 	def paragraph = 
 // 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
@@ -262,7 +262,7 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def table_inline =
     rep1(escaped | strong | em | double_code | code | image | link | autolink | space | table_plain) ^^
-		{case l =>
+		{ l =>
 			val (front, back) = l.splitAt( l.length - 1 )
 			val last =
 				back.head match

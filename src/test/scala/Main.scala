@@ -1,14 +1,20 @@
 package xyz.hyperreal.markdown
 
-import java.io._
-
 
 object Main extends App {
 
-  println( Markdown(
+  val input =
     """
       |asdf
+      |====
+      |
+      |`asdf`
+      |
+      |```html
+      |<p>asdf</p>
+      |```
     """.trim.stripMargin
-  ) )
+
+  println( Markdown(input) )
 
 }
