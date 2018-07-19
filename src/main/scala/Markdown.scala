@@ -85,7 +85,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def link_text: Parser[AST] = text( """[^\n*_`\\\[\]!]+|\[[^\n*_`\\\]!]*\]"""r )
 	
-	def link_inline: Parser[AST] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ SeqAST
+	def link_inline: Parser[AST] = rep1(escaped | strong | em | double_code | code | image | link_text) ^^ seq
 	
 	private def ref( id: String ): Option[(String, Option[String])] =
 		if (refmap contains id)
@@ -145,11 +145,11 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def inline_list = rep1(inline_element)
 	
-	def inline = inline_list ^^ SeqAST
+	def inline = inline_list ^^ seq
 
 	def strikethrough_inline =
     rep1(space_delim( "~~" ) | escaped | strong | em | double_code | code | image | link | underscore_word | autolink |
-		  space | plain) ^^ SeqAST
+		  space | plain) ^^ seq
 	
 	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ { t => StrikethroughAST( t )} | success(TextAST("~~")))
 
@@ -159,26 +159,26 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def space_delim( d: String ) = text( ("""[ \t]+\""" + d)r )
 	
-	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ SeqAST
+	def em_section( d: String, allow: String ) = rep1(escaped | strong_no_em | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ seq
 
 	def _em( d: String, allow: String ) = d ~> not(space) ~> em_section( d, allow ) <~ not(space) <~ d ^^ { e => EmphasisAST( e )} | text( d )
 
 	def em = _em( "*", "_" ) | _em( "_", "*" )
 	
-	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ SeqAST
+	def em_no_strong_section = rep1(escaped | inline_no_em_no_strong) ^^ seq
 
 	def _em_no_strong( d: String ): Parser[AST] =
 		(d ~ not(d ~ not(d))) ~> ((em_no_strong_section <~ (d ~ not(d ~ not(d))) ^^ { e => EmphasisAST( e )}) | success(TextAST( d )))
 	
 	def em_no_strong = _em_no_strong( "*" ) | _em_no_strong( "_" )
 	
-	def strong_section( d: String, allow: String ): Parser[AST] = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ SeqAST
+	def strong_section( d: String, allow: String ): Parser[AST] = rep1(escaped | em_no_strong | space_delim( d ) | inline_no_em_no_strong_allow(allow)) ^^ seq
 	
 	def _strong( d: String, allow: String ): Parser[AST] = d ~> not(space) ~> strong_section( d, allow ) <~ not(space) <~ d ^^ { e => StrongAST( e )} | text( d )
 	
 	def strong = _strong( "**", "__" ) | _strong( "__", "**" )
 	
-	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ SeqAST
+	def strong_no_em_section = rep1(escaped | inline_no_em_no_strong) ^^ seq
 	
 	def _strong_no_em( d: String ) = d ~> ((strong_no_em_section <~ d ^^ { e => StrongAST( e )}) | success(TextAST( d )))
 
@@ -223,7 +223,7 @@ class Markdown( features: String* ) extends RegexParsers
 			"\\\n" ^^^ (if (featureBackslashBreak) BreakAST else TextAST("\\\n")) |
 			"""  +\n""".r ^^^ BreakAST |
 			"\n" ^^^ (if (featureNewlineBreak) BreakAST else TextAST("\n")) |
-			inline_element) ^^ SeqAST
+			inline_element) ^^ seq
 			
 	def paragraph = 
 // 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
@@ -360,7 +360,7 @@ class Markdown( features: String* ) extends RegexParsers
 	def item_inline =
 		rep1(
 			"""\n(?!(?:[ \n]*\n|[*+-]| *[0-9]+\.))""".r ^^^ TextAST("\n") |
-			inline_element) ^^ SeqAST
+			inline_element) ^^ seq
 
 	def item = item_inline ~ document ^^ {case i ~ b => SeqAST( List(i, b) )} //guard("""[^\n]*\z"""r) ~>
 	
@@ -371,8 +371,14 @@ class Markdown( features: String* ) extends RegexParsers
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
 	def block: Parser[AST] = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | /*xml |*/ paragraph) <~ end_block //todo: xml
-	
-	def blocks = rep(block) ^^ SeqAST
+
+  def seq( s: Seq[AST] ) =
+    if (s.length == 1)
+      s.head
+    else
+      SeqAST( s )
+
+	def blocks = rep(block) ^^ seq
 	
 	def document = """(?:[ \t]*\n)*""".r ~> blocks
 
