@@ -109,7 +109,7 @@ class Markdown( features: String* ) extends RegexParsers
 		"[" ~> ((link_inline ~ """][ \t]*\(""".r ~ ("<" ~> """[^ \t>]*""".r <~ ">" | """[^ \t)]*""".r) ~
 			"""[ \t]*""".r ~ opt("\"" ~> """(?:"(?! *\))|[^"\n])*""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case text ~ _ ~ addr ~ _ ~ title =>
-			if (title == None)
+			if (title isEmpty)
 				LinkAST( addr.toString, None, text )
 			else
 				LinkAST( addr.toString, Some(title.toString), text )
@@ -120,7 +120,7 @@ class Markdown( features: String* ) extends RegexParsers
 			{
 				case None => TextAST( "[" + text + sep + id + "]" )
 				case Some((addr, title)) =>
-					if (title == None)
+					if (title isEmpty)
 						LinkAST( addr.toString, None, text )
 					else
 						LinkAST( addr.toString, Some(title.toString), text )
@@ -297,19 +297,19 @@ class Markdown( features: String* ) extends RegexParsers
 				
 				TableAST(
           seq(
-            Seq( TableHead( seq(
+            Seq( TableHeadAST( TableHeadRowAST( seq(
               for ((i, a) <- head zip aligns)
                 yield
-                  TableCell( a, i )
-              ) ),
-            TableBody( seq(
+                  TableCellAST( a, i )
+              ) ) ),
+            TableBodyAST( seq(
               for (i <- body)
                 yield
                   {
-                    TableRow( seq(
+                    TableBodyRowAST( seq(
                       for ((j, a) <- i zip aligns)
                         yield
-                          TableCell( a, j )
+                          TableCellAST( a, j )
                     ) )
                   }
             ) )

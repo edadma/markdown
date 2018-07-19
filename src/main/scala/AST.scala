@@ -59,13 +59,15 @@ case object BreakAST extends LeafAST { val text = "\n" }
 
 case object RuleAST extends LeafAST { val text = "" }
 
-case class TableCell( align: String, contents: AST ) extends BranchAST
+case class TableCellAST( align: String, contents: AST ) extends BranchAST
 
-case class TableRow( contents: AST ) extends BranchAST
+case class TableHeadRowAST( contents: AST ) extends BranchAST
 
-case class TableHead( contents: AST ) extends BranchAST
+case class TableBodyRowAST( contents: AST ) extends BranchAST
 
-case class TableBody( contents: AST ) extends BranchAST
+case class TableHeadAST( contents: AST ) extends BranchAST
+
+case class TableBodyAST(contents: AST ) extends BranchAST
 
 case class TableAST( contents: AST ) extends BranchAST
 

@@ -8,6 +8,8 @@ object Main extends App {
       |asdf
       |====
       |
+      |This is *too* cool.
+      |
       |asdf
       |====
       |
@@ -15,9 +17,12 @@ object Main extends App {
       |====
     """.trim.stripMargin
 
-  val res = Markdown( input )
+  val doc = Markdown( input )
 
-  Util.headingIds( res )
-  println( res )
+  Util.headingIds( doc )
+
+  val html = Util.html( doc, 2 )
+
+  println( html )
 
 }

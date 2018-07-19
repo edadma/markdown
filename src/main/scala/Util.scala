@@ -56,4 +56,47 @@ object Util {
     headingIds( ast )
   }
 
+  def html( doc: AST, tab: Int ) = {
+    val buf = new StringBuilder
+
+    def tag( tag: String, contents: AST, attr: (String, String)* ) =
+      s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>${html( contents )}</$tag>"
+
+    def leaf( tag: String, contents: String, attr: (String, String)* ) =
+      s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>$contents</$tag>"
+
+    def html( doc: AST ): String =
+      doc match {
+        case SeqAST( s ) => s map html mkString
+        case TextAST( t ) => t
+        case ParagraphAST( contents ) => tag( "p", contents )
+        case BlockquoteAST( contents ) => tag( "blockquote", contents )
+        case HeadingAST( level, contents, Some(id) ) => tag( s"h$level", contents, "id" -> id )
+        case HeadingAST( level, contents, None ) => tag( s"h$level", contents )
+        case CodeInlineAST( c ) => leaf( "code", c )
+        case CodeBlockAST( c, highlighted, caption ) => leaf( "pre", leaf("code", c) )
+        case LinkAST( address, None, contents ) => tag( "a", contents, "href" -> address )
+        case LinkAST( address, Some(title), contents ) => tag( "a", contents, "href" -> address, "title" -> title )
+        case ListItemAST( contents ) => tag( "li", contents )
+        case UnorderedListAST( contents ) => tag( "ul", contents )
+        case OrderedListAST( contents ) => tag( "ol", contents )
+        case ImageAST( address, None, text ) => leaf( "img", text, "src" -> address )
+        case ImageAST( address, Some(title), text ) => leaf( "img", text, "src" -> address, "title" -> title )
+        case EmphasisAST( contents ) => tag( "em", contents )
+        case StrongAST( contents ) => tag( "strong", contents )
+        case StrikethroughAST( contents ) => tag( "del", contents )
+        case BreakAST => "<br/>"
+        case RuleAST => "<hr/>"
+        case TableCellAST( align, contents ) => tag( "td", contents, "align" -> align )
+        case TableHeadRowAST( contents ) => tag( "th", contents )
+        case TableBodyRowAST( contents ) => tag( "tr", contents )
+        case TableHeadAST( contents ) => tag( "thead", contents )
+        case TableBodyAST( contents ) => tag( "tbody", contents )
+        case TableAST( contents ) => tag( "table", contents )
+        case EntityAST( entity, _ ) => s"&$entity;"
+      }
+
+    html( doc )
+  }
+
 }
