@@ -443,6 +443,13 @@ object Markdown
 		lines.reduce( _ + "\n" + _ )
 	}
 
+  def asHTML( s: String, features: String* ) = {
+    val doc = apply( s, features: _* )
+
+    Util.headingIds( doc )
+    doc.toString
+  }
+
 	def apply( s: String, features: String* ): AST = (new Markdown( features: _* )).parseDocument( s )
 }
 
