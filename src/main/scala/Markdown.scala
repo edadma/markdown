@@ -443,68 +443,10 @@ object Markdown
 		lines.reduce( _ + "\n" + _ )
 	}
 
-	def asXML( s: String, features: String* ): AST = {
-		val doc = (new Markdown( features: _* )).parseDocument( s )
-
-//    val idmap = new mutable.HashMap[String, Int]
-//    val idset = new mutable.HashSet[String]
-//    val rule1 = new RewriteRule {
-//      def id( s: String ) = {
-//        val ids =
-//          if (s isEmpty)
-//            "_"
-//          else
-//            s.replace( ' ', '_' ).replace( '\t', '_' ).replace( '\r', '_' ).replace( '\n', '_' )
-//
-//        if (idset(ids))
-//          idmap get ids match {
-//            case None =>
-//              val rid = s"$ids-1"
-//
-//              idset += rid
-//              idmap(ids) = 2
-//              rid
-//            case Some( count ) =>
-//              val rid = s"$ids-$count"
-//
-//              idset += rid
-//              idmap(ids) = count + 1
-//              rid
-//          }
-//        else {
-//          idset += ids
-//          idmap(ids) = 1
-//          ids
-//        }
-//      }
-//
-//      def text( n: AST ): String = {
-//        n match {
-//          case SeqAST( ns ) => ns map text mkString
-//          case TextAST( t ) => t
-//          case e => e.elements map text mkString
-//        }
-//      }
-
-//      override def transform(n: Node) = n match {
-//        case e @ ((<h1>{_*}</h1>)|(<h2>{_*}</h2>)|(<h3>{_*}</h3>)|(<h4>{_*}</h4>)|(<h5>{_*}</h5>)|(<h6>{_*}</h6>)) if e attribute "id" isEmpty =>
-//          e.asInstanceOf[Elem] % Attribute(null, "id", id(TextAST(e)), Null)
-//        case _ => n
-//      }
-//    }
-//
-//    val res = new RuleTransformer( rule1 ).transform( doc )
-//
-//		new SeqAST(res)
-      doc
-	}
-
-	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
+	def apply( s: String, features: String* ): AST = (new Markdown( features: _* )).parseDocument( s )
 }
 
 object GFM
 {
-	def asXML( s: String, features: String* ) = (new Markdown( ("gfm" +: features): _* )).parseDocument( s )
-	
-	def apply( s: String, features: String* ) = asXML( s, features: _* ).toString
+	def apply( s: String, features: String* ) = (new Markdown( ("gfm" +: features): _* )).parseDocument( s )
 }

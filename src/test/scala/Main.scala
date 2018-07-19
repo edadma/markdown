@@ -6,8 +6,18 @@ object Main extends App {
   val input =
     """
       |asdf
+      |====
+      |
+      |asdf
+      |====
+      |
+      |qwer
+      |====
     """.trim.stripMargin
 
-  println( Markdown(input) )
+  val res = Markdown( input )
+
+  Util.headingIds( res )
+  println( res )
 
 }
