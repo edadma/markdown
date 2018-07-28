@@ -5,16 +5,12 @@ object Main extends App {
 
   val input =
     """
-      |asdf
-      |====
+      |<=
+      |===
       |
-      |This is *too* cool.
+      |## Description
       |
-      |asdf
-      |====
-      |
-      |qwer
-      |====
+      |Tests whether one argument is less than or equal to the other.
     """.trim.stripMargin
 
   val doc = Markdown( input )

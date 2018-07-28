@@ -1,5 +1,6 @@
 //@
 package xyz.hyperreal.markdown
+
 import scala.collection.mutable
 
 
@@ -65,10 +66,28 @@ object Util {
     def leaf( tag: String, contents: String, attr: (String, String)* ) =
       s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>$contents</$tag>"
 
+    def escape( s: String ) = {
+      val buf = new StringBuilder
+
+      s foreach {
+        case '&' => buf ++= "&amp;"
+        case '<' => buf ++= "&lt;"
+        case '>' => buf ++= "&gt;"
+        case '"' => buf ++= "&quot;"
+        case '\\' => buf ++= "&bsol;"
+        case '{' => buf ++= "&lcub;"
+        case '}' => buf ++= "&rcub;"
+        case c if c > '\u007F' => buf ++= s"&#${c.toInt};"
+        case c => buf += c
+      }
+
+      buf.toString
+    }
+
     def html( doc: AST ): String =
       doc match {
         case SeqAST( s ) => s map html mkString
-        case TextAST( t ) => t
+        case TextAST( t ) => escape( t )
         case ParagraphAST( contents ) => tag( "p", contents )
         case BlockquoteAST( contents ) => tag( "blockquote", contents )
         case HeadingAST( level, contents, Some(id) ) => tag( s"h$level", contents, "id" -> id )
