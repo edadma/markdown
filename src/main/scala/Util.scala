@@ -50,6 +50,7 @@ object Util {
       ast match {
         case SeqAST( s ) => s foreach headingIds
         case h@HeadingAST( _, contents, _ ) => h.id = Some( id(text(contents)) )
+        case b: BranchAST => headingIds( b.contents )
         case _ =>
       }
     }
