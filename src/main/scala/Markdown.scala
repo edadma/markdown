@@ -112,7 +112,7 @@ class Markdown( features: String* ) extends RegexParsers
 			if (title isEmpty)
 				LinkAST( addr.toString, None, text )
 			else
-				LinkAST( addr.toString, Some(title.toString), text )
+				LinkAST( addr.toString, Some(title.get), text )
 		}) |
 		(link_inline ~ """][ \t\n]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
 		{case text ~ sep ~ id =>
@@ -123,7 +123,7 @@ class Markdown( features: String* ) extends RegexParsers
 					if (title isEmpty)
 						LinkAST( addr.toString, None, text )
 					else
-						LinkAST( addr.toString, Some(title.toString), text )
+						LinkAST( addr.toString, Some(title.get), text )
 			}
 		}) | success(TextAST( "[" )))
 	
@@ -297,19 +297,19 @@ class Markdown( features: String* ) extends RegexParsers
 				
 				TableAST(
           seq(
-            Seq( TableHeadAST( TableHeadRowAST( seq(
+            Seq( TableHeadAST( TableRowAST( seq(
               for ((i, a) <- head zip aligns)
                 yield
-                  TableCellAST( a, i )
+                  TableHeadCellAST( a, i )
               ) ) ),
             TableBodyAST( seq(
               for (i <- body)
                 yield
                   {
-                    TableBodyRowAST( seq(
+                    TableRowAST( seq(
                       for ((j, a) <- i zip aligns)
                         yield
-                          TableCellAST( a, j )
+                          TableBodyCellAST( a, j )
                     ) )
                   }
             ) )

@@ -168,37 +168,37 @@ Bang: `\!`
 Plus: `\+`
 
 Minus: `\-`
-""" ) shouldBe """<p>These should all get escaped:</p><p>Backslash: \</p><p>Backtick: `</p><p>Asterisk: *</p><p>Underscore: _</p><p>Left brace: {</p><p>Right brace: }</p><p>Left bracket: [</p><p>Right bracket: ]</p><p>Left paren: (</p><p>Right paren: )</p><p>Greater-than: &gt;</p><p>Hash: #</p><p>Period: .</p><p>Bang: !</p><p>Plus: +</p><p>Minus: -</p><p>These should not, because they occur within a code block:</p><pre><code>Backslash: \\
+""" ) shouldBe """<p>These should all get escaped:</p><p>Backslash: &bsol;</p><p>Backtick: `</p><p>Asterisk: *</p><p>Underscore: _</p><p>Left brace: &lcub;</p><p>Right brace: &rcub;</p><p>Left bracket: [</p><p>Right bracket: ]</p><p>Left paren: (</p><p>Right paren: )</p><p>Greater-than: &gt;</p><p>Hash: #</p><p>Period: .</p><p>Bang: !</p><p>Plus: +</p><p>Minus: -</p><p>These should not, because they occur within a code block:</p><pre><code>Backslash: &bsol;&bsol;
 
-Backtick: \`
+Backtick: &bsol;`
 
-Asterisk: \*
+Asterisk: &bsol;*
 
-Underscore: \_
+Underscore: &bsol;_
 
-Left brace: \{
+Left brace: &bsol;&lcub;
 
-Right brace: \}
+Right brace: &bsol;&rcub;
 
-Left bracket: \[
+Left bracket: &bsol;[
 
-Right bracket: \]
+Right bracket: &bsol;]
 
-Left paren: \(
+Left paren: &bsol;(
 
-Right paren: \)
+Right paren: &bsol;)
 
-Greater-than: \&gt;
+Greater-than: &bsol;&gt;
 
-Hash: \#
+Hash: &bsol;#
 
-Period: \.
+Period: &bsol;.
 
-Bang: \!
+Bang: &bsol;!
 
-Plus: \+
+Plus: &bsol;+
 
-Minus: \-</code></pre><p>Nor should these, which occur in code spans:</p><p>Backslash: <code>\\</code></p><p>Backtick: <code>\`</code></p><p>Asterisk: <code>\*</code></p><p>Underscore: <code>\_</code></p><p>Left brace: <code>\{</code></p><p>Right brace: <code>\}</code></p><p>Left bracket: <code>\[</code></p><p>Right bracket: <code>\]</code></p><p>Left paren: <code>\(</code></p><p>Right paren: <code>\)</code></p><p>Greater-than: <code>\&gt;</code></p><p>Hash: <code>\#</code></p><p>Period: <code>\.</code></p><p>Bang: <code>\!</code></p><p>Plus: <code>\+</code></p><p>Minus: <code>\-</code></p>"""
+Minus: &bsol;-</code></pre><p>Nor should these, which occur in code spans:</p><p>Backslash: <code>&bsol;&bsol;</code></p><p>Backtick: <code>&bsol;`</code></p><p>Asterisk: <code>&bsol;*</code></p><p>Underscore: <code>&bsol;_</code></p><p>Left brace: <code>&bsol;&lcub;</code></p><p>Right brace: <code>&bsol;&rcub;</code></p><p>Left bracket: <code>&bsol;[</code></p><p>Right bracket: <code>&bsol;]</code></p><p>Left paren: <code>&bsol;(</code></p><p>Right paren: <code>&bsol;)</code></p><p>Greater-than: <code>&bsol;&gt;</code></p><p>Hash: <code>&bsol;#</code></p><p>Period: <code>&bsol;.</code></p><p>Bang: <code>&bsol;!</code></p><p>Plus: <code>&bsol;+</code></p><p>Minus: <code>&bsol;-</code></p>"""
 	}
 	
 	"Blockquotes with code blocks" in

@@ -62,13 +62,19 @@ object Util {
     val buf = new StringBuilder
 
     def attributes( attr: Seq[(String, String)] ) =
-      attr map {case (k, v) => s"""$k="${escape( v )}""""} mkString ", "
+      attr.
+        filter {case ("align", "left") => false; case _ => true}.
+        map {case (k, v) => s"""$k="${escape( v )}""""}.
+        mkString (" ") match {
+          case "" => ""
+          case s => s" $s"
+        }
 
     def tag( tag: String, contents: AST, attr: (String, String)* ) =
-      s"<$tag${if (attr nonEmpty) " " else ""}${attributes( attr )}>${html( contents )}</$tag>"
+      s"<$tag${attributes( attr )}>${html( contents )}</$tag>"
 
     def leaf( tag: String, contents: String, attr: (String, String)* ) =
-      s"<$tag${if (attr nonEmpty) " " else ""}${attributes( attr )}>${escape( contents )}</$tag>"
+      s"<$tag${attributes( attr )}>${escape( contents )}</$tag>"
 
     def escape( s: String ) = {
       val buf = new StringBuilder
@@ -116,9 +122,9 @@ object Util {
         case StrikethroughAST( contents ) => tag( "del", contents )
         case BreakAST => "<br/>"
         case RuleAST => "<hr/>"
-        case TableCellAST( align, contents ) => tag( "td", contents, "align" -> align )
-        case TableHeadRowAST( contents ) => tag( "th", contents )
-        case TableBodyRowAST( contents ) => tag( "tr", contents )
+        case TableHeadCellAST( align, contents ) => tag( "th", contents, "align" -> align )
+        case TableBodyCellAST( align, contents ) => tag( "td", contents, "align" -> align )
+        case TableRowAST( contents ) => tag( "tr", contents )
         case TableHeadAST( contents ) => tag( "thead", contents )
         case TableBodyAST( contents ) => tag( "tbody", contents )
         case TableAST( contents ) => tag( "table", contents )
