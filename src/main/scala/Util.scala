@@ -60,11 +60,14 @@ object Util {
   def html( doc: AST, tab: Int, codeblock: (String, Option[String], Option[String]) => String = null ) = {
     val buf = new StringBuilder
 
+    def attributes( attr: Seq[(String, String)] ) =
+      attr map {case (k, v) => s"""$k="${escape( v )}""""} mkString ", "
+
     def tag( tag: String, contents: AST, attr: (String, String)* ) =
-      s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>${html( contents )}</$tag>"
+      s"<$tag${if (attr nonEmpty) " " else ""}${attributes( attr )}>${html( contents )}</$tag>"
 
     def leaf( tag: String, contents: String, attr: (String, String)* ) =
-      s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>${escape( contents )}</$tag>"
+      s"<$tag${if (attr nonEmpty) " " else ""}${attributes( attr )}>${escape( contents )}</$tag>"
 
     def escape( s: String ) = {
       val buf = new StringBuilder
