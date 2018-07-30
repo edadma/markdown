@@ -4,20 +4,20 @@ import org.scalatest._
 import prop.PropertyChecks
 
 
-class MarkdownTests extends FreeSpec with PropertyChecks with Matchers
+class MarkdownTests extends FreeSpec with PropertyChecks with Matchers with Tests
 {
 /*
 
 	"NAME" in
 	{
-		Markdown(
+		markdown(
 """
 """ ) shouldBe """OUTPUT"""
 	}
 */
 	"Amps and angle encoding" in
 	{
-		Markdown( """
+		markdown( """
 AT&T has an ampersand in their name.
 
 AT&amp;T is another way to write it.
@@ -44,7 +44,7 @@ Here's an inline [link](</script?foo=1&bar=2>).
 	
 	"Auto links" in
 	{
-		Markdown( """
+		markdown( """
 Link: <http://example.com/>.
 
 With an ampersand: <http://example.com/?foo=1&bar=2>
@@ -63,7 +63,7 @@ Auto-links should not occur here: `<http://example.com/>`
 	
 	"Backslash escapes" in
 	{
-		Markdown( """
+		markdown( """
 These should all get escaped:
 
 Backslash: \\
@@ -203,7 +203,7 @@ Minus: \-</code></pre><p>Nor should these, which occur in code spans:</p><p>Back
 	
 	"Blockquotes with code blocks" in
 	{
-		Markdown(
+		markdown(
 """
 > Example:
 > 
@@ -216,16 +216,16 @@ Minus: \-</code></pre><p>Nor should these, which occur in code spans:</p><p>Back
 >     sub status {
 >         return "working";
 >     }
-""" ) shouldBe """<blockquote><p>Example:</p><pre><code>sub status {
+""" ) shouldBe """<blockquote><p>Example:</p><pre><code>sub status &lcub;
     print &quot;working&quot;;
-}</code></pre><p>Or:</p><pre><code>sub status {
+&rcub;</code></pre><p>Or:</p><pre><code>sub status &lcub;
     return &quot;working&quot;;
-}</code></pre></blockquote>"""
+&rcub;</code></pre></blockquote>"""
 	}
 
 	"Hard-wrapped paragraphs with list-like lines" in
 	{
-		Markdown(
+		markdown(
 """
 In Markdown 1.0.0 and earlier. Version
 8. This line turns into a list item.
@@ -245,7 +245,7 @@ list item.</p><p>Here's one with a bullet.
 
 	"Horizontal rules" in
 	{
-		Markdown(
+		markdown(
 """
 Dashes:
 
@@ -319,7 +319,7 @@ _ _ _
 
     "Inline HTML (Advanced)" in
     {
-        Markdown(
+        markdown(
 """
 Simple block on one line:
 
@@ -347,7 +347,7 @@ foo
 
     "Inline HTML (Simple)" in
     {
-        Markdown(
+        markdown(
 """
 Here's a simple block:
 
@@ -426,7 +426,7 @@ Hr's:
 
     "Inline HTML comments" in
     {
-        Markdown(
+        markdown(
 """
 Paragraph one.
 
@@ -446,7 +446,7 @@ The end.
 
 	"Links, inline style" in
 	{
-		Markdown(
+		markdown(
 """
 Just a [URL](/url/).
 
@@ -462,7 +462,7 @@ Just a [URL](/url/).
 
 	"Links, reference style" in
 	{
-		Markdown(
+		markdown(
 """
 Foo [bar] [1].
 
@@ -500,7 +500,7 @@ Indented [four][] times.
 
 	"Literal quotes in titles" in
 	{
-		Markdown(
+		markdown(
 """
 Foo [bar][].
 
@@ -513,7 +513,7 @@ Foo [bar](/url/ "Title with "quotes" inside").
 
     "Markdown Documentation - Basics" in
     {
-        Markdown(
+        markdown(
 """
 Markdown: Basics
 ================
@@ -968,7 +968,7 @@ you've got to put paragraph tags in your blockquotes:&lt;/p&gt;
 
 	"Nested blockquotes" in
 	{
-		Markdown(
+		markdown(
 """
 > foo
 >
@@ -980,7 +980,7 @@ you've got to put paragraph tags in your blockquotes:&lt;/p&gt;
 
 	"Strong and em together" in
 	{
-		Markdown(
+		markdown(
 """
 ***This is strong and em.***
 
@@ -994,7 +994,7 @@ So is ___this___ word.
 	
 	"Tabs" in
 	{
-		Markdown( """
+		markdown( """
 +	this is a list item
 	indented with tabs
 
@@ -1027,7 +1027,7 @@ indented with spaces</li></ul><p>Code:</p><pre><code>this code block is indented
 	
 	"Tidyness" in
 	{
-		Markdown( """
+		markdown( """
 > A list within a blockquote:
 > 
 > *	asterisk 1

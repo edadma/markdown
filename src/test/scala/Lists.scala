@@ -4,12 +4,12 @@ import org.scalatest._
 import prop.PropertyChecks
 
 
-class Lists extends FreeSpec with PropertyChecks with Matchers
+class Lists extends FreeSpec with PropertyChecks with Matchers with Tests
 {
 	"unordered" in
 	{
-		Markdown( "* one" ) shouldBe "<ul><li>one</li></ul>"
-		Markdown( """
+		markdown( "* one" ) shouldBe "<ul><li>one</li></ul>"
+		markdown( """
 			|*   A list item.
 			|
 			|    With multiple paragraphs.
@@ -21,7 +21,7 @@ class Lists extends FreeSpec with PropertyChecks with Matchers
 	
 	"mixed" in
 	{
-		Markdown( """
+		markdown( """
 			|*   Abacus
 			|    * answer
 			|*   Bubbles

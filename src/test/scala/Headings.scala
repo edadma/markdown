@@ -4,27 +4,27 @@ import org.scalatest._
 import prop.PropertyChecks
 
 
-class Headings extends FreeSpec with PropertyChecks with Matchers
+class Headings extends FreeSpec with PropertyChecks with Matchers with Tests
 {
 	"underline" in
 	{
-		Markdown( """
+		markdown( """
 			|Heading Text
 			|============
 			|text
 			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
-		Markdown( """
+		markdown( """
 			|Heading Text
 			|============
 			|
 			|text
 			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
-		Markdown( """
+		markdown( """
 			|Heading Text
 			|------------
 			|text
 			|""".stripMargin ) shouldBe """<h2 id="Heading_Text">Heading Text</h2><p>text</p>"""
-		Markdown( """
+		markdown( """
 			|Heading Text
 			|------------
 			|
@@ -34,20 +34,20 @@ class Headings extends FreeSpec with PropertyChecks with Matchers
 	
 	"hash" in
 	{
-		Markdown( """
+		markdown( """
 			|#Heading Text
 			|text
 			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
-		Markdown( """
+		markdown( """
 			|#Heading Text
 			|
 			|text
 			|""".stripMargin ) shouldBe """<h1 id="Heading_Text">Heading Text</h1><p>text</p>"""
-		Markdown( """
+		markdown( """
 			|##Heading Text
 			|text
 			|""".stripMargin ) shouldBe """<h2 id="Heading_Text">Heading Text</h2><p>text</p>"""
-		Markdown( """
+		markdown( """
 			|##Heading Text
 			|
 			|text

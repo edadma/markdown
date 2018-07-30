@@ -4,11 +4,11 @@ import org.scalatest._
 import prop.PropertyChecks
 
 
-class Tables extends FreeSpec with PropertyChecks with Matchers
+class Tables extends FreeSpec with PropertyChecks with Matchers with Tests
 {
 	"mixed" in
 	{
-		Markdown( """
+		markdown( """
 			|Colons can be used to align columns.
 			|
 			|| Tables        | Are           | Cool  |

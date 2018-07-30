@@ -4,11 +4,11 @@ import org.scalatest._
 import prop.PropertyChecks
 
 
-class Combinations extends FreeSpec with PropertyChecks with Matchers
+class Combinations extends FreeSpec with PropertyChecks with Matchers with Tests
 {
 	"examples" in
 	{
-		Markdown( """
+		markdown( """
 			|> ## This is a header.
 			|> 
 			|> 1.   This is the first list item.

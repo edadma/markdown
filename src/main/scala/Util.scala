@@ -64,7 +64,7 @@ object Util {
       s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>${html( contents )}</$tag>"
 
     def leaf( tag: String, contents: String, attr: (String, String)* ) =
-      s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>$contents</$tag>"
+      s"<$tag${if (attr nonEmpty) " " else ""}${attr map {case (k, v) => s"""$k="$v""""} mkString ", "}>${escape( contents )}</$tag>"
 
     def escape( s: String ) = {
       val buf = new StringBuilder
@@ -94,10 +94,12 @@ object Util {
         case HeadingAST( level, contents, None ) => tag( s"h$level", contents )
         case CodeInlineAST( c ) => leaf( "code", c )
         case CodeBlockAST( c, highlighted, caption ) =>
+          val escaped = escape( c )
+
           if (codeblock eq null)
-            s"<pre><code>$c</code></pre>"
+            s"<pre><code>$escaped</code></pre>"
           else
-            codeblock( c, highlighted, caption )
+            codeblock( escaped, highlighted, caption )
         case LinkAST( address, None, contents ) => tag( "a", contents, "href" -> address )
         case LinkAST( address, Some(title), contents ) => tag( "a", contents, "href" -> address, "title" -> title )
         case ListItemAST( contents ) => tag( "li", contents )
