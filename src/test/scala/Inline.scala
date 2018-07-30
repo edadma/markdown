@@ -27,7 +27,7 @@ class Inline extends FreeSpec with PropertyChecks with Matchers with Tests
 	
 	"escapes" in
 	{
-		markdown( """\\ is a backslash""" ) shouldBe """<p>\ is a backslash</p>"""
+		markdown( """\\ is a backslash""" ) shouldBe """<p>&bsol; is a backslash</p>"""
 		markdown( """\` is a backtick""" ) shouldBe """<p>` is a backtick</p>"""
 		markdown( """\* is an asterisk""" ) shouldBe """<p>* is an asterisk</p>"""
 		markdown( """\_ is an underscore""" ) shouldBe """<p>_ is an underscore</p>"""
