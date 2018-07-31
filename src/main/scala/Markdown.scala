@@ -115,18 +115,18 @@ class Markdown( features: String* ) extends RegexParsers
 				LinkAST( addr.toString, Some(title.get), text )
 		}) |
 		(link_inline ~ """][ \t\n]*\[""".r ~ """[^ \t\]]*""".r <~ "]" ^^
-		{case text ~ sep ~ id =>
-			ref( if (id isEmpty) text.toString else id ) match
+		{case txt ~ sep ~ id =>
+			ref( if (id isEmpty) Util.text( txt ) else id ) match
 			{
-				case None => TextAST( "[" + text + sep + id + "]" )
+				case None => TextAST( "[" + txt + sep + id + "]" )
 				case Some((addr, title)) =>
 					if (title isEmpty)
-						LinkAST( addr.toString, None, text )
+						LinkAST( addr.toString, None, txt )
 					else
-						LinkAST( addr.toString, Some(title.get), text )
+						LinkAST( addr.toString, Some(title.get), txt )
 			}
 		}) | success(TextAST( "[" )))
-	
+
 	def image: Parser[AST] = "!" ~> ("[" ~> ("[^\\]]*".r ~ """][ \t]*\(""".r ~ """[^ )]+""".r ~ "[ ]*".r ~ opt("\"" ~> """[^"\n]+""".r <~ "\"") <~ """[ ]*\)""".r ^^
 		{case alt ~ _ ~ addr ~ _ ~ title =>
       ImageAST( addr, title, alt )
