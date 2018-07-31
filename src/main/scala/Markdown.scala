@@ -153,7 +153,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def strikethrough = "~~" ~> (not(space) ~> strikethrough_inline <~ "~~" ^^ { t => StrikethroughAST( t )} | success(TextAST("~~")))
 
-	def inline_no_em_no_strong: Parser[AST] = double_code | code | image | link | underscore_word | autolink | strikethrough | space/* | xml*/ | entity | plain
+	def inline_no_em_no_strong: Parser[AST] = double_code | code | image | link | underscore_word | autolink | strikethrough | space | xml | entity | plain
 	
 	def inline_no_em_no_strong_allow( allow: String ) = inline_no_em_no_strong | text( allow )
 
@@ -350,7 +350,7 @@ class Markdown( features: String* ) extends RegexParsers
 
 	def quote =
 		quote_prefix ~>
-			rep1sep(("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(quote_prefix) | success("")) ^^ {case c ~ s => c + s}), quote_prefix) ^^
+			rep1sep("""[^\n]*""".r ~ ("""\n([ \t]*\n)*""".r <~ guard(quote_prefix) | success("")) ^^ {case c ~ s => c + s}, quote_prefix) ^^
 				{ es =>
 					BlockquoteAST( parseRule( document, es.reduce(_ + _) ) )
 				}
