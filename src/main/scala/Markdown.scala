@@ -226,10 +226,10 @@ class Markdown( features: String* ) extends RegexParsers
 			inline_element) ^^ seq
 			
 	def paragraph = 
-// 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
-// 			{p => <p>{parseRule( paragraph_inline_element, p )}</p>}
-		rep1sep("""[ ]{0,3}""".r ~> """.+""".r, """\n(?!\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z)"""r) <~ " *".r ^^
-			{p => ParagraphAST( parseRule( paragraph_inline_element, p.reduce(_ + "\n" + _) ) )}
+ 		"""[ ]{0,3}""".r ~> """(?:.|\n)+?(?= *(?:\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z))""".r <~ " *".r ^^
+ 			{p => ParagraphAST( {parseRule( paragraph_inline_element, p )} )}
+//		rep1sep("""[ ]{0,3}""".r ~> """.+""".r, """\n(?!\n(?:[ \t]*(?:\n|\z)|#|[ ]{0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})|```)|\z)"""r) <~ " *".r ^^
+//			{p => ParagraphAST( parseRule( paragraph_inline_element, p.reduce(_ + "\n" + _) ) )}
 
 	def preformated_prefix = """[ ]{4}|[ ]{0,3}\t"""r
 
@@ -377,7 +377,7 @@ class Markdown( features: String* ) extends RegexParsers
 	
 	def end_block = """\n([ \t]*\n)*|\n?\z"""r
 	
-	def block: Parser[AST] = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | /*xml |*/ paragraph) <~ end_block //todo: xml
+	def block: Parser[AST] = (comment | rule | ul | ol | quote | table | heading1 | heading2 | preformated | reference | triple_code | xml | paragraph) <~ end_block
 
   def seq( s: Seq[AST] ) =
     if (s.length == 1)
@@ -407,7 +407,7 @@ class Markdown( features: String* ) extends RegexParsers
 		refmap.clear
 		
 	val result = parseRule( document, s1 )
-	
+
 		if (pass2)
 			parseRule( document, s1 )
 		else
