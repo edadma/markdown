@@ -6,15 +6,6 @@ import prop.PropertyChecks
 
 class MarkdownTests extends FreeSpec with PropertyChecks with Matchers with Tests
 {
-/*
-
-	"NAME" in
-	{
-		markdown(
-"""
-""" ) shouldBe """OUTPUT"""
-	}
-*/
 	"Amps and angle encoding" in
 	{
 		markdown( """
@@ -825,11 +816,11 @@ Output:
     &lt;/blockquote&gt;
     </code></pre>
 """ ) shouldBe """<h1 id="Markdown:_Basics">Markdown: Basics</h1><ul id="ProjectSubmenu">
-    <li><a title="Markdown Project Page" href="/projects/markdown/">Main</a></li>
-    <li><a title="Markdown Basics" class="selected">Basics</a></li>
-    <li><a title="Markdown Syntax Documentation" href="/projects/markdown/syntax">Syntax</a></li>
-    <li><a title="Pricing and License Information" href="/projects/markdown/license">License</a></li>
-    <li><a title="Online Markdown Web Form" href="/projects/markdown/dingus">Dingus</a></li>
+    <li><a href="/projects/markdown/" title="Markdown Project Page">Main</a></li>
+    <li><a class="selected" title="Markdown Basics">Basics</a></li>
+    <li><a href="/projects/markdown/syntax" title="Markdown Syntax Documentation">Syntax</a></li>
+    <li><a href="/projects/markdown/license" title="Pricing and License Information">License</a></li>
+    <li><a href="/projects/markdown/dingus" title="Online Markdown Web Form">Dingus</a></li>
 </ul><h2 id="Getting_the_Gist_of_Markdown's_Formatting_Syntax">Getting the Gist of Markdown's Formatting Syntax</h2><p>This page offers a brief overview of what it's like to use Markdown.
 The <a href="/projects/markdown/syntax" title="Markdown Syntax">syntax page</a> provides complete, detailed documentation for
 every feature, but Markdown should be very easy to pick up simply by
