@@ -73,6 +73,15 @@ object Util {
     def tag( tag: String, contents: AST, attr: (String, String)* ) =
       s"<$tag${attributes( attr )}>${html( contents )}</$tag>"
 
+    def optionalTag( tag: String, contents: AST, attr: (String, String)* ) = {
+      val c = html( contents )
+
+      if (c nonEmpty)
+        s"<$tag${attributes( attr )}>$c</$tag>"
+      else
+        ""
+    }
+
     def leaf( tag: String, contents: String, attr: (String, String)* ) =
       s"<$tag${attributes( attr )}>${escape( contents )}</$tag>"
 
@@ -98,7 +107,8 @@ object Util {
       doc match {
         case SeqAST( s ) => s map html mkString
         case TextAST( t ) => escape( t )
-        case ParagraphAST( contents ) => tag( "p", contents )
+        case RawAST( t ) => t
+        case ParagraphAST( contents ) => optionalTag( "p", contents )
         case BlockquoteAST( contents ) => tag( "blockquote", contents )
         case HeadingAST( level, contents, Some(id) ) => tag( s"h$level", contents, "id" -> id )
         case HeadingAST( level, contents, None ) => tag( s"h$level", contents )

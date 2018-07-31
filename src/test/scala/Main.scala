@@ -5,9 +5,11 @@ object Main extends App {
 
   val input =
     """
-      |Foo [bar][].
+      |Here's a simple block:
       |
-      |[bar]: /url/ "Title with "quotes" inside"
+      |<div>
+      |    foo
+      |</div>
     """.trim.stripMargin
 
   val doc = Markdown( input )

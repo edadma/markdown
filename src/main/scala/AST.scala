@@ -33,6 +33,7 @@ case class HeadingAST( level: Int, contents: AST, var id: Option[String] = None 
 case class CodeInlineAST( text: String ) extends LeafAST
 case class CodeBlockAST( text: String, highlighted: Option[String], caption: Option[String] ) extends LeafAST
 case class TextAST( text: String ) extends LeafAST
+case class RawAST( text: String ) extends LeafAST
 case class LinkAST( address: String, title: Option[String], contents: AST ) extends BranchAST
 case class ListItemAST( contents: AST ) extends BranchAST
 case class UnorderedListAST( contents: AST ) extends BranchAST

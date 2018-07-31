@@ -341,9 +341,9 @@ class Markdown( features: String* ) extends RegexParsers
 	def xml = xml_string ^^
 		{s =>
 			if (s startsWith "<!--")
-				TextAST( "" )
+				RawAST( "" )
 			else
-				Try( {/*println( "===\n" + s + "\n===" ); */XML.loadString(s)} ).getOrElse( TextAST(s) )
+				RawAST( s )
 		}
 		
 	def quote_prefix = """[ ]{0,3}> ?"""r
