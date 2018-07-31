@@ -118,7 +118,7 @@ class Markdown( features: String* ) extends RegexParsers
 		{case txt ~ sep ~ id =>
 			ref( if (id isEmpty) Util.text( txt ) else id ) match
 			{
-				case None => TextAST( "[" + txt + sep + id + "]" )
+				case None => TextAST( "[" + Util.text(txt) + sep + id + "]" )
 				case Some((addr, title)) =>
 					if (title isEmpty)
 						LinkAST( addr.toString, None, txt )
