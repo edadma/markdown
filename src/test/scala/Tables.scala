@@ -1,10 +1,10 @@
 package xyz.hyperreal.markdown
 
 import org.scalatest._
-import prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
-class Tables extends FreeSpec with PropertyChecks with Matchers with Tests
+class Tables extends FreeSpec with ScalaCheckPropertyChecks with Matchers with Tests
 {
 	"mixed" in
 	{

@@ -1,10 +1,10 @@
 package xyz.hyperreal.markdown
 
 import org.scalatest._
-import prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
-class Emphasis extends FreeSpec with PropertyChecks with Matchers with Tests
+class Emphasis extends FreeSpec with ScalaCheckPropertyChecks with Matchers with Tests
 {
 	"italic" in
 	{

@@ -1,10 +1,10 @@
 package xyz.hyperreal.markdown
 
 import org.scalatest._
-import prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
-class Lists extends FreeSpec with PropertyChecks with Matchers with Tests
+class Lists extends FreeSpec with ScalaCheckPropertyChecks with Matchers with Tests
 {
 	"unordered" in
 	{

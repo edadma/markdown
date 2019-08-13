@@ -1,10 +1,10 @@
 package xyz.hyperreal.markdown
 
 import org.scalatest._
-import prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
-class Inline extends FreeSpec with PropertyChecks with Matchers with Tests
+class Inline extends FreeSpec with ScalaCheckPropertyChecks with Matchers with Tests
 {
 	"autolink" in
 	{
