@@ -487,6 +487,51 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
   }
 
+  def handleRawHTML(): Unit = {
+    val startPos = pos
+    pos += 1 // Skip the opening <
+
+    // Check if this is a valid HTML tag start
+    if (
+      pos < cursors.size &&
+      (cursors(pos).char.isLetter ||
+        cursors(pos).char == '/' ||
+        cursors(pos).char == '!' ||
+        cursors(pos).char == '?' ||
+        cursors(pos).char == '%')
+    ) {
+
+      var depth  = 1
+      var tagEnd = pos
+
+      // Find the closing >
+      while (pos < cursors.size && depth > 0) {
+        if (cursors(pos).char == '<') depth += 1
+        if (cursors(pos).char == '>') depth -= 1
+
+        if (depth == 0) {
+          tagEnd = pos
+          pos += 1   // Include the >
+          depth = -1 // Signal successful parsing
+        } else {
+          pos += 1
+        }
+      }
+
+      if (depth == -1) {
+        // Successfully parsed HTML tag
+        val htmlContent = cursors.slice(startPos, pos).map(_.char).mkString
+        addInline(RawHTML(htmlContent))
+      } else {
+        // Incomplete tag, treat as plain text
+        handlePlainText(startPos)
+      }
+    } else {
+      // Not a valid HTML tag start
+      handlePlainText(startPos)
+    }
+  }
+
   // Main loop - process each cursor
   while (pos < cursors.size) {
     val cursor = cursors(pos)
@@ -504,9 +549,21 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       handleLineBreak()
     } else if (
       cursor.char == '<' && pos + 1 < cursors.size &&
-      (cursors(pos + 1).char.isLetterOrDigit || cursors(pos + 1).char == '/')
+      (
+        // Scheme-based URLs
+        (cursors(pos + 1).char.isLetter &&
+          cursors.slice(pos + 1, pos + 9).map(_.char).mkString.contains("://")) ||
+
+          // Email addresses
+          (cursors(pos + 1).char.isLetter &&
+            cursors.slice(pos + 1, pos + 20)
+              .takeWhile(_.char != '>')
+              .count(_.char == '@') == 1)
+      )
     ) {
       handleAutoLink()
+    } else if (cursor.char == '<') {
+      handleRawHTML()
     } else {
       // Plain text - collect consecutive text characters
       val (textContent, newPos) = collectText(pos)
