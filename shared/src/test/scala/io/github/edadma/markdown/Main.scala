@@ -4,7 +4,7 @@ import pprint.pprintln
 
 @main def run(): Unit =
   val input =
-    "Line one\\\nLine two\\\nLine three"
+    "<https://example.com>"
 //    """l` ine ` 1
 //      |line 2
 //      |""".stripMargin
