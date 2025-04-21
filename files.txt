@@ -4,6 +4,10 @@
 ./shared/src/main/scala/io/github/edadma/markdown
 Cursor.scala
 InputReader.scala
+Node.scala
+parseDocument.scala
+parseInline.scala
+renderToHTML.scala
 
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
