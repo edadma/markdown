@@ -12,3 +12,5 @@ case class ThematicBreak()                                          extends Bloc
 
 sealed trait Inline              extends Node
 case class Text(content: String) extends Inline
+case class SoftLineBreak()       extends Inline
+case class HardLineBreak()       extends Inline

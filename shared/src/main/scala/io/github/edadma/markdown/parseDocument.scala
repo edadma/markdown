@@ -78,9 +78,13 @@ object ParagraphBlockParser extends BlockParser {
       paragraphLines.length // The paragraph runs to the end
     }
 
-    // Convert the lines to a text block
-    val text      = paragraphLines.flatten.map(_.char).mkString
-    val paragraph = Paragraph(List(Text(text)))
+    // Collect all cursors from the paragraph lines and convert to LazyList
+    // This fixes the type mismatch
+    val paragraphCursors = LazyList.from(paragraphLines.flatten)
+
+    // Parse the inline content
+    val inlines   = parseInline(paragraphCursors)
+    val paragraph = Paragraph(inlines)
 
     (paragraph, linesConsumed)
   }
