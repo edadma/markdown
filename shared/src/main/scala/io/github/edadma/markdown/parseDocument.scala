@@ -1,3 +1,4 @@
+// File: parseDocument.scala
 package io.github.edadma.markdown
 
 def parseDocument(stream: LazyList[Cursor]): Document = {
@@ -27,9 +28,12 @@ private def collectParagraphs(stream: LazyList[Cursor]): List[LazyList[Cursor]] 
   var currentParagraph: List[LazyList[Cursor]] = Nil
 
   for (line <- lines) {
+    // Debug the line content
+    // println(s"Line: '${line.map(_.char).mkString}'")
+    // println(s"Is blank: ${isBlankLine(line)}")
+
     if (isBlankLine(line) && currentParagraph.nonEmpty) {
       // End of paragraph - concatenate the cursor lines
-      // Convert the list of cursors to a LazyList
       val paragraphCursors = currentParagraph.reverse.foldLeft(LazyList.empty[Cursor])(_ ++ _)
       paragraphs = paragraphCursors :: paragraphs
       currentParagraph = Nil
@@ -37,11 +41,11 @@ private def collectParagraphs(stream: LazyList[Cursor]): List[LazyList[Cursor]] 
       // Continue paragraph
       currentParagraph = line :: currentParagraph
     }
+    // Skip blank lines that don't end paragraphs
   }
 
   // Add final paragraph if there is one
   if (currentParagraph.nonEmpty) {
-    // Convert the list of cursors to a LazyList
     val paragraphCursors = currentParagraph.reverse.foldLeft(LazyList.empty[Cursor])(_ ++ _)
     paragraphs = paragraphCursors :: paragraphs
   }
@@ -50,7 +54,9 @@ private def collectParagraphs(stream: LazyList[Cursor]): List[LazyList[Cursor]] 
 }
 
 private def isBlankLine(line: LazyList[Cursor]): Boolean = {
-  line.forall(c => c.char == ' ' || c.char == '\t')
+  // A blank line contains only whitespace or is empty (excluding newline)
+  val contentChars = line.filter(_.char != '\n')
+  contentChars.isEmpty || contentChars.forall(c => c.char == ' ' || c.char == '\t')
 }
 
 private def groupIntoLines(stream: LazyList[Cursor]): List[LazyList[Cursor]] = {
