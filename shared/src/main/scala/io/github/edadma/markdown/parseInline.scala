@@ -358,10 +358,33 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
   }
 
+  // Main function for text collection
+  def collectText(startPos: Int): (String, Int) = {
+    var textEnd            = startPos
+    var continueCollecting = true
+
+    // Find next special character
+    while (textEnd < cursors.size && continueCollecting) {
+      val c = cursors(textEnd)
+      if ((c.char == '`' || c.char == '[' || c.char == '!' || c.char == '\n') && !c.isLiteral) {
+        continueCollecting = false
+      } else {
+        textEnd += 1
+      }
+    }
+
+    // Extract the text content
+    val rawContent = cursors.slice(startPos, textEnd).map(_.char).mkString
+
+    // Return the content and updated position
+    (rawContent, textEnd)
+  }
+
   // Handle line breaks
-  def handleLineBreak(cursor: Cursor): Unit = {
+  def handleLineBreak(): Unit = {
     // Check if it's a hard line break (preceded by two or more spaces)
-    var isHardBreak = false
+    var isHardBreak  = false
+    var spacesToTrim = 0
 
     // Check for trailing spaces (>=2)
     if (pos > 0) {
@@ -372,7 +395,19 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
         i -= 1
       }
 
-      isHardBreak = spacesCount >= 2
+      if (spacesCount >= 2) {
+        isHardBreak = true
+        spacesToTrim = spacesCount
+
+        // If we have trailing spaces, we need to remove them from the previous text node
+        if (spacesToTrim > 0 && inlines.nonEmpty && inlines.head.isInstanceOf[Text]) {
+          val textNode   = inlines.head.asInstanceOf[Text]
+          val newContent = textNode.content.dropRight(spacesToTrim)
+          // Replace the text node with a trimmed version
+          inlines = inlines.tail
+          inlines = Text(newContent) :: inlines
+        }
+      }
     }
 
     // If previous cursor was a backslash, we need a hard break
@@ -402,29 +437,14 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     ) {
       handleImage()
     } else if (cursor.char == '\n') {
-      handleLineBreak(cursor)
+      handleLineBreak()
     } else {
       // Plain text - collect consecutive text characters
-      val startPos           = pos
-      var textEnd            = pos + 1
-      var continueCollecting = true
-
-      // Find next special character
-      while (textEnd < cursors.size && continueCollecting) {
-        val c = cursors(textEnd)
-        if ((c.char == '`' || c.char == '[' || c.char == '!' || c.char == '\n') && !c.isLiteral) {
-          continueCollecting = false
-        } else {
-          textEnd += 1
-        }
-      }
-
-      // Create text node
-      val textContent = cursors.slice(startPos, textEnd).map(_.char).mkString
+      val (textContent, newPos) = collectText(pos)
       addInline(Text(textContent))
 
       // Update position (subtract 1 because loop will increment)
-      pos = textEnd - 1
+      pos = newPos - 1
     }
 
     pos += 1
