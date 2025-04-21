@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://spec.commonmark.org/0.31.2/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>CommonMark Spec</title>
+<style type="text/css">
+body { font-family: Helvetica, arial, freesans, clean, sans-serif;
+    line-height: 1.4;
+    max-width: 48em;
+    margin: auto;
+    padding: 0 0.5em 4em;
+    color: #333333;
+    background-color: #ffffff;
+    font-size: 13pt;
+}
+div#TOC ul { list-style: none; }
+h1 { font-size: 140%; font-weight: bold; border-top: 1px solid gray; padding-top: 0.5em; }
+h2 { font-size: 120%; font-weight: bold; }
+h3 { font-size: 110%; font-weight: bold; }
+h4 { font-size: 100%; font-weight: bold; }
+a.definition { font-weight: bold; }
+span.space { position: relative; }
+span.number:after { content: "  " }
+span.space:after {
+  content: "·";
+  position: absolute;
+  /* create a mark that indicates a space (trick from D. Greenspan) */
+  top: 0; bottom: 7px; left: 1px; right: 1px;
+  color: #aaaaaa;
+}
+div.example { overflow: hidden; }
+p { text-align: justify; }
+pre { padding: 0.5em; margin: 0.2em 0 0.5em; font-size: 88%; }
+pre {
+ white-space: pre-wrap;       /* css-3 */
+ white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+ white-space: -pre-wrap;      /* Opera 4-6 */
+ white-space: -o-pre-wrap;    /* Opera 7 */
+ word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+code { font-family: monospace; background-color: #d3e1e4; }
+pre > code { background-color: transparent; }
+.example { font-size: 0; /* hack to get width: 50% to work on inline-block */
+           padding-bottom: 6pt; }
+.column pre  { font-size: 11pt; padding: 2pt 6pt; }
+div.examplenum { font-size: 11pt; text-align: left; margin-bottom: 10px; }
+div.column { display: inline-block; width: 50%; vertical-align: top; }
+div.example > div:nth-child(2) { clear:left; background-color: #d3e1e4; }
+div.example > div:nth-child(3) { clear:right; background-color: #c9cace; }
+#watermark {
+ position: fixed;
+ bottom: 0;
+ left: 0;
+ padding: 1em;
+ width: 100%;
+ font-size: 120%;
+ opacity: 0.7;
+ z-index: 99;
+ color: white;
+}
+#watermark a { color: white; }
+a.dingus {
+  margin-left: 1em;
+  cursor: pointer;
+  line-height: 30px;
+  padding: 4px 7px;
+  color: #ffffff;
+  background-color: #33c3f0;
+  box-shadow: 2px 2px 2px rgba(0, 0, 0, .2);
+  border-color: #4fcaef;
+  border-bottom: 2px #2a9ec1 solid;
+  border-right: 2px #2a9ec1 solid;
+}
+a.footnoteRef > sup:before {
+  content: "[";
+}
+a.footnoteRef > sup:after {
+  content: "]";
+}
+a.footnoteRef > sup {
+  vertical-align: baseline;
+  font-size: 100%;
+}
+@media print {
+  @page {
+    size: auto;
+    margin: 1.2in 1.2in 1.2in 1.2in;
+  }
+  body {
+      margin: 0;
+      line-height: 1.2;
+      font-size: 10pt;
+    }
+ .column pre  { font-size: 9pt; }
+ div.examplenum { font-size: 9pt; }
+ a.dingus { display: none; }
+}
+</style>
+<script src="./CommonMarkSpec-0.31.2_files/jquery-2.2.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  $("div.example").each(function(e) {
+    var t = $(this).find('code.language-markdown').text();
+    $(this).find('a.dingus').click(function(f) {
+      window.open('/dingus/?text=' +
+        encodeURIComponent(t.replace(/→/g,"\t")));
+    });
+  });
+  $("code.language-markdown").dblclick(function(e) { window.open('/dingus/?text=' +
+      encodeURIComponent($(this).text()));
+  });
+});
+</script>
+</head>
+<body>
+<h1 class="title">CommonMark Spec</h1>
+<div class="version">Version 0.31.2 (2024-01-28)</div>
+<div class="authors">
+    <span class="author">John MacFarlane</span>
+</div>
+<div class="license">
+<a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative
+   Commons BY-SA" style="border-width: 0;" src="./CommonMarkSpec-0.31.2_files/80x15.png"></a><br><span style="display: none;"><span xmlns:dct="https://purl.org/dc/terms/" href="https://purl.org/dc/dcmitype/Text" property="dct:title" rel="dct:type">CommonMark Spec</span> by
+   <a xmlns:cc="https://creativecommons.org/ns#" href="https://spec.commonmark.org/" property="cc:attributionName" rel="cc:attributionURL">John MacFarlane</a> is licensed under a
+   <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative
+   Commons Attribution-ShareAlike 4.0 International License</a>.</span>
+</div>
+<div id="watermark"></div>
+
+<div id="TOC">
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#introduction"><span class="number">1</span>Introduction</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#what-is-markdown-"><span class="number">1.1</span>What is Markdown?</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#why-is-a-spec-needed-"><span class="number">1.2</span>Why is a spec needed?</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#about-this-document"><span class="number">1.3</span>About this document</a></li>
+</ul>
+</li>
+<li><a href="https://spec.commonmark.org/0.31.2/#preliminaries"><span class="number">2</span>Preliminaries</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#characters-and-lines"><span class="number">2.1</span>Characters and lines</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#tabs"><span class="number">2.2</span>Tabs</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#insecure-characters"><span class="number">2.3</span>Insecure characters</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#backslash-escapes"><span class="number">2.4</span>Backslash escapes</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#entity-and-numeric-character-references"><span class="number">2.5</span>Entity and numeric character references</a></li>
+</ul>
+</li>
+<li><a href="https://spec.commonmark.org/0.31.2/#blocks-and-inlines"><span class="number">3</span>Blocks and inlines</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#precedence"><span class="number">3.1</span>Precedence</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#container-blocks-and-leaf-blocks"><span class="number">3.2</span>Container blocks and leaf blocks</a></li>
+</ul>
+</li>
+<li><a href="https://spec.commonmark.org/0.31.2/#leaf-blocks"><span class="number">4</span>Leaf blocks</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#thematic-breaks"><span class="number">4.1</span>Thematic breaks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#atx-headings"><span class="number">4.2</span>ATX headings</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#setext-headings"><span class="number">4.3</span>Setext headings</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#indented-code-blocks"><span class="number">4.4</span>Indented code blocks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#fenced-code-blocks"><span class="number">4.5</span>Fenced code blocks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#html-blocks"><span class="number">4.6</span>HTML blocks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#link-reference-definitions"><span class="number">4.7</span>Link reference definitions</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#paragraphs"><span class="number">4.8</span>Paragraphs</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#blank-lines"><span class="number">4.9</span>Blank lines</a></li>
+</ul>
+</li>
+<li><a href="https://spec.commonmark.org/0.31.2/#container-blocks"><span class="number">5</span>Container blocks</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#block-quotes"><span class="number">5.1</span>Block quotes</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#list-items"><span class="number">5.2</span>List items</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#lists"><span class="number">5.3</span>Lists</a></li>
+</ul>
+</li>
+<li><a href="https://spec.commonmark.org/0.31.2/#inlines"><span class="number">6</span>Inlines</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#code-spans"><span class="number">6.1</span>Code spans</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#emphasis-and-strong-emphasis"><span class="number">6.2</span>Emphasis and strong emphasis</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#links"><span class="number">6.3</span>Links</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#images"><span class="number">6.4</span>Images</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#autolinks"><span class="number">6.5</span>Autolinks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#raw-html"><span class="number">6.6</span>Raw HTML</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#hard-line-breaks"><span class="number">6.7</span>Hard line breaks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#soft-line-breaks"><span class="number">6.8</span>Soft line breaks</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#textual-content"><span class="number">6.9</span>Textual content</a></li>
+</ul>
+</li>
+<li><a href="https://spec.commonmark.org/0.31.2/#appendix-a-parsing-strategy">Appendix: A parsing strategy</a>
+<ul>
+<li><a href="https://spec.commonmark.org/0.31.2/#overview">Overview</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#phase-1-block-structure">Phase 1: block structure</a></li>
+<li><a href="https://spec.commonmark.org/0.31.2/#phase-2-inline-structure">Phase 2: inline structure</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+
+<h1 id="introduction" class="definition">
+<span class="number">1</span>Introduction
+</h1>
+<h2 id="what-is-markdown-" class="definition">
+<span class="number">1.1</span>What is Markdown?
+</h2>
+<p>Markdown is a plain text format for writing structured documents,
+based on conventions for indicating formatting in email
+and usenet posts.  It was developed by John Gruber (with
+help from Aaron Swartz) and released in 2004 in the form of a
+<a href="https://daringfireball.net/projects/markdown/syntax">syntax description</a>
+and a Perl script (<code>Markdown.pl</code>) for converting Markdown to
+HTML.  In the next decade, dozens of implementations were
+developed in many languages.  Some extended the original
+Markdown syntax with conventions for footnotes, tables, and
+other document elements.  Some allowed Markdown documents to be
+rendered in formats other than HTML.  Websites like Reddit,
+StackOverflow, and GitHub had millions of people using Markdown.
+And Markdown started to be used beyond the web, to author books,
+articles, slide shows, letters, and lecture notes.</p>
+<p>What distinguishes Markdown from many other lightweight markup
+syntaxes, which are often easier to write, is its readability.
+As Gruber writes:</p>
+<blockquote>
+<p>The overriding design goal for Markdown’s formatting syntax is
+to make it as readable as possible. The idea is that a
+Markdown-formatted document should be publishable as-is, as
+plain text, without looking like it’s been marked up with tags
+or formatting instructions.
+(<a href="https://daringfireball.net/projects/markdown/">https://daringfireball.net/projects/markdown/</a>)</p>
+</blockquote>
+<p>The point can be illustrated by comparing a sample of
+<a href="https://asciidoc.org/">AsciiDoc</a> with
+an equivalent sample of Markdown.  Here is a sample of
+AsciiDoc from the AsciiDoc manual:</p>
+<pre><code>1. List item one.
++
+List item one continued with a second paragraph followed by an
+Indented block.
++
+.................
+$ ls *.sh
+$ mv *.sh ~/tmp
+.................
++
+List item continued with a third paragraph.
+
+2. List item two continued with an open block.
++
+--
+This paragraph is part of the preceding list item.
+
+a. This list is nested and does not require explicit item
+continuation.
++
+This paragraph is part of the preceding list item.
+
+b. List item b.
+
+This paragraph belongs to item two of the outer list.
+--
+</code></pre>
+<p>And here is the equivalent in Markdown:</p>
+<pre><code>1.  List item one.
+
+    List item one continued with a second paragraph followed by an
+    Indented block.
+
+        $ ls *.sh
+        $ mv *.sh ~/tmp
+
+    List item continued with a third paragraph.
+
+2.  List item two continued with an open block.
+
+    This paragraph is part of the preceding list item.
+
+    1. This list is nested and does not require explicit item continuation.
+
+       This paragraph is part of the preceding list item.
+
+    2. List item b.
+
+    This paragraph belongs to item two of the outer list.
+</code></pre>
+<p>The AsciiDoc version is, arguably, easier to write. You don’t need
+to worry about indentation.  But the Markdown version is much easier
+to read.  The nesting of list items is apparent to the eye in the
+source, not just in the processed document.</p>
+<h2 id="why-is-a-spec-needed-" class="definition">
+<span class="number">1.2</span>Why is a spec needed?
+</h2>
+<p>John Gruber’s <a href="https://daringfireball.net/projects/markdown/syntax">canonical description of Markdown’s
+syntax</a>
+does not specify the syntax unambiguously.  Here are some examples of
+questions it does not answer:</p>
+<ol>
+<li>
+<p>How much indentation is needed for a sublist?  The spec says that
+continuation paragraphs need to be indented four spaces, but is
+not fully explicit about sublists.  It is natural to think that
+they, too, must be indented four spaces, but <code>Markdown.pl</code> does
+not require that.  This is hardly a “corner case,” and divergences
+between implementations on this issue often lead to surprises for
+users in real documents. (See <a href="https://web.archive.org/web/20170611172104/http://article.gmane.org/gmane.text.markdown.general/1997">this comment by John
+Gruber</a>.)</p>
+</li>
+<li>
+<p>Is a blank line needed before a block quote or heading?
+Most implementations do not require the blank line.  However,
+this can lead to unexpected results in hard-wrapped text, and
+also to ambiguities in parsing (note that some implementations
+put the heading inside the blockquote, while others do not).
+(John Gruber has also spoken <a href="https://web.archive.org/web/20170611172104/http://article.gmane.org/gmane.text.markdown.general/2146">in favor of requiring the blank
+lines</a>.)</p>
+</li>
+<li>
+<p>Is a blank line needed before an indented code block?
+(<code>Markdown.pl</code> requires it, but this is not mentioned in the
+documentation, and some implementations do not require it.)</p>
+<pre><code class="language-markdown">paragraph
+    code?
+</code></pre>
+</li>
+<li>
+<p>What is the exact rule for determining when list items get
+wrapped in <code>&lt;p&gt;</code> tags?  Can a list be partially “loose” and partially
+“tight”?  What should we do with a list like this?</p>
+<pre><code class="language-markdown">1. one
+
+2. two
+3. three
+</code></pre>
+<p>Or this?</p>
+<pre><code class="language-markdown">1.  one
+    - a
+
+    - b
+2.  two
+</code></pre>
+<p>(There are some relevant comments by John Gruber
+<a href="https://web.archive.org/web/20170611172104/http://article.gmane.org/gmane.text.markdown.general/2554">here</a>.)</p>
+</li>
+<li>
+<p>Can list markers be indented?  Can ordered list markers be right-aligned?</p>
+<pre><code class="language-markdown"> 8. item 1
+ 9. item 2
+10. item 2a
+</code></pre>
+</li>
+<li>
+<p>Is this one list with a thematic break in its second item,
+or two lists separated by a thematic break?</p>
+<pre><code class="language-markdown">* a
+* * * * *
+* b
+</code></pre>
+</li>
+<li>
+<p>When list markers change from numbers to bullets, do we have
+two lists or one?  (The Markdown syntax description suggests two,
+but the perl scripts and many other implementations produce one.)</p>
+<pre><code class="language-markdown">1. fee
+2. fie
+-  foe
+-  fum
+</code></pre>
+</li>
+<li>
+<p>What are the precedence rules for the markers of inline structure?
+For example, is the following a valid link, or does the code span
+take precedence ?</p>
+<pre><code class="language-markdown">[a backtick (`)](/url) and [another backtick (`)](/url).
+</code></pre>
+</li>
+<li>
+<p>What are the precedence rules for markers of emphasis and strong
+emphasis?  For example, how should the following be parsed?</p>
+<pre><code class="language-markdown">*foo *bar* baz*
+</code></pre>
+</li>
+<li>
+<p>What are the precedence rules between block-level and inline-level
+structure?  For example, how should the following be parsed?</p>
+<pre><code class="language-markdown">- `a long code span can contain a hyphen like this
+  - and it can screw things up`
+</code></pre>
+</li>
+<li>
+<p>Can list items include section headings?  (<code>Markdown.pl</code> does not
+allow this, but does allow blockquotes to include headings.)</p>
+<pre><code class="language-markdown">- # Heading
+</code></pre>
+</li>
+<li>
+<p>Can list items be empty?</p>
+<pre><code class="language-markdown">* a
+*
+* b
+</code></pre>
+</li>
+<li>
+<p>Can link references be defined inside block quotes or list items?</p>
+<pre><code class="language-markdown">&gt; Blockquote [foo].
+&gt;
+&gt; [foo]: /url
+</code></pre>
+</li>
+<li>
+<p>If there are multiple definitions for the same reference, which takes
+precedence?</p>
+<pre><code class="language-markdown">[foo]: /url1
+[foo]: /url2
+
+[foo][]
+</code></pre>
+</li>
+</ol>
+<p>In the absence of a spec, early implementers consulted <code>Markdown.pl</code>
+to resolve these ambiguities.  But <code>Markdown.pl</code> was quite buggy, and
+gave manifestly bad results in many cases, so it was not a
+satisfactory replacement for a spec.</p>
+<p>Because there is no unambiguous spec, implementations have diverged
+considerably.  As a result, users are often surprised to find that
+a document that renders one way on one system (say, a GitHub wiki)
+renders differently on another (say, converting to docbook using
+pandoc).  To make matters worse, because nothing in Markdown counts
+as a “syntax error,” the divergence often isn’t discovered right away.</p>
+<h2 id="about-this-document" class="definition">
+<span class="number">1.3</span>About this document
+</h2>
+<p>This document attempts to specify Markdown syntax unambiguously.
+It contains many examples with side-by-side Markdown and
+HTML.  These are intended to double as conformance tests.  An
+accompanying script <code>spec_tests.py</code> can be used to run the tests
+against any Markdown program:</p>
+<pre><code>python test/spec_tests.py --spec spec.txt --program PROGRAM
+</code></pre>
+<p>Since this document describes how Markdown is to be parsed into
+an abstract syntax tree, it would have made sense to use an abstract
+representation of the syntax tree instead of HTML.  But HTML is capable
+of representing the structural distinctions we need to make, and the
+choice of HTML for the tests makes it possible to run the tests against
+an implementation without writing an abstract syntax tree renderer.</p>
+<p>Note that not every feature of the HTML samples is mandated by
+the spec.  For example, the spec says what counts as a link
+destination, but it doesn’t mandate that non-ASCII characters in
+the URL be percent-encoded.  To use the automatic tests,
+implementers will need to provide a renderer that conforms to
+the expectations of the spec examples (percent-encoding
+non-ASCII characters in URLs).  But a conforming implementation
+can use a different renderer and may choose not to
+percent-encode non-ASCII characters in URLs.</p>
+<p>This document is generated from a text file, <code>spec.txt</code>, written
+in Markdown with a small extension for the side-by-side tests.
+The script <code>tools/makespec.py</code> can be used to convert <code>spec.txt</code> into
+HTML or CommonMark (which can then be converted into other formats).</p>
+<p>In the examples, the <code>→</code> character is used to represent tabs.</p>
+<h1 id="preliminaries" class="definition">
+<span class="number">2</span>Preliminaries
+</h1>
+<h2 id="characters-and-lines" class="definition">
+<span class="number">2.1</span>Characters and lines
+</h2>
+<p>Any sequence of <a href="https://spec.commonmark.org/0.31.2/#character">characters</a> is a valid CommonMark
+document.</p>
+<p>A <a id="character" href="https://spec.commonmark.org/0.31.2/#character" class="definition">character</a> is a Unicode code point.  Although some
+code points (for example, combining accents) do not correspond to
+characters in an intuitive sense, all code points count as characters
+for purposes of this spec.</p>
+<p>This spec does not specify an encoding; it thinks of lines as composed
+of <a href="https://spec.commonmark.org/0.31.2/#character">characters</a> rather than bytes.  A conforming parser may be limited
+to a certain encoding.</p>
+<p>A <a id="line" href="https://spec.commonmark.org/0.31.2/#line" class="definition">line</a> is a sequence of zero or more <a href="https://spec.commonmark.org/0.31.2/#character">characters</a>
+other than line feed (<code>U+000A</code>) or carriage return (<code>U+000D</code>),
+followed by a <a href="https://spec.commonmark.org/0.31.2/#line-ending">line ending</a> or by the end of file.</p>
+<p>A <a id="line-ending" href="https://spec.commonmark.org/0.31.2/#line-ending" class="definition">line ending</a> is a line feed (<code>U+000A</code>), a carriage return
+(<code>U+000D</code>) not followed by a line feed, or a carriage return and a
+following line feed.</p>
+<p>A line containing no characters, or a line containing only spaces
+(<code>U+0020</code>) or tabs (<code>U+0009</code>), is called a <a id="blank-line" href="https://spec.commonmark.org/0.31.2/#blank-line" class="definition">blank line</a>.</p>
+<p>The following definitions of character classes will be used in this spec:</p>
+<p>A <a id="unicode-whitespace-character" href="https://spec.commonmark.org/0.31.2/#unicode-whitespace-character" class="definition">Unicode whitespace character</a> is a character in the Unicode <code>Zs</code> general
+category, or a tab (<code>U+0009</code>), line feed (<code>U+000A</code>), form feed (<code>U+000C</code>), or
+carriage return (<code>U+000D</code>).</p>
+<p><a id="unicode-whitespace" href="https://spec.commonmark.org/0.31.2/#unicode-whitespace" class="definition">Unicode whitespace</a> is a sequence of one or more
+<a href="https://spec.commonmark.org/0.31.2/#unicode-whitespace-character">Unicode whitespace characters</a>.</p>
+<p>A <a id="tab" href="https://spec.commonmark.org/0.31.2/#tab" class="definition">tab</a> is <code>U+0009</code>.</p>
+<p>A <a id="space" href="https://spec.commonmark.org/0.31.2/#space" class="definition">space</a> is <code>U+0020</code>.</p>
+<p>An <a id="ascii-control-character" href="https://spec.commonmark.org/0.31.2/#ascii-control-character" class="definition">ASCII control character</a> is a character between <code>U+0000–1F</code> (both
+including) or <code>U+007F</code>.</p>
+<p>An <a id="ascii-punctuation-character" href="https://spec.commonmark.org/0.31.2/#ascii-punctuation-character" class="definition">ASCII punctuation character</a>
+is <code>!</code>, <code>"</code>, <code>#</code>, <code>$</code>, <code>%</code>, <code>&amp;</code>, <code>'</code>, <code>(</code>, <code>)</code>,
+<code>*</code>, <code>+</code>, <code>,</code>, <code>-</code>, <code>.</code>, <code>/</code> (U+0021–2F),
+<code>:</code>, <code>;</code>, <code>&lt;</code>, <code>=</code>, <code>&gt;</code>, <code>?</code>, <code>@</code> (U+003A–0040),
+<code>[</code>, <code>\</code>, <code>]</code>, <code>^</code>, <code>_</code>, <code>`</code> (U+005B–0060),
+<code>{</code>, <code>|</code>, <code>}</code>, or <code>~</code> (U+007B–007E).</p>
+<p>A <a id="unicode-punctuation-character" href="https://spec.commonmark.org/0.31.2/#unicode-punctuation-character" class="definition">Unicode punctuation character</a> is a character in the Unicode <code>P</code>
+(puncuation) or <code>S</code> (symbol) general categories.</p>
+<h2 id="tabs" class="definition">
+<span class="number">2.2</span>Tabs
+</h2>
+<p>Tabs in lines are not expanded to <a href="https://spec.commonmark.org/0.31.2/#space">spaces</a>.  However,
+in contexts where spaces help to define block structure,
+tabs behave as if they were replaced by spaces with a tab stop
+of 4 characters.</p>
+<p>Thus, for example, a tab can be used instead of four spaces
+in an indented code block.  (Note, however, that internal
+tabs are passed through as literal tabs, not expanded to
+spaces.)</p>
+<div class="example" id="example-1">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-1">Example 1</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">→foo→baz→→bim
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;foo→baz→→bim
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-2">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-2">Example 2</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span><span class="space"> </span>→foo→baz→→bim
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;foo→baz→→bim
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-3">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-3">Example 3</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span><span class="space"> </span><span class="space"> </span><span class="space"> </span>a→a
+<span class="space"> </span><span class="space"> </span><span class="space"> </span><span class="space"> </span>ὐ→a
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;a→a
+ὐ→a
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<p>In the following example, a continuation paragraph of a list
+item is indented with a tab; this has exactly the same effect
+as indentation with four spaces would:</p>
+<div class="example" id="example-4">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-4">Example 4</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span><span class="space"> </span>-<span class="space"> </span>foo
+
+→bar
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;foo&lt;/p&gt;
+&lt;p&gt;bar&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-5">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-5">Example 5</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">-<span class="space"> </span>foo
+
+→→bar
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;foo&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;<span class="space"> </span><span class="space"> </span>bar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+</div>
+</div>
+<p>Normally the <code>&gt;</code> that begins a block quote may be followed
+optionally by a space, which is not considered part of the
+content.  In the following case <code>&gt;</code> is followed by a tab,
+which is treated as if it were expanded into three spaces.
+Since one of these spaces is considered part of the
+delimiter, <code>foo</code> is considered to be indented six spaces
+inside the block quote context, so we get an indented
+code block starting with two spaces.</p>
+<div class="example" id="example-6">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-6">Example 6</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&gt;→→foo
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;blockquote&gt;
+&lt;pre&gt;&lt;code&gt;<span class="space"> </span><span class="space"> </span>foo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-7">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-7">Example 7</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">-→→foo
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;ul&gt;
+&lt;li&gt;
+&lt;pre&gt;&lt;code&gt;<span class="space"> </span><span class="space"> </span>foo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-8">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-8">Example 8</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span><span class="space"> </span><span class="space"> </span><span class="space"> </span>foo
+→bar
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;foo
+bar
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-9">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-9">Example 9</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span>-<span class="space"> </span>foo
+<span class="space"> </span><span class="space"> </span><span class="space"> </span>-<span class="space"> </span>bar
+→<span class="space"> </span>-<span class="space"> </span>baz
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;ul&gt;
+&lt;li&gt;foo
+&lt;ul&gt;
+&lt;li&gt;bar
+&lt;ul&gt;
+&lt;li&gt;baz&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-10">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-10">Example 10</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">#→Foo
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;h1&gt;Foo&lt;/h1&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-11">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-11">Example 11</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">*→*→*→
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;hr<span class="space"> </span>/&gt;
+</code></pre>
+</div>
+</div>
+<h2 id="insecure-characters" class="definition">
+<span class="number">2.3</span>Insecure characters
+</h2>
+<p>For security reasons, the Unicode character <code>U+0000</code> must be replaced
+with the REPLACEMENT CHARACTER (<code>U+FFFD</code>).</p>
+<h2 id="backslash-escapes" class="definition">
+<span class="number">2.4</span>Backslash escapes
+</h2>
+<p>Any ASCII punctuation character may be backslash-escaped:</p>
+<div class="example" id="example-12">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-12">Example 12</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">\!\"\#\$\%\&amp;\'\(\)\*\+\,\-\.\/\:\;\&lt;\=\&gt;\?\@\[\\\]\^\_\`\{\|\}\~
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;!&amp;quot;#$%&amp;amp;'()*+,-./:;&amp;lt;=&amp;gt;?@[\]^_`{|}~&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Backslashes before other characters are treated as literal
+backslashes:</p>
+<div class="example" id="example-13">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-13">Example 13</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">\→\A\a\<span class="space"> </span>\3\φ\«
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;\→\A\a\<span class="space"> </span>\3\φ\«&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Escaped characters are treated as regular characters and do
+not have their usual Markdown meanings:</p>
+<div class="example" id="example-14">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-14">Example 14</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">\*not<span class="space"> </span>emphasized*
+\&lt;br/&gt;<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>tag
+\[not<span class="space"> </span>a<span class="space"> </span>link](/foo)
+\`not<span class="space"> </span>code`
+1\.<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>list
+\*<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>list
+\#<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>heading
+\[foo]:<span class="space"> </span>/url<span class="space"> </span>"not<span class="space"> </span>a<span class="space"> </span>reference"
+\&amp;ouml;<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>character<span class="space"> </span>entity
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;*not<span class="space"> </span>emphasized*
+&amp;lt;br/&amp;gt;<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>tag
+[not<span class="space"> </span>a<span class="space"> </span>link](/foo)
+`not<span class="space"> </span>code`
+1.<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>list
+*<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>list
+#<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>heading
+[foo]:<span class="space"> </span>/url<span class="space"> </span>&amp;quot;not<span class="space"> </span>a<span class="space"> </span>reference&amp;quot;
+&amp;amp;ouml;<span class="space"> </span>not<span class="space"> </span>a<span class="space"> </span>character<span class="space"> </span>entity&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>If a backslash is itself escaped, the following character is not:</p>
+<div class="example" id="example-15">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-15">Example 15</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">\\*emphasis*
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;\&lt;em&gt;emphasis&lt;/em&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>A backslash at the end of the line is a <a href="https://spec.commonmark.org/0.31.2/#hard-line-break">hard line break</a>:</p>
+<div class="example" id="example-16">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-16">Example 16</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">foo\
+bar
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;foo&lt;br<span class="space"> </span>/&gt;
+bar&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Backslash escapes do not work in code blocks, code spans, autolinks, or
+raw HTML:</p>
+<div class="example" id="example-17">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-17">Example 17</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">``<span class="space"> </span>\[\`<span class="space"> </span>``
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;code&gt;\[\`&lt;/code&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-18">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-18">Example 18</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span><span class="space"> </span><span class="space"> </span><span class="space"> </span>\[\]
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;\[\]
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-19">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-19">Example 19</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">~~~
+\[\]
+~~~
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;\[\]
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-20">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-20">Example 20</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&lt;https://example.com?find=\*&gt;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;a<span class="space"> </span>href="https://example.com?find=%5C*"&gt;https://example.com?find=\*&lt;/a&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-21">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-21">Example 21</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&lt;a<span class="space"> </span>href="/bar\/)"&gt;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;a<span class="space"> </span>href="/bar\/)"&gt;
+</code></pre>
+</div>
+</div>
+<p>But they work in all other contexts, including URLs and link titles,
+link references, and <a href="https://spec.commonmark.org/0.31.2/#info-string">info strings</a> in <a href="https://spec.commonmark.org/0.31.2/#fenced-code-blocks">fenced code blocks</a>:</p>
+<div class="example" id="example-22">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-22">Example 22</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">[foo](/bar\*<span class="space"> </span>"ti\*tle")
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;a<span class="space"> </span>href="/bar*"<span class="space"> </span>title="ti*tle"&gt;foo&lt;/a&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-23">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-23">Example 23</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">[foo]
+
+[foo]:<span class="space"> </span>/bar\*<span class="space"> </span>"ti\*tle"
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;a<span class="space"> </span>href="/bar*"<span class="space"> </span>title="ti*tle"&gt;foo&lt;/a&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-24">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-24">Example 24</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">```<span class="space"> </span>foo\+bar
+foo
+```
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code<span class="space"> </span>class="language-foo+bar"&gt;foo
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<h2 id="entity-and-numeric-character-references" class="definition">
+<span class="number">2.5</span>Entity and numeric character references
+</h2>
+<p>Valid HTML entity references and numeric character references
+can be used in place of the corresponding Unicode character,
+with the following exceptions:</p>
+<ul>
+<li>
+<p>Entity and character references are not recognized in code
+blocks and code spans.</p>
+</li>
+<li>
+<p>Entity and character references cannot stand in place of
+special characters that define structural elements in
+CommonMark.  For example, although <code>&amp;#42;</code> can be used
+in place of a literal <code>*</code> character, <code>&amp;#42;</code> cannot replace
+<code>*</code> in emphasis delimiters, bullet list markers, or thematic
+breaks.</p>
+</li>
+</ul>
+<p>Conforming CommonMark parsers need not store information about
+whether a particular character was represented in the source
+using a Unicode character or an entity reference.</p>
+<p><a id="entity-references" href="https://spec.commonmark.org/0.31.2/#entity-references" class="definition">Entity references</a> consist of <code>&amp;</code> + any of the valid
+HTML5 entity names + <code>;</code>. The
+document <a href="https://html.spec.whatwg.org/entities.json">https://html.spec.whatwg.org/entities.json</a>
+is used as an authoritative source for the valid entity
+references and their corresponding code points.</p>
+<div class="example" id="example-25">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-25">Example 25</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;nbsp;<span class="space"> </span>&amp;amp;<span class="space"> </span>&amp;copy;<span class="space"> </span>&amp;AElig;<span class="space"> </span>&amp;Dcaron;
+&amp;frac34;<span class="space"> </span>&amp;HilbertSpace;<span class="space"> </span>&amp;DifferentialD;
+&amp;ClockwiseContourIntegral;<span class="space"> </span>&amp;ngE;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&nbsp;<span class="space"> </span>&amp;amp;<span class="space"> </span>©<span class="space"> </span>Æ<span class="space"> </span>Ď
+¾<span class="space"> </span>ℋ<span class="space"> </span>ⅆ
+∲<span class="space"> </span>≧̸&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p><a id="decimal-numeric-character-references" href="https://spec.commonmark.org/0.31.2/#decimal-numeric-character-references" class="definition">Decimal numeric character
+references</a>
+consist of <code>&amp;#</code> + a string of 1–7 arabic digits + <code>;</code>. A
+numeric character reference is parsed as the corresponding
+Unicode character. Invalid Unicode code points will be replaced by
+the REPLACEMENT CHARACTER (<code>U+FFFD</code>).  For security reasons,
+the code point <code>U+0000</code> will also be replaced by <code>U+FFFD</code>.</p>
+<div class="example" id="example-26">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-26">Example 26</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;#35;<span class="space"> </span>&amp;#1234;<span class="space"> </span>&amp;#992;<span class="space"> </span>&amp;#0;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;#<span class="space"> </span>Ӓ<span class="space"> </span>Ϡ<span class="space"> </span>�&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p><a id="hexadecimal-numeric-character-references" href="https://spec.commonmark.org/0.31.2/#hexadecimal-numeric-character-references" class="definition">Hexadecimal numeric character
+references</a> consist of <code>&amp;#</code> +
+either <code>X</code> or <code>x</code> + a string of 1-6 hexadecimal digits + <code>;</code>.
+They too are parsed as the corresponding Unicode character (this
+time specified with a hexadecimal numeral instead of decimal).</p>
+<div class="example" id="example-27">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-27">Example 27</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;#X22;<span class="space"> </span>&amp;#XD06;<span class="space"> </span>&amp;#xcab;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&amp;quot;<span class="space"> </span>ആ<span class="space"> </span>ಫ&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Here are some nonentities:</p>
+<div class="example" id="example-28">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-28">Example 28</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;nbsp<span class="space"> </span>&amp;x;<span class="space"> </span>&amp;#;<span class="space"> </span>&amp;#x;
+&amp;#87654321;
+&amp;#abcdef0;
+&amp;ThisIsNotDefined;<span class="space"> </span>&amp;hi?;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&amp;amp;nbsp<span class="space"> </span>&amp;amp;x;<span class="space"> </span>&amp;amp;#;<span class="space"> </span>&amp;amp;#x;
+&amp;amp;#87654321;
+&amp;amp;#abcdef0;
+&amp;amp;ThisIsNotDefined;<span class="space"> </span>&amp;amp;hi?;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Although HTML5 does accept some entity references
+without a trailing semicolon (such as <code>&amp;copy</code>), these are not
+recognized here, because it makes the grammar too ambiguous:</p>
+<div class="example" id="example-29">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-29">Example 29</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;copy
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&amp;amp;copy&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Strings that are not on the list of HTML5 named entities are not
+recognized as entity references either:</p>
+<div class="example" id="example-30">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-30">Example 30</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;MadeUpEntity;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&amp;amp;MadeUpEntity;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<p>Entity and numeric character references are recognized in any
+context besides code spans or code blocks, including
+URLs, <a href="https://spec.commonmark.org/0.31.2/#link-title">link titles</a>, and <a href="https://spec.commonmark.org/0.31.2/#fenced-code-block">fenced code block</a> <a href="https://spec.commonmark.org/0.31.2/#info-string">info strings</a>:</p>
+<div class="example" id="example-31">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-31">Example 31</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&lt;a<span class="space"> </span>href="&amp;ouml;&amp;ouml;.html"&gt;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;a<span class="space"> </span>href="&amp;ouml;&amp;ouml;.html"&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-32">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-32">Example 32</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">[foo](/f&amp;ouml;&amp;ouml;<span class="space"> </span>"f&amp;ouml;&amp;ouml;")
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;a<span class="space"> </span>href="/f%C3%B6%C3%B6"<span class="space"> </span>title="föö"&gt;foo&lt;/a&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-33">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-33">Example 33</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">[foo]
+
+[foo]:<span class="space"> </span>/f&amp;ouml;&amp;ouml;<span class="space"> </span>"f&amp;ouml;&amp;ouml;"
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;a<span class="space"> </span>href="/f%C3%B6%C3%B6"<span class="space"> </span>title="föö"&gt;foo&lt;/a&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-34">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-34">Example 34</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">```<span class="space"> </span>f&amp;ouml;&amp;ouml;
+foo
+```
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code<span class="space"> </span>class="language-föö"&gt;foo
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<p>Entity and numeric character references are treated as literal
+text in code spans and code blocks:</p>
+<div class="example" id="example-35">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-35">Example 35</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">`f&amp;ouml;&amp;ouml;`
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;&lt;code&gt;f&amp;amp;ouml;&amp;amp;ouml;&lt;/code&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-36">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-36">Example 36</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown"><span class="space"> </span><span class="space"> </span><span class="space"> </span><span class="space"> </span>f&amp;ouml;f&amp;ouml;
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;pre&gt;&lt;code&gt;f&amp;amp;ouml;f&amp;amp;ouml;
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</div>
+</div>
+<p>Entity and numeric character references cannot be used
+in place of symbols indicating structure in CommonMark
+documents.</p>
+<div class="example" id="example-37">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-37">Example 37</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;#42;foo&amp;#42;
+*foo*
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;*foo*
+&lt;em&gt;foo&lt;/em&gt;&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-38">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-38">Example 38</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;#42;<span class="space"> </span>foo
+
+*<span class="space"> </span>foo
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;*<span class="space"> </span>foo&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;foo&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-39">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-39">Example 39</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">foo&amp;#10;&amp;#10;bar
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;foo
+
+bar&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-40">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-40">Example 40</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">&amp;#9;foo
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;→foo&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<div class="example" id="example-41">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-41">Example 41</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">[a](url<span class="space"> </span>&amp;quot;tit&amp;quot;)
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;p&gt;[a](url<span class="space"> </span>&amp;quot;tit&amp;quot;)&lt;/p&gt;
+</code></pre>
+</div>
+</div>
+<h1 id="blocks-and-inlines" class="definition">
+<span class="number">3</span>Blocks and inlines
+</h1>
+<p>We can think of a document as a sequence of
+<a id="blocks" href="https://spec.commonmark.org/0.31.2/#blocks" class="definition">blocks</a>—structural elements like paragraphs, block
+quotations, lists, headings, rules, and code blocks.  Some blocks (like
+block quotes and list items) contain other blocks; others (like
+headings and paragraphs) contain <a id="inline" href="https://spec.commonmark.org/0.31.2/#inline" class="definition">inline</a> content—text,
+links, emphasized text, images, code spans, and so on.</p>
+<h2 id="precedence" class="definition">
+<span class="number">3.1</span>Precedence
+</h2>
+<p>Indicators of block structure always take precedence over indicators
+of inline structure.  So, for example, the following is a list with
+two items, not a list with one item containing a code span:</p>
+<div class="example" id="example-42">
+<div class="examplenum">
+<a href="https://spec.commonmark.org/0.31.2/#example-42">Example 42</a><a class="dingus" title="open in interactive dingus">Try It</a>
+</div>
+<div class="column">
+<pre><code class="language-markdown">-<span class="space"> </span>`one
+-<span class="space"> </span>two`
+</code></pre>
+</div>
+<div class="column">
+<pre><code class="language-html">&lt;ul&gt;
+&lt;li&gt;`one&lt;/li&gt;
+&lt;li&gt;two`&lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+</div>
+</div>
+<p>This means that parsing can proceed in two steps:  first, the block
+structure of the document can be discerned; second, text lines inside
+paragraphs, headings, and other block constructs can be parsed for inline
+structure.  The second step requires information about link reference
+definitions that will be available only at the end of the first
+step.  Note that the first step requires processing lines in sequence,
+but the second can be parallelized, since the inline parsing of
+one block element does not affect the inline parsing of any other.</p>
+<h2 id="container-blocks-and-leaf-blocks" class="definition">
+<span class="number">3.2</span>Container blocks and leaf blocks
+</h2>
+<p>We can divide blocks into two types:
+<a href="https://spec.commonmark.org/0.31.2/#container-blocks">container blocks</a>,
+which can contain other blocks, and <a href="https://spec.commonmark.org/0.31.2/#leaf-blocks">leaf blocks</a>,
+which cannot.</p>
+<h1 id="leaf-blocks" class="definition">
