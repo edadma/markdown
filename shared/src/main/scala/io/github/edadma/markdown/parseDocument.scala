@@ -29,7 +29,8 @@ private def collectParagraphs(stream: LazyList[Cursor]): List[LazyList[Cursor]] 
   for (line <- lines) {
     if (isBlankLine(line) && currentParagraph.nonEmpty) {
       // End of paragraph - concatenate the cursor lines
-      val paragraphCursors = currentParagraph.reverse.flatten
+      // Convert the list of cursors to a LazyList
+      val paragraphCursors = currentParagraph.reverse.foldLeft(LazyList.empty[Cursor])(_ ++ _)
       paragraphs = paragraphCursors :: paragraphs
       currentParagraph = Nil
     } else if (!isBlankLine(line)) {
@@ -40,7 +41,8 @@ private def collectParagraphs(stream: LazyList[Cursor]): List[LazyList[Cursor]] 
 
   // Add final paragraph if there is one
   if (currentParagraph.nonEmpty) {
-    val paragraphCursors = currentParagraph.reverse.flatten
+    // Convert the list of cursors to a LazyList
+    val paragraphCursors = currentParagraph.reverse.foldLeft(LazyList.empty[Cursor])(_ ++ _)
     paragraphs = paragraphCursors :: paragraphs
   }
 
@@ -52,6 +54,27 @@ private def isBlankLine(line: LazyList[Cursor]): Boolean = {
 }
 
 private def groupIntoLines(stream: LazyList[Cursor]): List[LazyList[Cursor]] = {
-  // Implementation to group cursor stream into lines of cursors
-  // ...
+  var lines: List[LazyList[Cursor]] = Nil
+  var currentLine: List[Cursor]     = Nil
+
+  // Process each cursor
+  stream.foreach { cursor =>
+    if (cursor == EndOfInput) {
+      // End of input - add final line if not empty
+      if (currentLine.nonEmpty) {
+        lines = LazyList.from(currentLine.reverse) :: lines
+      }
+    } else if (cursor.char == '\n') {
+      // End of line - add current line (including the newline) and start a new one
+      currentLine = cursor :: currentLine
+      lines = LazyList.from(currentLine.reverse) :: lines
+      currentLine = Nil
+    } else {
+      // Add to current line
+      currentLine = cursor :: currentLine
+    }
+  }
+
+  // Return lines in original order
+  lines.reverse
 }

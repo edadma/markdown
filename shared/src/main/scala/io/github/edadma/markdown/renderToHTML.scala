@@ -13,7 +13,6 @@ def renderToHTML(node: Node): String = node match {
 private def renderInlines(inlines: List[Inline]): String =
   inlines.map {
     case Text(content) => escapeHtml(content)
-    case _             => "" // Ignore other inline types for now
   }.mkString
 
 private def escapeHtml(text: String): String =
