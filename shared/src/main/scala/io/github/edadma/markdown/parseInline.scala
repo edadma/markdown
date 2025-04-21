@@ -403,6 +403,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
         if (spacesToTrim > 0 && inlines.nonEmpty && inlines.head.isInstanceOf[Text]) {
           val textNode   = inlines.head.asInstanceOf[Text]
           val newContent = textNode.content.dropRight(spacesToTrim)
+
           // Replace the text node with a trimmed version
           inlines = inlines.tail
           inlines = Text(newContent) :: inlines
@@ -413,6 +414,13 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     // If previous cursor was a backslash, we need a hard break
     if (pos > 0 && cursors(pos - 1).char == '\\' && !cursors(pos - 1).isLiteral) {
       isHardBreak = true
+
+      val textNode   = inlines.head.asInstanceOf[Text]
+      val newContent = textNode.content.dropRight(1)
+
+      // Replace the text node with a new version without the backslash
+      inlines = inlines.tail
+      inlines = Text(newContent) :: inlines
     }
 
     // Add the appropriate line break
