@@ -6,7 +6,12 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
   // Add an inline element to our result list
   def addInline(inlineNode: Inline): Unit = {
-    inlines = inlineNode :: inlines
+    inlines match {
+      case Text(prevContent) :: rest if inlineNode.isInstanceOf[Text] =>
+        inlines = Text(prevContent + inlineNode.asInstanceOf[Text].content) :: rest
+      case _ =>
+        inlines = inlineNode :: inlines
+    }
   }
 
   // Process a code span starting at the current position
@@ -432,7 +437,6 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
   }
 
   def handleAutoLink(): Unit = {
-    println(pos)
     // If we're here, we know the first character is '<'
     // First, check if there's anything after the '<'
     if (pos + 1 >= cursors.size) {
@@ -503,7 +507,6 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       (cursors(pos + 1).char.isLetterOrDigit || cursors(pos + 1).char == '/')
     ) {
       handleAutoLink()
-      pos -= 1 // Adjust for loop increment
     } else {
       // Plain text - collect consecutive text characters
       val (textContent, newPos) = collectText(pos)

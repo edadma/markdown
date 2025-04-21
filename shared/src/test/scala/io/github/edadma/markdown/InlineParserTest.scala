@@ -76,11 +76,9 @@ class InlineParserTest extends AnyFlatSpec with Matchers {
     val input  = "This is `unmatched"
     val result = parseInlineContent(input)
 
-    result should have length 2
+    result should have length 1
     result(0) shouldBe a[Text]
-    result(0).asInstanceOf[Text].content should be("This is ")
-    result(1) shouldBe a[Text]
-    result(1).asInstanceOf[Text].content should be("`unmatched")
+    result(0).asInstanceOf[Text].content should be("This is `unmatched")
   }
 
   // Tests for line breaks
