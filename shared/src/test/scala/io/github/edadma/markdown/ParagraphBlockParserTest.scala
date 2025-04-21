@@ -31,12 +31,12 @@ Third paragraph."""
     document.children.foreach(_ shouldBe a[Paragraph])
 
     val paras = document.children.map(_.asInstanceOf[Paragraph])
-    paras(0).inlines.head.asInstanceOf[Text].content should include("First paragraph")
-    paras(1).inlines.head.asInstanceOf[Text].content should include("Second paragraph")
-    paras(2).inlines.head.asInstanceOf[Text].content should include("Third paragraph")
+    paras(0).inlines.head.asInstanceOf[Text].content should be("First paragraph.")
+    paras(1).inlines.head.asInstanceOf[Text].content should be("Second paragraph.")
+    paras(2).inlines.head.asInstanceOf[Text].content should be("Third paragraph.")
   }
 
-  it should "parse a multi-line paragraph as a single paragraph" in {
+  it should "parse a multi-line paragraph as a single paragraph with line breaks" in {
     val input    = """This is a paragraph
 that spans multiple
 lines."""
@@ -46,10 +46,22 @@ lines."""
     document.children should have length 1
     document.children.head shouldBe a[Paragraph]
 
-    val text = document.children.head.asInstanceOf[Paragraph].inlines.head.asInstanceOf[Text].content
-    text should include("This is a paragraph")
-    text should include("that spans multiple")
-    text should include("lines")
+    val para = document.children.head.asInstanceOf[Paragraph]
+
+    // The paragraph should have alternating Text and SoftLineBreak nodes
+    para.inlines.length should be >= 5 // At least 3 text nodes and 2 line breaks
+
+    // Check that the text content is spread across multiple Text nodes
+    val textNodes = para.inlines.collect { case t: Text => t.content }
+    textNodes should contain("This is a paragraph")
+    textNodes should contain("that spans multiple")
+    textNodes should contain("lines.")
+
+    // Verify the structure has alternating Text and SoftLineBreak nodes
+    para.inlines.zipWithIndex.foreach { case (node, idx) =>
+      if (idx % 2 == 0) node shouldBe a[Text]
+      else node shouldBe a[SoftLineBreak]
+    }
   }
 
   it should "handle empty documents" in {
@@ -85,8 +97,8 @@ Last paragraph.
     document.children.foreach(_ shouldBe a[Paragraph])
 
     val paras = document.children.map(_.asInstanceOf[Paragraph])
-    paras(0).inlines.head.asInstanceOf[Text].content should include("First paragraph")
-    paras(1).inlines.head.asInstanceOf[Text].content should include("Last paragraph")
+    paras(0).inlines.head.asInstanceOf[Text].content should be("First paragraph.")
+    paras(1).inlines.head.asInstanceOf[Text].content should be("Last paragraph.")
   }
 
   it should "handle paragraphs with different line endings" in {
@@ -99,11 +111,12 @@ Last paragraph.
     document.children.foreach(_ shouldBe a[Paragraph])
 
     val firstPara = document.children(0).asInstanceOf[Paragraph]
-    firstPara.inlines.head.asInstanceOf[Text].content should include("First line")
-    firstPara.inlines.head.asInstanceOf[Text].content should include("Second line")
+    firstPara.inlines(0).asInstanceOf[Text].content should be("First line.")
+    firstPara.inlines(1) shouldBe a[SoftLineBreak]
+    firstPara.inlines(2).asInstanceOf[Text].content should be("Second line.")
 
     val secondPara = document.children(1).asInstanceOf[Paragraph]
-    secondPara.inlines.head.asInstanceOf[Text].content should include("New paragraph")
+    secondPara.inlines.head.asInstanceOf[Text].content should be("New paragraph.")
   }
 
   it should "handle multiple consecutive blank lines between paragraphs" in {
@@ -118,8 +131,8 @@ Second paragraph."""
     document.children.foreach(_ shouldBe a[Paragraph])
 
     val paras = document.children.map(_.asInstanceOf[Paragraph])
-    paras(0).inlines.head.asInstanceOf[Text].content should include("First paragraph")
-    paras(1).inlines.head.asInstanceOf[Text].content should include("Second paragraph")
+    paras(0).inlines.head.asInstanceOf[Text].content should be("First paragraph.")
+    paras(1).inlines.head.asInstanceOf[Text].content should be("Second paragraph.")
   }
 
   it should "handle paragraphs with different indentation" in {
@@ -133,11 +146,11 @@ Not indented paragraph."""
     document.children.foreach(_ shouldBe a[Paragraph])
 
     val paras = document.children.map(_.asInstanceOf[Paragraph])
-    paras(0).inlines.head.asInstanceOf[Text].content should include("  Indented paragraph")
-    paras(1).inlines.head.asInstanceOf[Text].content should include("Not indented paragraph")
+    paras(0).inlines.head.asInstanceOf[Text].content should be("  Indented paragraph.")
+    paras(1).inlines.head.asInstanceOf[Text].content should be("Not indented paragraph.")
   }
 
-  it should "preserve newlines in the paragraph content" in {
+  it should "correctly structure line breaks within a paragraph" in {
     val input    = """Line one
 Line two
 Line three"""
@@ -147,8 +160,20 @@ Line three"""
     document.children should have length 1
     document.children.head shouldBe a[Paragraph]
 
-    val content = document.children.head.asInstanceOf[Paragraph].inlines.head.asInstanceOf[Text].content
-    content should include("\n")
-    content.count(_ == '\n') should be(2) // Two newlines in the paragraph
+    val para = document.children.head.asInstanceOf[Paragraph]
+    para.inlines.length should be(5) // 3 text nodes + 2 line breaks
+
+    para.inlines(0) shouldBe a[Text]
+    para.inlines(0).asInstanceOf[Text].content should be("Line one")
+
+    para.inlines(1) shouldBe a[SoftLineBreak]
+
+    para.inlines(2) shouldBe a[Text]
+    para.inlines(2).asInstanceOf[Text].content should be("Line two")
+
+    para.inlines(3) shouldBe a[SoftLineBreak]
+
+    para.inlines(4) shouldBe a[Text]
+    para.inlines(4).asInstanceOf[Text].content should be("Line three")
   }
 }
