@@ -431,6 +431,58 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
   }
 
+  def handleAutoLink(): Unit = {
+    println(pos)
+    // If we're here, we know the first character is '<'
+    // First, check if there's anything after the '<'
+    if (pos + 1 >= cursors.size) {
+      handlePlainText(pos)
+      return
+    }
+
+    val startPos = pos
+    pos += 1 // Skip the opening <
+
+    // Try to find the closing '>'
+    var closingFound = false
+    var linkEnd      = pos
+
+    while (pos < cursors.size && !closingFound) {
+      if (cursors(pos).char == '>') {
+        closingFound = true
+        linkEnd = pos
+      }
+      pos += 1
+    }
+
+    // If no closing '>', treat as plain text
+    if (!closingFound) {
+      handlePlainText(startPos)
+      return
+    }
+
+    // Extract link text (excluding the angle brackets)
+    val linkText = cursors.slice(startPos + 1, linkEnd).map(_.char).mkString
+
+    // Basic validation
+    val isValidLink =
+      linkText.contains("://") ||                                      // Looks like a URL
+        (linkText.contains("@") && linkText.exists(_.isLetterOrDigit)) // Looks like an email
+
+    if (isValidLink) {
+      val destination = if (linkText.contains("@")) {
+        s"mailto:$linkText"
+      } else {
+        linkText
+      }
+
+      addInline(AutoLink(destination, linkText))
+    } else {
+      // If not a valid link, treat as plain text
+      handlePlainText(startPos)
+    }
+  }
+
   // Main loop - process each cursor
   while (pos < cursors.size) {
     val cursor = cursors(pos)
@@ -446,6 +498,12 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       handleImage()
     } else if (cursor.char == '\n') {
       handleLineBreak()
+    } else if (
+      cursor.char == '<' && pos + 1 < cursors.size &&
+      (cursors(pos + 1).char.isLetterOrDigit || cursors(pos + 1).char == '/')
+    ) {
+      handleAutoLink()
+      pos -= 1 // Adjust for loop increment
     } else {
       // Plain text - collect consecutive text characters
       val (textContent, newPos) = collectText(pos)

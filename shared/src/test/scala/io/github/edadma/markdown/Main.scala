@@ -4,7 +4,7 @@ import pprint.pprintln
 
 @main def run(): Unit =
   val input =
-    "<https://example.com>"
+    "<not a valid url>"
 //    """l` ine ` 1
 //      |line 2
 //      |""".stripMargin
