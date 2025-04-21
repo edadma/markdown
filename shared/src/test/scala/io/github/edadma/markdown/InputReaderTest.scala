@@ -100,11 +100,11 @@ class InputReaderTest extends AnyFlatSpec with Matchers {
     val reader         = new InputReader(input)
     val expandedStream = reader.getStreamWithExpandedTabs().toList.dropRight(1)
 
-    // Should be: 'a' + 4 spaces (tab at column 1) + 'b'
-    expandedStream should have length 6
+    // Should be: 'a' + 3 spaces (tab at column 1) + 'b'
+    expandedStream should have length 5
     expandedStream(0).char should be('a')
-    expandedStream.slice(1, 5).foreach(_.char should be(' '))
-    expandedStream(5).char should be('b')
+    expandedStream.slice(1, 4).foreach(_.char should be(' '))
+    expandedStream(4).char should be('b')
   }
 
   it should "handle multiple tab expansion correctly" in {
