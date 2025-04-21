@@ -56,13 +56,11 @@ class InlineParserTest extends AnyFlatSpec with Matchers {
     val input  = "This is ``code with `backticks` inside``"
     val result = parseInlineContent(input)
 
-    result should have length 3
+    result should have length 2
     result(0) shouldBe a[Text]
     result(0).asInstanceOf[Text].content should be("This is ")
     result(1) shouldBe a[CodeSpan]
     result(1).asInstanceOf[CodeSpan].content should be("code with `backticks` inside")
-    result(2) shouldBe a[Text]
-    result(2).asInstanceOf[Text].content should be("")
   }
 
   it should "handle code spans with spaces at the edges" in {
