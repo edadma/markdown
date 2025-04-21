@@ -19,8 +19,8 @@ ThisBuild / sonatypeProfileName := "io.github.edadma"
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/edadma/cross_template"),
-    "scm:git@github.com:edadma/cross_template.git",
+    url("https://github.com/edadma/markdown"),
+    "scm:git@github.com:edadma/markdown.git",
   ),
 )
 ThisBuild / developers := List(
@@ -32,7 +32,7 @@ ThisBuild / developers := List(
   ),
 )
 
-ThisBuild / homepage := Some(url("https://github.com/edadma/cross_template"))
+ThisBuild / homepage := Some(url("https://github.com/edadma/markdown"))
 
 ThisBuild / pomIncludeRepository := { _ => false }
 ThisBuild / publishTo := {
@@ -54,10 +54,10 @@ lazy val commonSettings = Seq(
   scalaJSLinkerConfig ~= { _.withSourceMap(false) },
 )
 
-lazy val cross_template = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("."))
   .settings(
-    name         := "cross_template",
+    name         := "markdown",
     version      := "0.0.1",
     scalaVersion := "3.6.4",
     scalacOptions ++=
@@ -70,8 +70,8 @@ lazy val cross_template = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         "-language:existentials",
         "-language:dynamics",
       ),
-    organization := "io.github.edadma",
-//    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
+    organization                            := "io.github.edadma",
+    libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
 //    libraryDependencies ++= Seq(
 //      "io.github.edadma" %%% "cross-platform" % "0.0.10"
 //    ),
