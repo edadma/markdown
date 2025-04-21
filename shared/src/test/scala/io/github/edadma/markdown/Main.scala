@@ -4,7 +4,7 @@ import pprint.pprintln
 
 @main def run(): Unit =
   val input =
-    "[link text](https://example.com)"
+    "This is `unmatched"
 //    """l` ine ` 1
 //      |line 2
 //      |""".stripMargin

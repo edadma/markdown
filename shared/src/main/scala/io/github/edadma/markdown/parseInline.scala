@@ -1,7 +1,7 @@
 package io.github.edadma.markdown
 
 def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
-  var pos = 0
+  var pos                   = 0
   var inlines: List[Inline] = Nil
 
   // Add an inline element to our result list
@@ -11,14 +11,14 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
   // Process a code span starting at the current position
   def handleCodeSpan(): Unit = {
-    val startPos = pos
+    val startPos         = pos
     val openingBackticks = countConsecutive(pos, '`')
     pos += openingBackticks
 
     // Find matching closing backticks
     val startContent = pos
     var foundClosing = false
-    var endContent = pos
+    var endContent   = pos
 
     while (pos < cursors.size && !foundClosing) {
       if (cursors(pos).char == '`') {
@@ -42,9 +42,11 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       // Process content according to spec
       val processedContent = {
         val contentWithSpaces = content.replace('\n', ' ')
-        if (contentWithSpaces.startsWith(" ") &&
+        if (
+          contentWithSpaces.startsWith(" ") &&
           contentWithSpaces.endsWith(" ") &&
-          contentWithSpaces.trim.nonEmpty) {
+          contentWithSpaces.trim.nonEmpty
+        ) {
           contentWithSpaces.substring(1, contentWithSpaces.length - 1)
         } else {
           contentWithSpaces
@@ -54,17 +56,36 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       addInline(CodeSpan(processedContent))
       pos -= 1 // Adjust for the loop increment
     } else {
-      // No matching closing backticks, treat as literal text
+      // No matching closing backticks
+      // Reset position and collect unmatched backticks and subsequent text as a single node
       pos = startPos
-      addInline(Text("`" * openingBackticks))
-      pos += openingBackticks - 1 // Adjust for the loop increment
+
+      // Find where the next delimiter character or end of input is
+      var textEnd            = startPos + openingBackticks
+      var continueCollecting = true
+
+      while (textEnd < cursors.size && continueCollecting) {
+        val c = cursors(textEnd)
+        if ((c.char == '`' || c.char == '[' || c.char == '!' || c.char == '\n') && !c.isLiteral) {
+          continueCollecting = false
+        } else {
+          textEnd += 1
+        }
+      }
+
+      // Create text node with backticks and subsequent text
+      val textContent = cursors.slice(startPos, textEnd).map(_.char).mkString
+      addInline(Text(textContent))
+
+      // Update position
+      pos = textEnd - 1 // Adjust for the loop increment
     }
   }
 
   // Look for a run of characters and return its length
   def countConsecutive(startPos: Int, c: Char): Int = {
     var count = 0
-    var i = startPos
+    var i     = startPos
     while (i < cursors.size && cursors(i).char == c) {
       count += 1
       i += 1
@@ -79,8 +100,8 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
     // Collect the link text
     val textStart = pos
-    var textEnd = pos
-    var depth = 1 // Track nested brackets
+    var textEnd   = pos
+    var depth     = 1 // Track nested brackets
 
     // Find the closing bracket
     while (pos < cursors.size && depth > 0) {
@@ -107,9 +128,9 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
         }
 
         // Collect destination
-        val destStart = pos
-        var destEnd = pos
-        var parenDepth = 0
+        val destStart          = pos
+        var destEnd            = pos
+        var parenDepth         = 0
         var continueCollecting = true
 
         while (pos < cursors.size && continueCollecting) {
@@ -118,8 +139,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
           if (c.char == '(' && !c.isLiteral) {
             parenDepth += 1
             pos += 1
-          }
-          else if (c.char == ')' && !c.isLiteral) {
+          } else if (c.char == ')' && !c.isLiteral) {
             if (parenDepth == 0) {
               // End of destination
               continueCollecting = false
@@ -127,12 +147,10 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
               parenDepth -= 1
               pos += 1
             }
-          }
-          else if (c.char.isWhitespace && parenDepth == 0) {
+          } else if (c.char.isWhitespace && parenDepth == 0) {
             // Whitespace outside parentheses marks end of destination
             continueCollecting = false
-          }
-          else {
+          } else {
             pos += 1
           }
         }
@@ -152,16 +170,18 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
         // Check for a title
         if (pos < cursors.size && (cursors(pos).char == '"' || cursors(pos).char == '\'' || cursors(pos).char == '(')) {
-          val titleDelim = cursors(pos).char
+          val titleDelim   = cursors(pos).char
           val closingDelim = if (titleDelim == '(') ')' else titleDelim
 
           pos += 1 // Skip opening delimiter
           val titleStart = pos
 
           // Find closing delimiter
-          while (pos < cursors.size &&
+          while (
+            pos < cursors.size &&
             cursors(pos).char != closingDelim &&
-            cursors(pos).char != '\n') {
+            cursors(pos).char != '\n'
+          ) {
             pos += 1
           }
 
@@ -183,8 +203,8 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
           val linkText = cursors.slice(textStart, textEnd).map(_.char).mkString
 
           // Parse the link text recursively
-          val textReader = new InputReader(linkText)
-          val textStream = textReader.stream.takeWhile(_ != EndOfInput)
+          val textReader  = new InputReader(linkText)
+          val textStream  = textReader.stream.takeWhile(_ != EndOfInput)
           val textInlines = parseInline(textStream)
 
           // Create the link node
@@ -215,8 +235,8 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
     // Collect the image alt text
     val textStart = pos
-    var textEnd = pos
-    var depth = 1 // Track nested brackets
+    var textEnd   = pos
+    var depth     = 1 // Track nested brackets
 
     // Find the closing bracket
     while (pos < cursors.size && depth > 0) {
@@ -243,9 +263,9 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
         }
 
         // Collect destination
-        val destStart = pos
-        var destEnd = pos
-        var parenDepth = 0
+        val destStart          = pos
+        var destEnd            = pos
+        var parenDepth         = 0
         var continueCollecting = true
 
         while (pos < cursors.size && continueCollecting) {
@@ -254,8 +274,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
           if (c.char == '(' && !c.isLiteral) {
             parenDepth += 1
             pos += 1
-          }
-          else if (c.char == ')' && !c.isLiteral) {
+          } else if (c.char == ')' && !c.isLiteral) {
             if (parenDepth == 0) {
               // End of destination
               continueCollecting = false
@@ -263,12 +282,10 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
               parenDepth -= 1
               pos += 1
             }
-          }
-          else if (c.char.isWhitespace && parenDepth == 0) {
+          } else if (c.char.isWhitespace && parenDepth == 0) {
             // Whitespace outside parentheses marks end of destination
             continueCollecting = false
-          }
-          else {
+          } else {
             pos += 1
           }
         }
@@ -288,16 +305,18 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
         // Check for a title
         if (pos < cursors.size && (cursors(pos).char == '"' || cursors(pos).char == '\'' || cursors(pos).char == '(')) {
-          val titleDelim = cursors(pos).char
+          val titleDelim   = cursors(pos).char
           val closingDelim = if (titleDelim == '(') ')' else titleDelim
 
           pos += 1 // Skip opening delimiter
           val titleStart = pos
 
           // Find closing delimiter
-          while (pos < cursors.size &&
+          while (
+            pos < cursors.size &&
             cursors(pos).char != closingDelim &&
-            cursors(pos).char != '\n') {
+            cursors(pos).char != '\n'
+          ) {
             pos += 1
           }
 
@@ -319,8 +338,8 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
           val altText = cursors.slice(textStart, textEnd).map(_.char).mkString
 
           // Parse the alt text recursively
-          val textReader = new InputReader(altText)
-          val textStream = textReader.stream.takeWhile(_ != EndOfInput)
+          val textReader  = new InputReader(altText)
+          val textStream  = textReader.stream.takeWhile(_ != EndOfInput)
           val textInlines = parseInline(textStream)
 
           // Create the image node
@@ -347,7 +366,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     // Check for trailing spaces (>=2)
     if (pos > 0) {
       var spacesCount = 0
-      var i = pos - 1
+      var i           = pos - 1
       while (i >= 0 && cursors(i).char == ' ') {
         spacesCount += 1
         i -= 1
@@ -377,15 +396,17 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       handleCodeSpan()
     } else if (cursor.char == '[' && !cursor.isLiteral) {
       handleLink()
-    } else if (cursor.char == '!' && pos + 1 < cursors.size &&
-      cursors(pos + 1).char == '[' && !cursor.isLiteral) {
+    } else if (
+      cursor.char == '!' && pos + 1 < cursors.size &&
+      cursors(pos + 1).char == '[' && !cursor.isLiteral
+    ) {
       handleImage()
     } else if (cursor.char == '\n') {
       handleLineBreak(cursor)
     } else {
       // Plain text - collect consecutive text characters
-      val startPos = pos
-      var textEnd = pos + 1
+      val startPos           = pos
+      var textEnd            = pos + 1
       var continueCollecting = true
 
       // Find next special character
