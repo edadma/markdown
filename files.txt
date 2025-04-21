@@ -1,0 +1,18 @@
+; `markdown` codebase
+
+# app code
+./shared/src/main/scala/io/github/edadma/markdown
+Cursor.scala
+InputReader.scala
+
+# test code
+./shared/src/test/scala/io/github/edadma/markdown
+InputReaderTest.scala
+Main.scala
+
+# build config
+./
+build.sbt
+./project
+build.properties
+plugins.sbt
