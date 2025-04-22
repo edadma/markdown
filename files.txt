@@ -6,6 +6,7 @@ Cursor.scala
 DelimiterStack.scala
 InputReader.scala
 Node.scala
+package.scala
 parseDocument.scala
 parseInline.scala
 renderToHTML.scala

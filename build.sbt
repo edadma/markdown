@@ -91,11 +91,12 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies += "org.scala-js"       %% "scalajs-stubs"   % "1.1.0" % "provided",
   )
   .jsSettings(
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    //    Test / scalaJSUseMainModuleInitializer := true,
-    //    Test / scalaJSUseTestModuleInitializer := false,
-    Test / scalaJSUseMainModuleInitializer      := false,
-    Test / scalaJSUseTestModuleInitializer      := true,
+    jsEnv                                  := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    Test / scalaJSUseMainModuleInitializer := true,
+    Test / scalaJSUseTestModuleInitializer := false,
+//    Test / scalaJSUseMainModuleInitializer      := false,
+//    Test / scalaJSUseTestModuleInitializer      := true,
     scalaJSUseMainModuleInitializer             := true,
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+    libraryDependencies += "io.github.edadma"  %%% "logger"          % "0.0.6",
   )
