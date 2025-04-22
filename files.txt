@@ -3,7 +3,6 @@
 # app code
 ./shared/src/main/scala/io/github/edadma/markdown
 Cursor.scala
-DelimiterStack.scala
 InputReader.scala
 Node.scala
 package.scala
@@ -13,7 +12,6 @@ renderToHTML.scala
 
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
-DelimiterStackTest.scala
 InputReaderTest.scala
 InlineParserTest.scala
 Main.scala

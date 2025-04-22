@@ -5,7 +5,6 @@ import scala.collection.mutable
 def parseInline(cursors: mutable.Buffer[Cursor]): List[Inline] = {
   var pos                   = 0
   var inlines: List[Inline] = Nil
-  val delimiterStack        = new DelimiterStack(cursors)
 
   // Helper to add an inline element
   def addInline(inlineNode: Inline): Unit = {
@@ -289,53 +288,6 @@ def parseInline(cursors: mutable.Buffer[Cursor]): List[Inline] = {
     }
   }
 
-  // Handle delimiters (* and _) - add to stack only, not to output
-  def handleDelimiter(delimChar: Char): Unit = {
-    val startPos = pos
-
-    // Count consecutive delimiters
-    val length = countConsecutive(pos, delimChar)
-    pos += length - 1 // -1 because loop will increment by 1
-
-    // Determine if this can be opener/closer
-    val beforeChar = if (startPos > 0) Some(cursors(startPos - 1).char) else None
-    val afterChar  = if (pos + 1 < cursors.size) Some(cursors(pos + 1).char) else None
-
-    val (canOpen, canClose) = determineDelimiterStatus(
-      delimChar,
-      length,
-      beforeChar,
-      afterChar,
-    )
-
-    // Add to delimiter stack (but not to output)
-    val delimType = if (delimChar == '*') Asterisk else Underscore
-    delimiterStack.push(startPos, delimType, length, canOpen, canClose)
-  }
-
-  // Handle link/image opening - add to stack only, not to output
-  def handleLinkOpen(isImage: Boolean = false): Unit = {
-    val startPos = pos
-
-    // Push to delimiter stack
-    if (isImage) {
-      // Skip the ! character
-      pos += 1
-      // Now we're at the [ character
-      delimiterStack.push(pos, OpenImage, 1, true, false)
-    } else {
-      delimiterStack.push(startPos, OpenBracket, 1, true, false)
-    }
-  }
-
-  // Handle closing bracket - try to form a link/image
-  def handleCloseBracket(): Unit = {
-    // Process against delimiter stack to potentially create link/image
-    val (updatedInlines, newPos) = delimiterStack.lookForLinkOrImage(inlines, pos)
-    inlines = updatedInlines
-    pos = newPos
-  }
-
   // Count consecutive characters of the same type
   def countConsecutive(startPos: Int, c: Char): Int = {
     var count = 0
@@ -427,29 +379,6 @@ def parseInline(cursors: mutable.Buffer[Cursor]): List[Inline] = {
           handleRawHTML()
           pos += 1
 
-        case '*' | '_' =>
-          // Emphasis delimiters - don't add to output, just to stack
-          handleDelimiter(cursor.char)
-          pos += 1
-
-        case '!'
-            if pos + 1 < cursors.size &&
-              cursors(pos + 1).char == '[' &&
-              !cursors(pos + 1).isLiteral =>
-          // Potential image start
-          handleLinkOpen(isImage = true)
-          pos += 2 // Skip both ! and [
-
-        case '[' =>
-          // Potential link start
-          handleLinkOpen()
-          pos += 1
-
-        case ']' =>
-          // Potential link/image end
-          handleCloseBracket()
-          pos += 1
-
         case '\n' =>
           // Line break
           handleLineBreak()
@@ -463,9 +392,6 @@ def parseInline(cursors: mutable.Buffer[Cursor]): List[Inline] = {
     }
   }
 
-  // After processing all characters, process remaining emphasis delimiters
-  val processedInlines = delimiterStack.processEmphasis(inlines)
-
   // Return the inlines in correct order
-  (if (processedInlines.nonEmpty) processedInlines else inlines).reverse
+  inlines.reverse
 }
