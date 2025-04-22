@@ -284,6 +284,106 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
   }
 
   // Process all emphasis delimiters in the stack
+//  def processEmphasis(inlines: List[Inline], stackBottom: Option[Delimiter] = None): List[Inline] = {
+//    logger.debug(s"Processing inlines: $inlines")
+//    logger.debug(s"Stack bottom: $stackBottom")
+//
+//    // If stack is empty or we're at the bottom, return inlines unchanged
+//    if (bottom.isEmpty || (stackBottom.isDefined && stackBottom.get == bottom.get)) {
+//      logger.debug("Returning inlines unchanged - empty stack or at bottom")
+//      return inlines
+//    }
+//
+//    // Convert to mutable buffer for processing
+//    val inlinesBuffer = new mutable.ArrayBuffer[Inline]()
+//    inlinesBuffer.appendAll(inlines)
+//
+//    // Map from delimiter positions to locations in the inlines buffer
+//    val positionMap = new mutable.HashMap[Delimiter, (Int, Int)]()
+//
+//    // Fill the position map by scanning through inlines
+//    mapDelimitersToPositions(inlinesBuffer, positionMap)
+//    logger.debug(s"Position map: $positionMap")
+//
+//    // Track openers_bottom for each delimiter type/length/can_open combination
+//    val openersBottom = new mutable.HashMap[(DelimiterType, Int, Boolean), Delimiter]()
+//
+//    // Start with the first delimiter above stackBottom
+//    var current = if (stackBottom.isDefined) stackBottom.get.next else bottom
+//
+//    // Process all potential closers
+//    while (current.isDefined) {
+//      val closer = current.get
+//
+//      // Only process * and _ delimiters that can close
+//      if (
+//        (closer.delimiterType == Asterisk || closer.delimiterType == Underscore) &&
+//        closer.canClose
+//      ) {
+//
+//        // Look for a matching opener
+//        val opener = findMatchingOpener(closer, openersBottom, stackBottom)
+//
+//        if (opener.isDefined) {
+//          // Found a matching opener! Create emphasis
+//          val useDelims = if (opener.get.length >= 2 && closer.length >= 2) 2 else 1
+//
+//          // Create the emphasis node based on the matching pair
+//          val emphasisSuccess = createEmphasisNode(inlinesBuffer, positionMap, opener.get, closer, useDelims)
+//
+//          if (emphasisSuccess) {
+//            // Update delimiters
+//            opener.get.length -= useDelims
+//            closer.length -= useDelims
+//
+//            // Clean up used delimiters
+//            if (opener.get.length == 0) {
+//              remove(opener.get)
+//            }
+//            if (closer.length == 0) {
+//              val nextDelim = closer.next
+//              remove(closer)
+//              current = nextDelim
+//              // Continue without incrementing current
+//              if (current.isDefined) {
+//                // Skip to next iteration of while loop
+//                current = current // Dummy to avoid syntax error
+//              } else {
+//                // Break out of loop
+//                current = None
+//              }
+//            }
+//          } else {
+//            current = current.get.next
+//          }
+//        } else {
+//          // No matching opener
+//          // Set this as the bottom for this type of delimiter
+//          val key = (closer.delimiterType, closer.length % 3, closer.canOpen)
+//          openersBottom(key) = closer
+//
+//          // If it can't be an opener, remove it
+//          if (!closer.canOpen) {
+//            val nextDelim = closer.next
+//            remove(closer)
+//            current = nextDelim
+//          } else {
+//            current = current.get.next
+//          }
+//        }
+//      } else {
+//        // Not a closer we can process, move to next
+//        current = current.get.next
+//      }
+//    }
+//
+//    // Clean up - remove any remaining delimiters above stackBottom
+//    removeDelimitersAbove(stackBottom)
+//
+//    // Return the transformed inlines
+//    inlinesBuffer.toList
+//  }
+
   def processEmphasis(inlines: List[Inline], stackBottom: Option[Delimiter] = None): List[Inline] = {
     logger.debug(s"Processing inlines: $inlines")
     logger.debug(s"Stack bottom: $stackBottom")
@@ -320,11 +420,13 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
         (closer.delimiterType == Asterisk || closer.delimiterType == Underscore) &&
         closer.canClose
       ) {
+        logger.debug(s"Processing potential closer: $closer")
 
         // Look for a matching opener
         val opener = findMatchingOpener(closer, openersBottom, stackBottom)
 
         if (opener.isDefined) {
+          logger.debug(s"Found matching opener: ${opener.get}")
           // Found a matching opener! Create emphasis
           val useDelims = if (opener.get.length >= 2 && closer.length >= 2) 2 else 1
 
@@ -332,6 +434,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
           val emphasisSuccess = createEmphasisNode(inlinesBuffer, positionMap, opener.get, closer, useDelims)
 
           if (emphasisSuccess) {
+            logger.debug("Emphasis node created successfully")
             // Update delimiters
             opener.get.length -= useDelims
             closer.length -= useDelims
@@ -354,9 +457,11 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
               }
             }
           } else {
+            logger.debug("Failed to create emphasis node")
             current = current.get.next
           }
         } else {
+          logger.debug("No matching opener found")
           // No matching opener
           // Set this as the bottom for this type of delimiter
           val key = (closer.delimiterType, closer.length % 3, closer.canOpen)
@@ -385,6 +490,72 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
   }
 
   // Find a matching opener for a closing delimiter
+//  def findMatchingOpener(
+//      closer: Delimiter,
+//      openersBottom: mutable.Map[(DelimiterType, Int, Boolean), Delimiter],
+//      stackBottom: Option[Delimiter],
+//  ): Option[Delimiter] = {
+//    logger.debug(s"Finding opener for closer: $closer")
+//    val delimType = closer.delimiterType
+//    val closerMod = closer.length % 3
+//
+//    // Look back through the entire stack for a matching opener
+//    var current                  = closer.previous
+//    var found: Option[Delimiter] = None
+//
+//    while (
+//      current.isDefined &&
+//      (stackBottom.isEmpty || current.get != stackBottom.get)
+//    ) {
+//      val delimiter = current.get
+//      logger.debug(s"Checking potential opener: $delimiter")
+//
+//      // Check if this is a potential opener of the same type
+//      if (delimiter.delimiterType == delimType && delimiter.canOpen) {
+//        // Rule from the spec about delimiter length and emphasis
+//        val sumIsMultipleOf3     = (delimiter.length + closer.length) % 3 == 0
+//        val neitherIsMultipleOf3 = delimiter.length                   % 3 != 0 && closer.length % 3 != 0
+//
+//        logger.debug(s"Sum multiple of 3: $sumIsMultipleOf3, Neither multiple of 3: $neitherIsMultipleOf3")
+//
+//        if (!(sumIsMultipleOf3 && neitherIsMultipleOf3)) {
+//          // Check against previous bottom delimiter for this type/length/opener status
+//          val key            = (delimType, closerMod, closer.canOpen)
+//          val previousBottom = openersBottom.get(key)
+//
+//          // If no previous bottom or current delimiter is above the previous bottom
+//          if (
+//            previousBottom.isEmpty ||
+//            !previousBottom.exists(bottom =>
+//              current.exists(current =>
+//                current == bottom ||
+//                  (bottom.previous.isDefined && bottom.previous.get == current),
+//              ),
+//            )
+//          ) {
+//
+//            logger.debug("Found matching opener!")
+//            found = current
+//            // Update the bottom for this delimiter type
+//            openersBottom(key) = delimiter
+//            // Stop searching
+//            current = None
+//          } else {
+//            logger.debug("Skipping due to bottom delimiter constraint")
+//            current = delimiter.previous
+//          }
+//        } else {
+//          logger.debug("Does not match due to delimiter length rule")
+//          current = delimiter.previous
+//        }
+//      } else {
+//        current = delimiter.previous
+//      }
+//    }
+//
+//    found
+//  }
+
   def findMatchingOpener(
       closer: Delimiter,
       openersBottom: mutable.Map[(DelimiterType, Int, Boolean), Delimiter],
@@ -414,31 +585,10 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
         logger.debug(s"Sum multiple of 3: $sumIsMultipleOf3, Neither multiple of 3: $neitherIsMultipleOf3")
 
         if (!(sumIsMultipleOf3 && neitherIsMultipleOf3)) {
-          // Check against previous bottom delimiter for this type/length/opener status
-          val key            = (delimType, closerMod, closer.canOpen)
-          val previousBottom = openersBottom.get(key)
-
-          // If no previous bottom or current delimiter is above the previous bottom
-          if (
-            previousBottom.isEmpty ||
-            !previousBottom.exists(bottom =>
-              current.exists(current =>
-                current == bottom ||
-                  (bottom.previous.isDefined && bottom.previous.get == current),
-              ),
-            )
-          ) {
-
-            logger.debug("Found matching opener!")
-            found = current
-            // Update the bottom for this delimiter type
-            openersBottom(key) = delimiter
-            // Stop searching
-            current = None
-          } else {
-            logger.debug("Skipping due to bottom delimiter constraint")
-            current = delimiter.previous
-          }
+          logger.debug("Potential match found!")
+          found = current
+          // Stop searching
+          current = None
         } else {
           logger.debug("Does not match due to delimiter length rule")
           current = delimiter.previous
