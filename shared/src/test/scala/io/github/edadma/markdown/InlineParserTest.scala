@@ -4,15 +4,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class InlineParserTest extends AnyFlatSpec with Matchers {
-
-  // Helper method to parse inline content
-  def parseInlineContent(input: String): List[Inline] = {
-    val reader           = new InputReader(input)
-    val streamWithoutEOI = reader.stream.takeWhile(_ != EndOfInput)
-
-    parseInline(streamWithoutEOI)
-  }
-
   // Helper to get string representation of inlines for easier assertions
   def inlineToString(inlines: List[Inline]): String = {
     inlines.map {
