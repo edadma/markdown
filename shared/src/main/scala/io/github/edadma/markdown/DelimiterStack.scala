@@ -390,11 +390,13 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
       openersBottom: mutable.Map[(DelimiterType, Int, Boolean), Delimiter],
       stackBottom: Option[Delimiter],
   ): Option[Delimiter] = {
+    logger.debug(s"Finding opener for closer: $closer")
     val delimType = closer.delimiterType
     val closerMod = closer.length % 3
 
     // Get the bottom delimiter for this type/mod
     val bottom = openersBottom.getOrElse((delimType, closerMod, closer.canOpen), null)
+    logger.debug(s"Bottom delimiter: $bottom")
 
     // Look back for a matching opener
     var current                  = closer.previous
@@ -408,6 +410,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
     ) {
 
       val delimiter = current.get
+      logger.debug(s"Checking potential opener: $delimiter")
 
       // Check if this is a potential opener of the same type
       if (delimiter.delimiterType == delimType && delimiter.canOpen) {
@@ -416,11 +419,15 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
         val sumIsMultipleOf3     = (delimiter.length + closer.length) % 3 == 0
         val neitherIsMultipleOf3 = delimiter.length                   % 3 != 0 && closer.length % 3 != 0
 
+        logger.debug(s"Sum multiple of 3: $sumIsMultipleOf3, Neither multiple of 3: $neitherIsMultipleOf3")
+
         if (!(sumIsMultipleOf3 && neitherIsMultipleOf3)) {
+          logger.debug("Found matching opener!")
           // This is a match!
           found = current
           current = None // Break out of loop
         } else {
+          logger.debug("Does not match due to delimiter length rule")
           current = delimiter.previous
         }
       } else {
