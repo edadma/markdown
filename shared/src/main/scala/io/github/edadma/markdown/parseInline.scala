@@ -17,6 +17,107 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
   }
 
+  // Original handleAutoLink function - preserved exactly as it was
+  def handleAutoLink(): Unit = {
+    // If we're here, we know the first character is '<'
+    // First, check if there's anything after the '<'
+    if (pos + 1 >= cursors.size) {
+      handlePlainText()
+      return
+    }
+
+    val startPos = pos
+    pos += 1 // Skip the opening <
+
+    // Try to find the closing '>'
+    var closingFound = false
+    var linkEnd      = pos
+
+    while (pos < cursors.size && !closingFound) {
+      if (cursors(pos).char == '>') {
+        closingFound = true
+        linkEnd = pos
+      }
+      pos += 1
+    }
+
+    // If no closing '>', treat as plain text
+    if (!closingFound) {
+      pos = startPos // Reset position
+      handlePlainText()
+      return
+    }
+
+    // Extract link text (excluding the angle brackets)
+    val linkText = cursors.slice(startPos + 1, linkEnd).map(_.char).mkString
+
+    // Basic validation
+    val isValidLink =
+      linkText.contains("://") ||                                      // Looks like a URL
+        (linkText.contains("@") && linkText.exists(_.isLetterOrDigit)) // Looks like an email
+
+    if (isValidLink) {
+      val destination = if (linkText.contains("@")) {
+        s"mailto:$linkText"
+      } else {
+        linkText
+      }
+
+      addInline(AutoLink(destination, linkText))
+    } else {
+      // If not a valid link, treat as plain text
+      pos = startPos // Reset position
+      handlePlainText()
+    }
+  }
+
+  // Original handleRawHTML function - preserved exactly as it was
+  def handleRawHTML(): Unit = {
+    val startPos = pos
+    pos += 1 // Skip the opening <
+
+    // Check if this is a valid HTML tag start
+    if (
+      pos < cursors.size &&
+      (cursors(pos).char.isLetter ||
+        cursors(pos).char == '/' ||
+        cursors(pos).char == '!' ||
+        cursors(pos).char == '?' ||
+        cursors(pos).char == '%')
+    ) {
+      var depth  = 1
+      var tagEnd = pos
+
+      // Find the closing >
+      while (pos < cursors.size && depth > 0) {
+        if (cursors(pos).char == '<') depth += 1
+        if (cursors(pos).char == '>') depth -= 1
+
+        if (depth == 0) {
+          tagEnd = pos
+          pos += 1   // Include the >
+          depth = -1 // Signal successful parsing
+        } else {
+          pos += 1
+        }
+      }
+
+      if (depth == -1) {
+        // Successfully parsed HTML tag
+        val htmlContent = cursors.slice(startPos, pos).map(_.char).mkString
+        addInline(RawHTML(htmlContent))
+      } else {
+        // Incomplete tag, treat as plain text
+        pos = startPos
+        handlePlainText()
+      }
+    } else {
+      // Not a valid HTML tag start
+      pos = startPos
+      handlePlainText()
+    }
+  }
+
   // Determine if delimiter can be opener/closer based on surrounding characters
   def determineDelimiterStatus(
       delimChar: Char,
@@ -289,10 +390,23 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       handleCloseBracket()
     } else if (cursor.char == '\n') {
       handleLineBreak()
+    } else if (
+      cursor.char == '<' && pos + 1 < cursors.size &&
+      (
+        // Scheme-based URLs
+        (cursors(pos + 1).char.isLetter &&
+          cursors.slice(pos + 1, pos + 9).map(_.char).mkString.contains("://")) ||
+
+          // Email addresses
+          (cursors(pos + 1).char.isLetter &&
+            cursors.slice(pos + 1, pos + 20)
+              .takeWhile(_.char != '>')
+              .count(_.char == '@') == 1)
+      )
+    ) {
+      handleAutoLink()
     } else if (cursor.char == '<') {
-      // We should handle autolinks and HTML here
-      // For now, just treat as text
-      handlePlainText()
+      handleRawHTML()
     } else {
       handlePlainText()
     }
