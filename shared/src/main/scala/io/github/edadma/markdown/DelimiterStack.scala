@@ -195,27 +195,74 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
         if (pos < cursors.size && cursors(pos).char == ')') {
           pos += 1 // Skip closing paren
 
-          // Create the content for the link/image
-          // We'll do this by manually extracting text between opener and current position
-          val startContentPos = opener.get.position +
-            (if (opener.get.delimiterType == OpenImage) 2 else 1)
-          val endContentPos = curPos
+          // Here's the fix: we need to properly extract the link text content
+          // First, find the text nodes that were created between the opener and closer
 
-          // Collect all text nodes between these positions
-          val textContent = inlines
-            .takeWhile(inline => {
-              // We'd need position tracking for each inline node for this to work properly
-              // This is a simplified approach that won't handle nested content well
-              true
-            })
-            .collect {
-              case Text(content) => content
+          // Calculate how many inlines to skip by looking at the nodes added
+          // since the opener was pushed to the stack
+
+          // We need to find the text between the opening [ and the closing ]
+          // Get the content by examining the inlines list
+
+          // First, figure out how many nodes we need to examine
+          // The nodes are in reverse order (newest first)
+          var textNodes: List[Inline] = Nil
+          var remainingInlines        = inlines
+          var foundBracketNode        = false
+          var skipCount               = 0
+
+          // Find the bracket in the inlines list
+          breakable {
+            while (remainingInlines.nonEmpty && !foundBracketNode) {
+              remainingInlines.head match {
+                case Text(content) if content.contains("[") || content.contains("![") =>
+                  foundBracketNode = true
+                  // Found the opening bracket node
+
+                  // Create a new text node without the bracket(s)
+                  val bracketText = remainingInlines.head.asInstanceOf[Text]
+                  if (opener.get.delimiterType == OpenBracket) {
+                    // For [text], remove the [
+                    if (bracketText.content == "[") {
+                      // Skip this node entirely
+                      skipCount += 1
+                    } else {
+                      // Extract only the content after the [
+                      val bracketPos = bracketText.content.indexOf("[")
+                      if (bracketPos >= 0 && bracketPos < bracketText.content.length - 1) {
+                        // There's content after the [
+                        textNodes = Text(bracketText.content.substring(bracketPos + 1)) :: textNodes
+                      }
+                      skipCount += 1
+                    }
+                  } else {
+                    // For ![text], remove the ![
+                    if (bracketText.content == "![") {
+                      // Skip this node entirely
+                      skipCount += 1
+                    } else {
+                      // Extract only the content after the ![
+                      val bracketPos = bracketText.content.indexOf("![")
+                      if (bracketPos >= 0 && bracketPos < bracketText.content.length - 2) {
+                        // There's content after the ![
+                        textNodes = Text(bracketText.content.substring(bracketPos + 2)) :: textNodes
+                      }
+                      skipCount += 1
+                    }
+                  }
+                  break
+
+                case _ =>
+                  // This is part of the content inside the brackets
+                  textNodes = remainingInlines.head :: textNodes
+                  skipCount += 1
+                  remainingInlines = remainingInlines.tail
+              }
             }
-            .mkString
+          }
 
-          // Parse the textContent for inlines - in a real implementation we'd
-          // actually call the inline parser recursively here
-          val linkInlines = List(Text(textContent))
+          // Process any accumulated text nodes
+          val linkInlines = textNodes
 
           // Create appropriate node
           val newNode: Inline = if (opener.get.delimiterType == OpenImage) {
@@ -236,7 +283,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
           remove(opener.get)
 
           // Return the new node and updated position
-          return (newNode :: inlines.drop(linkInlines.length), pos - 1)
+          return (newNode :: inlines.drop(skipCount), pos - 1)
         }
       }
     }
