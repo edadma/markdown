@@ -320,7 +320,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       // Skip the ! character
       pos += 1
       // Now we're at the [ character
-      delimiterStack.push(startPos, OpenImage, 1, true, false)
+      delimiterStack.push(pos, OpenImage, 1, true, false)
     } else {
       delimiterStack.push(startPos, OpenBracket, 1, true, false)
     }

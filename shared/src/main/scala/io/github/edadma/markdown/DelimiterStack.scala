@@ -204,7 +204,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
 
           // Calculate the position of the opener in the stream
           val openerPos  = opener.get.position
-          val textOffset = if (isImageOpener) 2 else 1 // ! + [ for images, just [ for links
+          val textOffset = /*if (isImageOpener) 2 else*/ 1 // ! + [ for images, just [ for links
 
           // Collect inlines to use as link content (working backwards)
           var linkInlines: List[Inline] = Nil
@@ -222,7 +222,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
                 if (linkTextChars > openerPos) {
                   // This text node contains the opener
                   // We only want the part after the opener bracket
-                  val startIndex = Math.max(0, content.length - (linkTextChars - openerPos) - textOffset + 1)
+                  val startIndex = Math.max(0, content.length - (linkTextChars - openerPos) - textOffset)
                   if (startIndex < content.length) {
                     val textAfterOpener = content.substring(startIndex)
                     if (textAfterOpener.nonEmpty) {
