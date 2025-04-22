@@ -70,6 +70,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
   }
 
   // Look for link or image when ] is encountered
+  // Look for link or image when ] is encountered
   def lookForLinkOrImage(inlines: List[Inline], curPos: Int): (List[Inline], Int) = {
     logger.debug("Looking for link or image after closing bracket")
 
@@ -112,11 +113,12 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
       }
 
       // Parse destination
-      val destStart  = pos
-      var destEnd    = pos
-      var parenDepth = 0
+      val destStart    = pos
+      var destEnd      = destStart
+      var parenDepth   = 0
+      var foundDestEnd = false
 
-      while (pos < cursors.size) {
+      while (pos < cursors.size && !foundDestEnd) {
         val c = cursors(pos)
 
         if (c.char == '(' && !c.isLiteral) {
@@ -126,7 +128,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
           if (parenDepth == 0) {
             // End of destination/link
             destEnd = pos
-            break
+            foundDestEnd = true
           } else {
             parenDepth -= 1
             pos += 1
@@ -134,7 +136,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
         } else if (c.char.isWhitespace && parenDepth == 0) {
           // Whitespace marks end of destination
           destEnd = pos
-          break
+          foundDestEnd = true
         } else {
           pos += 1
         }
@@ -157,42 +159,52 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
           pos < cursors.size &&
           (cursors(pos).char == '"' || cursors(pos).char == '\'' || cursors(pos).char == '(')
         ) {
-
           val titleDelim   = cursors(pos).char
           val closingDelim = if (titleDelim == '(') ')' else titleDelim
 
           pos += 1 // Skip opening delimiter
           val titleStart = pos
+          var foundTitle = false
 
           // Find closing delimiter
           while (
             pos < cursors.size &&
-            cursors(pos).char != closingDelim &&
-            cursors(pos).char != '\n'
+            !foundTitle
           ) {
-            pos += 1
-          }
-
-          if (pos < cursors.size && cursors(pos).char == closingDelim) {
-            title = Some(cursors.slice(titleStart, pos).map(_.char).mkString)
-            pos += 1 // Skip closing delimiter
-            logger.debug(s"Found title: $title")
+            if (cursors(pos).char == closingDelim && !cursors(pos).isLiteral) {
+              title = Some(cursors.slice(titleStart, pos).map(_.char).mkString)
+              pos += 1 // Skip closing delimiter
+              logger.debug(s"Found title: $title")
+              foundTitle = true
+            } else if (cursors(pos).char == '\n') {
+              // Title can't contain newlines without escaping
+              foundTitle = true
+            } else {
+              pos += 1
+            }
           }
         }
 
         // Skip to closing paren
-        while (pos < cursors.size && cursors(pos).char != ')') {
-          pos += 1
+        var foundClosingParen = false
+        while (pos < cursors.size && !foundClosingParen) {
+          if (cursors(pos).char == ')' && !cursors(pos).isLiteral) {
+            foundClosingParen = true
+          } else {
+            pos += 1
+          }
         }
 
-        if (pos < cursors.size && cursors(pos).char == ')') {
+        if (foundClosingParen) {
           pos += 1 // Skip closing paren
 
           // Extract link text content from inlines
           // We need to find all inlines that were added since the opener
+          val isImageOpener = opener.get.delimiterType == OpenImage
 
           // Calculate the position of the opener in the stream
-          val openerPos = opener.get.position
+          val openerPos  = opener.get.position
+          val textOffset = if (isImageOpener) 2 else 1 // ! + [ for images, just [ for links
 
           // Collect inlines to use as link content (working backwards)
           var linkInlines: List[Inline] = Nil
@@ -210,11 +222,12 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
                 if (linkTextChars > openerPos) {
                   // This text node contains the opener
                   // We only want the part after the opener bracket
-                  val textAfterOpener = content.substring(
-                    Math.min(content.length, content.length - (linkTextChars - openerPos) + 1),
-                  )
-                  if (textAfterOpener.nonEmpty) {
-                    linkInlines = Text(textAfterOpener) :: linkInlines
+                  val startIndex = Math.max(0, content.length - (linkTextChars - openerPos) - textOffset + 1)
+                  if (startIndex < content.length) {
+                    val textAfterOpener = content.substring(startIndex)
+                    if (textAfterOpener.nonEmpty) {
+                      linkInlines = Text(textAfterOpener) :: linkInlines
+                    }
                   }
                 } else {
                   // This text node is entirely within the link text
@@ -231,7 +244,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
           }
 
           // Create the appropriate node type
-          val newNode: Inline = if (opener.get.delimiterType == OpenImage) {
+          val newNode: Inline = if (isImageOpener) {
             logger.debug(s"Creating image node with ${linkInlines.length} inlines")
             Image(destination, title, linkInlines)
           } else {
