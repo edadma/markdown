@@ -119,6 +119,60 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
   }
 
   // Determine if delimiter can be opener/closer based on surrounding characters
+//  def determineDelimiterStatus(
+//      delimChar: Char,
+//      length: Int,
+//      beforeChar: Option[Char],
+//      afterChar: Option[Char],
+//  ): (Boolean, Boolean) = {
+//    // Define what counts as whitespace and punctuation
+//    def isWhitespace(c: Option[Char]): Boolean = c.exists(ch => ch.isWhitespace || ch == '\n')
+//    def isPunctuation(c: Option[Char]): Boolean = c.exists(ch =>
+//      (ch >= '!' && ch <= '/') || (ch >= ':' && ch <= '@') ||
+//        (ch >= '[' && ch <= '`') || (ch >= '{' && ch <= '~'),
+//    )
+//
+//    // A left-flanking delimiter run:
+//    // - is not followed by Unicode whitespace
+//    // - and either (a) is not followed by a Unicode punctuation character
+//    //   or (b) is followed by punctuation and preceded by whitespace or punctuation
+//    val isLeftFlanking = !isWhitespace(afterChar) && (
+//      !isPunctuation(afterChar) ||
+//        (isPunctuation(afterChar) && (isWhitespace(beforeChar) || isPunctuation(beforeChar)))
+//    )
+//
+//    // A right-flanking delimiter run:
+//    // - is not preceded by Unicode whitespace
+//    // - and either (a) is not preceded by a Unicode punctuation character
+//    //   or (b) is preceded by punctuation and followed by whitespace or punctuation
+//    val isRightFlanking = !isWhitespace(beforeChar) && (
+//      !isPunctuation(beforeChar) ||
+//        (isPunctuation(beforeChar) && (isWhitespace(afterChar) || isPunctuation(afterChar)))
+//    )
+//
+//    // For * delimiter:
+//    // - Can open if left-flanking
+//    // - Can close if right-flanking
+//    if (delimChar == '*') {
+//      return (isLeftFlanking, isRightFlanking)
+//    }
+//
+//    // For _ delimiter:
+//    // - Can open if left-flanking AND
+//    //   (a) not right-flanking OR (b) right-flanking and preceded by punctuation
+//    // - Can close if right-flanking AND
+//    //   (a) not left-flanking OR (b) left-flanking and followed by punctuation
+//    val canBeOpener = isLeftFlanking && (
+//      !isRightFlanking || (isRightFlanking && isPunctuation(beforeChar))
+//    )
+//
+//    val canBeCloser = isRightFlanking && (
+//      !isLeftFlanking || (isLeftFlanking && isPunctuation(afterChar))
+//    )
+//
+//    (canBeOpener, canBeCloser)
+//  }
+
   def determineDelimiterStatus(
       delimChar: Char,
       length: Int,
@@ -127,10 +181,15 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
   ): (Boolean, Boolean) = {
     // Define what counts as whitespace and punctuation
     def isWhitespace(c: Option[Char]): Boolean = c.exists(ch => ch.isWhitespace || ch == '\n')
+
     def isPunctuation(c: Option[Char]): Boolean = c.exists(ch =>
       (ch >= '!' && ch <= '/') || (ch >= ':' && ch <= '@') ||
         (ch >= '[' && ch <= '`') || (ch >= '{' && ch <= '~'),
     )
+
+    logger.debug(s"Determining delimiter status for '$delimChar'")
+    logger.debug(s"Before character: $beforeChar")
+    logger.debug(s"After character: $afterChar")
 
     // A left-flanking delimiter run:
     // - is not followed by Unicode whitespace
@@ -149,6 +208,9 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       !isPunctuation(beforeChar) ||
         (isPunctuation(beforeChar) && (isWhitespace(afterChar) || isPunctuation(afterChar)))
     )
+
+    logger.debug(s"Left-flanking: $isLeftFlanking")
+    logger.debug(s"Right-flanking: $isRightFlanking")
 
     // For * delimiter:
     // - Can open if left-flanking
@@ -169,6 +231,9 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     val canBeCloser = isRightFlanking && (
       !isLeftFlanking || (isLeftFlanking && isPunctuation(afterChar))
     )
+
+    logger.debug(s"Can be opener: $canBeOpener")
+    logger.debug(s"Can be closer: $canBeCloser")
 
     (canBeOpener, canBeCloser)
   }

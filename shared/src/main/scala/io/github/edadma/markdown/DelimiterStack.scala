@@ -385,7 +385,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
   }
 
   // Find a matching opener for a closing delimiter
-  private def findMatchingOpener(
+  def findMatchingOpener(
       closer: Delimiter,
       openersBottom: mutable.Map[(DelimiterType, Int, Boolean), Delimiter],
       stackBottom: Option[Delimiter],
@@ -394,38 +394,51 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
     val delimType = closer.delimiterType
     val closerMod = closer.length % 3
 
-    // Get the bottom delimiter for this type/mod
-    val bottom = openersBottom.getOrElse((delimType, closerMod, closer.canOpen), null)
-    logger.debug(s"Bottom delimiter: $bottom")
-
-    // Look back for a matching opener
+    // Look back through the entire stack for a matching opener
     var current                  = closer.previous
     var found: Option[Delimiter] = None
 
-    // Search back through the stack
     while (
       current.isDefined &&
-      (bottom == null || current.get != bottom) &&
       (stackBottom.isEmpty || current.get != stackBottom.get)
     ) {
-
       val delimiter = current.get
       logger.debug(s"Checking potential opener: $delimiter")
 
       // Check if this is a potential opener of the same type
       if (delimiter.delimiterType == delimType && delimiter.canOpen) {
-        // Check for Rule 9: sum of opener/closer length must not be multiple of 3
-        // unless both are multiples of 3
+        // Rule from the spec about delimiter length and emphasis
         val sumIsMultipleOf3     = (delimiter.length + closer.length) % 3 == 0
         val neitherIsMultipleOf3 = delimiter.length                   % 3 != 0 && closer.length % 3 != 0
 
         logger.debug(s"Sum multiple of 3: $sumIsMultipleOf3, Neither multiple of 3: $neitherIsMultipleOf3")
 
         if (!(sumIsMultipleOf3 && neitherIsMultipleOf3)) {
-          logger.debug("Found matching opener!")
-          // This is a match!
-          found = current
-          current = None // Break out of loop
+          // Check against previous bottom delimiter for this type/length/opener status
+          val key            = (delimType, closerMod, closer.canOpen)
+          val previousBottom = openersBottom.get(key)
+
+          // If no previous bottom or current delimiter is above the previous bottom
+          if (
+            previousBottom.isEmpty ||
+            !previousBottom.exists(bottom =>
+              current.exists(current =>
+                current == bottom ||
+                  (bottom.previous.isDefined && bottom.previous.get == current),
+              ),
+            )
+          ) {
+
+            logger.debug("Found matching opener!")
+            found = current
+            // Update the bottom for this delimiter type
+            openersBottom(key) = delimiter
+            // Stop searching
+            current = None
+          } else {
+            logger.debug("Skipping due to bottom delimiter constraint")
+            current = delimiter.previous
+          }
         } else {
           logger.debug("Does not match due to delimiter length rule")
           current = delimiter.previous
