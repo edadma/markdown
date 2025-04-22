@@ -180,12 +180,20 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       afterChar: Option[Char],
   ): (Boolean, Boolean) = {
     // Define what counts as whitespace and punctuation
-    def isWhitespace(c: Option[Char]): Boolean = c.exists(ch => ch.isWhitespace || ch == '\n')
+    def isWhitespace(c: Option[Char]): Boolean = {
+      val result = c.isEmpty || c.exists(ch => ch.isWhitespace || ch == '\n')
+      logger.debug(s"isWhitespace($c) = $result")
+      result
+    }
 
-    def isPunctuation(c: Option[Char]): Boolean = c.exists(ch =>
-      (ch >= '!' && ch <= '/') || (ch >= ':' && ch <= '@') ||
-        (ch >= '[' && ch <= '`') || (ch >= '{' && ch <= '~'),
-    )
+    def isPunctuation(c: Option[Char]): Boolean = {
+      val result = c.exists(ch =>
+        (ch >= '!' && ch <= '/') || (ch >= ':' && ch <= '@') ||
+          (ch >= '[' && ch <= '`') || (ch >= '{' && ch <= '~'),
+      )
+      logger.debug(s"isPunctuation($c) = $result")
+      result
+    }
 
     logger.debug(s"Determining delimiter status for '$delimChar'")
     logger.debug(s"Before character: $beforeChar")
@@ -220,16 +228,14 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
 
     // For _ delimiter:
-    // - Can open if left-flanking AND
-    //   (a) not right-flanking OR (b) right-flanking and preceded by punctuation
-    // - Can close if right-flanking AND
-    //   (a) not left-flanking OR (b) left-flanking and followed by punctuation
+    // - Can open if left-flanking AND (not right-flanking OR preceded by punctuation)
+    // - Can close if right-flanking AND (not left-flanking OR followed by punctuation)
     val canBeOpener = isLeftFlanking && (
-      !isRightFlanking || (isRightFlanking && isPunctuation(beforeChar))
+      !isRightFlanking || isPunctuation(beforeChar)
     )
 
     val canBeCloser = isRightFlanking && (
-      !isLeftFlanking || (isLeftFlanking && isPunctuation(afterChar))
+      !isLeftFlanking || isPunctuation(afterChar)
     )
 
     logger.debug(s"Can be opener: $canBeOpener")

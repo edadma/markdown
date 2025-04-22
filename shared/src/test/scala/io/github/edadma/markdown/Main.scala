@@ -7,13 +7,4 @@ import io.github.edadma.logger.{FileHandler, LogLevel}
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setHandler(new FileHandler("log"))
 
-  val input =
-    "*foo*"
-//    """l` ine ` 1
-//      |line 2
-//      |""".stripMargin
-//  val reader = new InputReader(input)
-//  val ast    = parseDocument(reader.stream)
-  val ast = parseInlineContent(input)
-
-  pprintln(ast)
+  pprintln(parseInlineContent("*foo **bar** baz*"))
