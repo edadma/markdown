@@ -1,7 +1,5 @@
 package io.github.edadma.markdown
 
-import scala.util.control.Breaks.{break, breakable}
-
 def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
   var pos                   = 0
   var inlines: List[Inline] = Nil
@@ -21,20 +19,19 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     val startPos = pos
 
     // Find next special character
-    var textEnd = startPos
+    var textEnd     = startPos
+    var shouldBreak = false
 
-    breakable {
-      while (textEnd < cursors.size) {
-        val c = cursors(textEnd)
-        if (
-          (c.char == '`' || c.char == '*' || c.char == '_' ||
-            c.char == '[' || c.char == '!' || c.char == ']' ||
-            c.char == '<' || c.char == '\n') && !c.isLiteral
-        ) {
-          break()
-        }
-        textEnd += 1
+    while (shouldBreak || textEnd < cursors.size) {
+      val c = cursors(textEnd)
+      if (
+        (c.char == '`' || c.char == '*' || c.char == '_' ||
+          c.char == '[' || c.char == '!' || c.char == ']' ||
+          c.char == '<' || c.char == '\n') && !c.isLiteral
+      ) {
+        shouldBreak = true
       }
+      textEnd += 1
     }
 
     // Extract the text content
