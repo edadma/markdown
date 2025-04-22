@@ -1,5 +1,7 @@
 package io.github.edadma.markdown
 
+import scala.collection.mutable.ArrayBuffer
+
 // Add to Node.scala:
 // case class Heading(level: Int, inlines: List[Inline]) extends Block
 // case class CodeBlock(content: String, infoString: Option[String] = None) extends Block
@@ -80,7 +82,7 @@ object ParagraphBlockParser extends BlockParser {
 
     // Collect all cursors from the paragraph lines and convert to LazyList
     // This fixes the type mismatch
-    val paragraphCursors = LazyList.from(paragraphLines.flatten)
+    val paragraphCursors = ArrayBuffer.from(paragraphLines.flatten)
 
     // Parse the inline content
     val inlines   = parseInline(paragraphCursors)

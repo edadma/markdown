@@ -1,6 +1,8 @@
 package io.github.edadma.markdown
 
-def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
+import scala.collection.mutable
+
+def parseInline(cursors: mutable.Buffer[Cursor]): List[Inline] = {
   var pos                   = 0
   var inlines: List[Inline] = Nil
   val delimiterStack        = new DelimiterStack(cursors)

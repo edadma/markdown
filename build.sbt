@@ -42,18 +42,6 @@ ThisBuild / publishTo := {
 }
 ThisBuild / publishMavenStyle := true
 
-lazy val commonSettings = Seq(
-  scalacOptions ++= Seq(
-    "-deprecation",
-    "-feature",
-    "-unchecked",
-    "-Xfatal-warnings",
-  ),
-  scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
-  //  scalaJSLinkerConfig ~= { _.withModuleSplitStyle(ModuleSplitStyle.SmallestModules) },
-  scalaJSLinkerConfig ~= { _.withSourceMap(false) },
-)
-
 lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("."))
   .settings(
@@ -65,19 +53,14 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         "-deprecation",
         "-feature",
         "-unchecked",
-        "-language:postfixOps",
-        "-language:implicitConversions",
-        "-language:existentials",
-        "-language:dynamics",
+        "-Xfatal-warnings",
       ),
     organization                            := "io.github.edadma",
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
-//    libraryDependencies ++= Seq(
-//      "io.github.edadma" %%% "cross-platform" % "0.0.10"
-//    ),
     libraryDependencies ++= Seq(
 //      "com.github.scopt" %%% "scopt" % "4.1.0",
-      "com.lihaoyi" %%% "pprint" % "0.9.0" % "test",
+      "com.lihaoyi"      %%% "pprint" % "0.9.0" % "test",
+      "io.github.edadma" %%% "logger" % "0.0.9",
     ),
     publishMavenStyle      := true,
     Test / publishArtifact := false,
@@ -99,5 +82,12 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 //    Test / scalaJSUseTestModuleInitializer      := true,
     scalaJSUseMainModuleInitializer             := true,
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
-    libraryDependencies += "io.github.edadma"  %%% "logger"          % "0.0.6",
+  )
+
+lazy val root = project
+  .in(file("."))
+  .aggregate(markdown.js, markdown.jvm, markdown.native)
+  .settings(
+    publish / skip      := true,
+    publishLocal / skip := true,
   )
