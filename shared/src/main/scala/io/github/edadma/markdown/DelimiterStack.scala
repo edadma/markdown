@@ -11,26 +11,13 @@ case object OpenBracket extends DelimiterType // [
 case object OpenImage   extends DelimiterType // ![
 
 // Delimiter node in the stack
-case class Delimiter(
-    // Position in the input stream
-    position: Int,
-
-    // Type of delimiter
-    delimiterType: DelimiterType,
-
-    // Number of delimiters (e.g., ** is 2)
+class Delimiter(
+    val position: Int,
+    val delimiterType: DelimiterType,
     var length: Int,
-
-    // Whether this delimiter can open emphasis
-    canOpen: Boolean,
-
-    // Whether this delimiter can close emphasis
-    canClose: Boolean,
-
-    // Whether this delimiter is still active - changed to var so it can be modified
+    val canOpen: Boolean,
+    val canClose: Boolean,
     var active: Boolean = true,
-
-    // Links for doubly-linked list
     var previous: Option[Delimiter] = None,
     var next: Option[Delimiter] = None,
 )
