@@ -29,6 +29,8 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
 
   // Push a new delimiter onto the stack
   def push(position: Int, delimiterType: DelimiterType, length: Int, canOpen: Boolean, canClose: Boolean): Delimiter = {
+    logger.debug(s"Pushing delimiter: type=$delimiterType, length=$length, canOpen=$canOpen, canClose=$canClose")
+
     val newDelimiter = Delimiter(position, delimiterType, length, canOpen, canClose)
 
     // Link with existing top
@@ -283,8 +285,12 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
 
   // Process all emphasis delimiters in the stack
   def processEmphasis(inlines: List[Inline], stackBottom: Option[Delimiter] = None): List[Inline] = {
+    logger.debug(s"Processing inlines: $inlines")
+    logger.debug(s"Stack bottom: $stackBottom")
+
     // If stack is empty or we're at the bottom, return inlines unchanged
     if (bottom.isEmpty || (stackBottom.isDefined && stackBottom.get == bottom.get)) {
+      logger.debug("Returning inlines unchanged - empty stack or at bottom")
       return inlines
     }
 
@@ -297,6 +303,7 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
 
     // Fill the position map by scanning through inlines
     mapDelimitersToPositions(inlinesBuffer, positionMap)
+    logger.debug(s"Position map: $positionMap")
 
     // Track openers_bottom for each delimiter type/length/can_open combination
     val openersBottom = new mutable.HashMap[(DelimiterType, Int, Boolean), Delimiter]()
@@ -429,22 +436,28 @@ class DelimiterStack(cursors: LazyList[Cursor]) {
       inlines: mutable.ArrayBuffer[Inline],
       positionMap: mutable.HashMap[Delimiter, (Int, Int)],
   ): Unit = {
+    logger.debug(s"Mapping delimiter positions in inlines: $inlines")
+
     var pos = 0
     for (i <- inlines.indices) {
       inlines(i) match {
         case Text(content) =>
+          logger.debug(s"Processing text node at index $i: $content")
           // Check if any delimiters are in this text node
           var current = bottom
           while (current.isDefined) {
             val delimiter = current.get
+            logger.debug(s"Checking delimiter: $delimiter")
             if (delimiter.position >= pos && delimiter.position < pos + content.length) {
               // This delimiter is in this text node
+              logger.debug(s"Mapping delimiter ${delimiter} to position (${i}, ${delimiter.position - pos})")
               positionMap(delimiter) = (i, delimiter.position - pos)
             }
             current = current.get.next
           }
           pos += content.length
         case _ =>
+          logger.debug(s"Skipping non-text node at index $i")
         // Skip non-text nodes
       }
     }
