@@ -17,6 +17,7 @@ InputReaderTest.scala
 InlineParserTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
+Testing.scala
 
 # build config
 ./
