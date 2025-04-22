@@ -1,10 +1,13 @@
 package io.github.edadma.markdown
 
+import scala.util.control.Breaks._
+
 def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
   var pos                   = 0
   var inlines: List[Inline] = Nil
+  val delimiterStack        = new DelimiterStack(cursors)
 
-  // Add an inline element to our result list
+  // Helper to add an inline element
   def addInline(inlineNode: Inline): Unit = {
     inlines match {
       case Text(prevContent) :: rest if inlineNode.isInstanceOf[Text] =>
@@ -14,29 +17,134 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
   }
 
-  // Process a code span starting at the current position
+  // Determine if delimiter can be opener/closer based on surrounding characters
+  def determineDelimiterStatus(
+      delimChar: Char,
+      length: Int,
+      beforeChar: Option[Char],
+      afterChar: Option[Char],
+  ): (Boolean, Boolean) = {
+    // Define what counts as whitespace and punctuation
+    def isWhitespace(c: Option[Char]): Boolean = c.exists(ch => ch.isWhitespace || ch == '\n')
+    def isPunctuation(c: Option[Char]): Boolean = c.exists(ch =>
+      (ch >= '!' && ch <= '/') || (ch >= ':' && ch <= '@') ||
+        (ch >= '[' && ch <= '`') || (ch >= '{' && ch <= '~'),
+    )
+
+    // A left-flanking delimiter run:
+    // - is not followed by Unicode whitespace
+    // - and either (a) is not followed by a Unicode punctuation character
+    //   or (b) is followed by punctuation and preceded by whitespace or punctuation
+    val isLeftFlanking = !isWhitespace(afterChar) && (
+      !isPunctuation(afterChar) ||
+        (isPunctuation(afterChar) && (isWhitespace(beforeChar) || isPunctuation(beforeChar)))
+    )
+
+    // A right-flanking delimiter run:
+    // - is not preceded by Unicode whitespace
+    // - and either (a) is not preceded by a Unicode punctuation character
+    //   or (b) is preceded by punctuation and followed by whitespace or punctuation
+    val isRightFlanking = !isWhitespace(beforeChar) && (
+      !isPunctuation(beforeChar) ||
+        (isPunctuation(beforeChar) && (isWhitespace(afterChar) || isPunctuation(afterChar)))
+    )
+
+    // For * delimiter:
+    // - Can open if left-flanking
+    // - Can close if right-flanking
+    if (delimChar == '*') {
+      return (isLeftFlanking, isRightFlanking)
+    }
+
+    // For _ delimiter:
+    // - Can open if left-flanking AND
+    //   (a) not right-flanking OR (b) right-flanking and preceded by punctuation
+    // - Can close if right-flanking AND
+    //   (a) not left-flanking OR (b) left-flanking and followed by punctuation
+    val canBeOpener = isLeftFlanking && (
+      !isRightFlanking || (isRightFlanking && isPunctuation(beforeChar))
+    )
+
+    val canBeCloser = isRightFlanking && (
+      !isLeftFlanking || (isLeftFlanking && isPunctuation(afterChar))
+    )
+
+    (canBeOpener, canBeCloser)
+  }
+
+  // Process emphasis delimiter (* or _)
+  def handleEmphasisDelimiter(delimChar: Char): Unit = {
+    val startPos = pos
+
+    // Count consecutive delimiters
+    val length = countConsecutive(pos, delimChar)
+    pos += length - 1 // -1 because loop will increment by 1
+
+    // Determine if this can be opener/closer
+    val beforeChar = if (startPos > 0) Some(cursors(startPos - 1).char) else None
+    val afterChar  = if (pos + 1 < cursors.size) Some(cursors(pos + 1).char) else None
+
+    val (canOpen, canClose) = determineDelimiterStatus(
+      delimChar,
+      length,
+      beforeChar,
+      afterChar,
+    )
+
+    // Add text node and update delimiter stack
+    val textNode = Text(String.valueOf(delimChar) * length)
+    addInline(textNode)
+
+    val delimType = if (delimChar == '*') Asterisk else Underscore
+    delimiterStack.push(startPos, delimType, length, canOpen, canClose)
+  }
+
+  // Count consecutive characters of the same type
+  def countConsecutive(startPos: Int, c: Char): Int = {
+    var count = 0
+    var i     = startPos
+    while (i < cursors.size && cursors(i).char == c && !cursors(i).isLiteral) {
+      count += 1
+      i += 1
+    }
+    count
+  }
+
+  // Handle closing bracket
+  def handleCloseBracket(): Unit = {
+    // Look for matching opening bracket and possibly create link/image
+    val (updatedInlines, newPos) = delimiterStack.lookForLinkOrImage(inlines, pos)
+    inlines = updatedInlines
+    pos = newPos
+  }
+
+  // Handle code spans
   def handleCodeSpan(): Unit = {
     val startPos         = pos
     val openingBackticks = countConsecutive(pos, '`')
-    pos += openingBackticks
+    pos += openingBackticks - 1 // -1 to account for loop increment
 
     // Find matching closing backticks
-    val startContent = pos
     var foundClosing = false
-    var endContent   = pos
+    var startContent = pos + 1
+    var endContent   = startContent
 
-    while (pos < cursors.size && !foundClosing) {
-      if (cursors(pos).char == '`') {
-        val closingBackticks = countConsecutive(pos, '`')
-        if (closingBackticks == openingBackticks) {
-          endContent = pos
-          pos += closingBackticks
-          foundClosing = true
+    breakable {
+      var searchPos = startContent
+      while (searchPos < cursors.size) {
+        if (cursors(searchPos).char == '`' && !cursors(searchPos).isLiteral) {
+          val closingCount = countConsecutive(searchPos, '`')
+          if (closingCount == openingBackticks) {
+            foundClosing = true
+            endContent = searchPos
+            pos = searchPos + closingCount - 1 // -1 for loop increment
+            break
+          } else {
+            searchPos += closingCount
+          }
         } else {
-          pos += closingBackticks
+          searchPos += 1
         }
-      } else {
-        pos += 1
       }
     }
 
@@ -48,6 +156,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       val processedContent = {
         val contentWithSpaces = content.replace('\n', ' ')
         if (
+          contentWithSpaces.nonEmpty &&
           contentWithSpaces.startsWith(" ") &&
           contentWithSpaces.endsWith(" ") &&
           contentWithSpaces.trim.nonEmpty
@@ -59,330 +168,11 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
       }
 
       addInline(CodeSpan(processedContent))
-      pos -= 1 // Adjust for the loop increment
     } else {
-      // No matching closing backticks
-      // Reset position and collect unmatched backticks and subsequent text as a single node
-      pos = startPos
-
-      // Find where the next delimiter character or end of input is
-      var textEnd            = startPos + openingBackticks
-      var continueCollecting = true
-
-      while (textEnd < cursors.size && continueCollecting) {
-        val c = cursors(textEnd)
-        if ((c.char == '`' || c.char == '[' || c.char == '!' || c.char == '\n') && !c.isLiteral) {
-          continueCollecting = false
-        } else {
-          textEnd += 1
-        }
-      }
-
-      // Create text node with backticks and subsequent text
-      val textContent = cursors.slice(startPos, textEnd).map(_.char).mkString
-      addInline(Text(textContent))
-
-      // Update position
-      pos = textEnd - 1 // Adjust for the loop increment
+      // No matching closing backticks, treat as plain text
+      addInline(Text(cursors.slice(startPos, startPos + openingBackticks).map(_.char).mkString))
+      pos = startPos // Reset position (will be incremented in loop)
     }
-  }
-
-  // Look for a run of characters and return its length
-  def countConsecutive(startPos: Int, c: Char): Int = {
-    var count = 0
-    var i     = startPos
-    while (i < cursors.size && cursors(i).char == c) {
-      count += 1
-      i += 1
-    }
-    count
-  }
-
-  // Direct implementation of link parsing without using delimiter stack
-  def handleLink(): Unit = {
-    val startPos = pos
-    pos += 1 // Skip the opening [
-
-    // Collect the link text
-    val textStart = pos
-    var textEnd   = pos
-    var depth     = 1 // Track nested brackets
-
-    // Find the closing bracket
-    while (pos < cursors.size && depth > 0) {
-      val c = cursors(pos)
-      if (c.char == '[' && !c.isLiteral) depth += 1
-      else if (c.char == ']' && !c.isLiteral) depth -= 1
-
-      if (depth > 0) pos += 1
-    }
-
-    if (depth == 0) {
-      // Found closing bracket
-      textEnd = pos
-      pos += 1 // Skip the closing bracket
-
-      // Check if we have a link destination
-      if (pos < cursors.size && cursors(pos).char == '(' && !cursors(pos).isLiteral) {
-        // Parse link destination
-        pos += 1 // Skip the opening paren
-
-        // Skip whitespace
-        while (pos < cursors.size && cursors(pos).char.isWhitespace) {
-          pos += 1
-        }
-
-        // Collect destination
-        val destStart          = pos
-        var destEnd            = pos
-        var parenDepth         = 0
-        var continueCollecting = true
-
-        while (pos < cursors.size && continueCollecting) {
-          val c = cursors(pos)
-
-          if (c.char == '(' && !c.isLiteral) {
-            parenDepth += 1
-            pos += 1
-          } else if (c.char == ')' && !c.isLiteral) {
-            if (parenDepth == 0) {
-              // End of destination
-              continueCollecting = false
-            } else {
-              parenDepth -= 1
-              pos += 1
-            }
-          } else if (c.char.isWhitespace && parenDepth == 0) {
-            // Whitespace outside parentheses marks end of destination
-            continueCollecting = false
-          } else {
-            pos += 1
-          }
-        }
-
-        destEnd = pos
-
-        // Extract the destination
-        val destination = cursors.slice(destStart, destEnd).map(_.char).mkString
-
-        // Check for a title
-        var title: Option[String] = None
-
-        // Skip whitespace
-        while (pos < cursors.size && cursors(pos).char.isWhitespace) {
-          pos += 1
-        }
-
-        // Check for a title
-        if (pos < cursors.size && (cursors(pos).char == '"' || cursors(pos).char == '\'' || cursors(pos).char == '(')) {
-          val titleDelim   = cursors(pos).char
-          val closingDelim = if (titleDelim == '(') ')' else titleDelim
-
-          pos += 1 // Skip opening delimiter
-          val titleStart = pos
-
-          // Find closing delimiter
-          while (
-            pos < cursors.size &&
-            cursors(pos).char != closingDelim &&
-            cursors(pos).char != '\n'
-          ) {
-            pos += 1
-          }
-
-          if (pos < cursors.size && cursors(pos).char == closingDelim) {
-            title = Some(cursors.slice(titleStart, pos).map(_.char).mkString)
-            pos += 1 // Skip closing delimiter
-          }
-        }
-
-        // Skip to closing paren
-        while (pos < cursors.size && cursors(pos).char != ')') {
-          pos += 1
-        }
-
-        if (pos < cursors.size && cursors(pos).char == ')') {
-          pos += 1 // Skip closing paren
-
-          // Extract the link text
-          val linkText = cursors.slice(textStart, textEnd).map(_.char).mkString
-
-          // Parse the link text recursively
-          val textReader  = new InputReader(linkText)
-          val textStream  = textReader.stream.takeWhile(_ != EndOfInput)
-          val textInlines = parseInline(textStream)
-
-          // Create the link node
-          addInline(Link(destination, title, textInlines))
-        } else {
-          // No closing paren, treat as plain text
-          handlePlainText(startPos)
-        }
-      } else {
-        // No link destination, treat as plain text
-        handlePlainText(startPos)
-      }
-    } else {
-      // No closing bracket, treat as plain text
-      handlePlainText(startPos)
-    }
-  }
-
-  def handlePlainText(revertPos: Int): Unit = {
-    // Reset position and treat as plain text
-    pos = revertPos
-    addInline(Text(cursors(pos).char.toString))
-  }
-
-  def handleImage(): Unit = {
-    val startPos = pos
-    pos += 2 // Skip the ![ prefix
-
-    // Collect the image alt text
-    val textStart = pos
-    var textEnd   = pos
-    var depth     = 1 // Track nested brackets
-
-    // Find the closing bracket
-    while (pos < cursors.size && depth > 0) {
-      val c = cursors(pos)
-      if (c.char == '[' && !c.isLiteral) depth += 1
-      else if (c.char == ']' && !c.isLiteral) depth -= 1
-
-      if (depth > 0) pos += 1
-    }
-
-    if (depth == 0) {
-      // Found closing bracket
-      textEnd = pos
-      pos += 1 // Skip the closing bracket
-
-      // Check if we have an image destination
-      if (pos < cursors.size && cursors(pos).char == '(' && !cursors(pos).isLiteral) {
-        // Parse image destination
-        pos += 1 // Skip the opening paren
-
-        // Skip whitespace
-        while (pos < cursors.size && cursors(pos).char.isWhitespace) {
-          pos += 1
-        }
-
-        // Collect destination
-        val destStart          = pos
-        var destEnd            = pos
-        var parenDepth         = 0
-        var continueCollecting = true
-
-        while (pos < cursors.size && continueCollecting) {
-          val c = cursors(pos)
-
-          if (c.char == '(' && !c.isLiteral) {
-            parenDepth += 1
-            pos += 1
-          } else if (c.char == ')' && !c.isLiteral) {
-            if (parenDepth == 0) {
-              // End of destination
-              continueCollecting = false
-            } else {
-              parenDepth -= 1
-              pos += 1
-            }
-          } else if (c.char.isWhitespace && parenDepth == 0) {
-            // Whitespace outside parentheses marks end of destination
-            continueCollecting = false
-          } else {
-            pos += 1
-          }
-        }
-
-        destEnd = pos
-
-        // Extract the destination
-        val destination = cursors.slice(destStart, destEnd).map(_.char).mkString
-
-        // Check for a title
-        var title: Option[String] = None
-
-        // Skip whitespace
-        while (pos < cursors.size && cursors(pos).char.isWhitespace) {
-          pos += 1
-        }
-
-        // Check for a title
-        if (pos < cursors.size && (cursors(pos).char == '"' || cursors(pos).char == '\'' || cursors(pos).char == '(')) {
-          val titleDelim   = cursors(pos).char
-          val closingDelim = if (titleDelim == '(') ')' else titleDelim
-
-          pos += 1 // Skip opening delimiter
-          val titleStart = pos
-
-          // Find closing delimiter
-          while (
-            pos < cursors.size &&
-            cursors(pos).char != closingDelim &&
-            cursors(pos).char != '\n'
-          ) {
-            pos += 1
-          }
-
-          if (pos < cursors.size && cursors(pos).char == closingDelim) {
-            title = Some(cursors.slice(titleStart, pos).map(_.char).mkString)
-            pos += 1 // Skip closing delimiter
-          }
-        }
-
-        // Skip to closing paren
-        while (pos < cursors.size && cursors(pos).char != ')') {
-          pos += 1
-        }
-
-        if (pos < cursors.size && cursors(pos).char == ')') {
-          pos += 1 // Skip closing paren
-
-          // Extract the alt text
-          val altText = cursors.slice(textStart, textEnd).map(_.char).mkString
-
-          // Parse the alt text recursively
-          val textReader  = new InputReader(altText)
-          val textStream  = textReader.stream.takeWhile(_ != EndOfInput)
-          val textInlines = parseInline(textStream)
-
-          // Create the image node
-          addInline(Image(destination, title, textInlines))
-        } else {
-          // No closing paren, treat as plain text
-          handlePlainText(startPos)
-        }
-      } else {
-        // No image destination, treat as plain text
-        handlePlainText(startPos)
-      }
-    } else {
-      // No closing bracket, treat as plain text
-      handlePlainText(startPos)
-    }
-  }
-
-  // Main function for text collection
-  def collectText(startPos: Int): (String, Int) = {
-    var textEnd            = startPos
-    var continueCollecting = true
-
-    // Find next special character
-    while (textEnd < cursors.size && continueCollecting) {
-      val c = cursors(textEnd)
-      if ((c.char == '`' || c.char == '[' || c.char == '!' || c.char == '\n') && !c.isLiteral) {
-        continueCollecting = false
-      } else {
-        textEnd += 1
-      }
-    }
-
-    // Extract the text content
-    val rawContent = cursors.slice(startPos, textEnd).map(_.char).mkString
-
-    // Return the content and updated position
-    (rawContent, textEnd)
   }
 
   // Handle line breaks
@@ -411,7 +201,9 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
 
           // Replace the text node with a trimmed version
           inlines = inlines.tail
-          inlines = Text(newContent) :: inlines
+          if (newContent.nonEmpty) {
+            inlines = Text(newContent) :: inlines
+          }
         }
       }
     }
@@ -420,12 +212,17 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     if (pos > 0 && cursors(pos - 1).char == '\\' && !cursors(pos - 1).isLiteral) {
       isHardBreak = true
 
-      val textNode   = inlines.head.asInstanceOf[Text]
-      val newContent = textNode.content.dropRight(1)
+      // Remove the backslash from the previous Text node
+      if (inlines.nonEmpty && inlines.head.isInstanceOf[Text]) {
+        val textNode   = inlines.head.asInstanceOf[Text]
+        val newContent = textNode.content.dropRight(1)
 
-      // Replace the text node with a new version without the backslash
-      inlines = inlines.tail
-      inlines = Text(newContent) :: inlines
+        // Replace the text node with a new version without the backslash
+        inlines = inlines.tail
+        if (newContent.nonEmpty) {
+          inlines = Text(newContent) :: inlines
+        }
+      }
     }
 
     // Add the appropriate line break
@@ -436,146 +233,79 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
     }
   }
 
-  def handleAutoLink(): Unit = {
-    // If we're here, we know the first character is '<'
-    // First, check if there's anything after the '<'
-    if (pos + 1 >= cursors.size) {
-      handlePlainText(pos)
-      return
-    }
-
+  // Plain text handling
+  def handlePlainText(): Unit = {
     val startPos = pos
-    pos += 1 // Skip the opening <
 
-    // Try to find the closing '>'
-    var closingFound = false
-    var linkEnd      = pos
+    // Find next special character
+    var textEnd = startPos
 
-    while (pos < cursors.size && !closingFound) {
-      if (cursors(pos).char == '>') {
-        closingFound = true
-        linkEnd = pos
-      }
-      pos += 1
-    }
-
-    // If no closing '>', treat as plain text
-    if (!closingFound) {
-      handlePlainText(startPos)
-      return
-    }
-
-    // Extract link text (excluding the angle brackets)
-    val linkText = cursors.slice(startPos + 1, linkEnd).map(_.char).mkString
-
-    // Basic validation
-    val isValidLink =
-      linkText.contains("://") ||                                      // Looks like a URL
-        (linkText.contains("@") && linkText.exists(_.isLetterOrDigit)) // Looks like an email
-
-    if (isValidLink) {
-      val destination = if (linkText.contains("@")) {
-        s"mailto:$linkText"
-      } else {
-        linkText
-      }
-
-      addInline(AutoLink(destination, linkText))
-    } else {
-      // If not a valid link, treat as plain text
-      handlePlainText(startPos)
-    }
-  }
-
-  def handleRawHTML(): Unit = {
-    val startPos = pos
-    pos += 1 // Skip the opening <
-
-    // Check if this is a valid HTML tag start
-    if (
-      pos < cursors.size &&
-      (cursors(pos).char.isLetter ||
-        cursors(pos).char == '/' ||
-        cursors(pos).char == '!' ||
-        cursors(pos).char == '?' ||
-        cursors(pos).char == '%')
-    ) {
-
-      var depth  = 1
-      var tagEnd = pos
-
-      // Find the closing >
-      while (pos < cursors.size && depth > 0) {
-        if (cursors(pos).char == '<') depth += 1
-        if (cursors(pos).char == '>') depth -= 1
-
-        if (depth == 0) {
-          tagEnd = pos
-          pos += 1   // Include the >
-          depth = -1 // Signal successful parsing
-        } else {
-          pos += 1
+    breakable {
+      while (textEnd < cursors.size) {
+        val c = cursors(textEnd)
+        if (
+          (c.char == '`' || c.char == '*' || c.char == '_' ||
+            c.char == '[' || c.char == '!' || c.char == ']' ||
+            c.char == '<' || c.char == '\n') && !c.isLiteral
+        ) {
+          break
         }
+        textEnd += 1
       }
+    }
 
-      if (depth == -1) {
-        // Successfully parsed HTML tag
-        val htmlContent = cursors.slice(startPos, pos).map(_.char).mkString
-        addInline(RawHTML(htmlContent))
-      } else {
-        // Incomplete tag, treat as plain text
-        handlePlainText(startPos)
-      }
-    } else {
-      // Not a valid HTML tag start
-      handlePlainText(startPos)
+    // Extract the text content
+    if (textEnd > startPos) {
+      val textContent = cursors.slice(startPos, textEnd).map(_.char).mkString
+      addInline(Text(textContent))
+      pos = textEnd - 1 // -1 to account for loop increment
     }
   }
 
-  // Main loop - process each cursor
+  // Main loop
   while (pos < cursors.size) {
     val cursor = cursors(pos)
 
-    if (cursor.char == '`' && !cursor.isLiteral) {
+    if (cursor.isLiteral) {
+      // If the character is literal, handle it as plain text
+      addInline(Text(cursor.char.toString))
+    } else if (cursor.char == '`') {
       handleCodeSpan()
-    } else if (cursor.char == '[' && !cursor.isLiteral) {
-      handleLink()
+    } else if (cursor.char == '*' || cursor.char == '_') {
+      handleEmphasisDelimiter(cursor.char)
+    } else if (cursor.char == '[') {
+      // Add to delimiter stack
+      addInline(Text("["))
+      delimiterStack.push(pos, OpenBracket, 1, true, false)
     } else if (
       cursor.char == '!' && pos + 1 < cursors.size &&
-      cursors(pos + 1).char == '[' && !cursor.isLiteral
+      cursors(pos + 1).char == '[' && !cursors(pos + 1).isLiteral
     ) {
-      handleImage()
+      // Image opening
+      addInline(Text("!["))
+      delimiterStack.push(pos, OpenImage, 1, true, false)
+      pos += 1 // Skip the next '['
+    } else if (cursor.char == ']') {
+      handleCloseBracket()
     } else if (cursor.char == '\n') {
       handleLineBreak()
-    } else if (
-      cursor.char == '<' && pos + 1 < cursors.size &&
-      (
-        // Scheme-based URLs
-        (cursors(pos + 1).char.isLetter &&
-          cursors.slice(pos + 1, pos + 9).map(_.char).mkString.contains("://")) ||
-
-          // Email addresses
-          (cursors(pos + 1).char.isLetter &&
-            cursors.slice(pos + 1, pos + 20)
-              .takeWhile(_.char != '>')
-              .count(_.char == '@') == 1)
-      )
-    ) {
-      handleAutoLink()
     } else if (cursor.char == '<') {
-      handleRawHTML()
+      // We should handle autolinks and HTML here
+      // For now, just treat as text
+      handlePlainText()
     } else {
-      // Plain text - collect consecutive text characters
-      val (textContent, newPos) = collectText(pos)
-      addInline(Text(textContent))
-
-      // Update position (subtract 1 because loop will increment)
-      pos = newPos - 1
+      handlePlainText()
     }
 
     pos += 1
   }
 
-  // Remove EndOfInput and return inlines in correct order
-  inlines.reverse
+  // At the end of the document, process any remaining emphasis delimiters
+  val processedInlines = delimiterStack.processEmphasis(None)
+
+  // If we processed any emphasis, use those inlines, otherwise use what we've built
+  val finalInlines = if (processedInlines.nonEmpty) processedInlines else inlines
+
+  // Return inlines in correct order
+  finalInlines.reverse
 }
