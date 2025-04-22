@@ -415,7 +415,7 @@ def parseInline(cursors: LazyList[Cursor]): List[Inline] = {
   }
 
   // At the end of the document, process any remaining emphasis delimiters
-  val processedInlines = delimiterStack.processEmphasis(None)
+  val processedInlines = delimiterStack.processEmphasis(inlines)
 
   // If we processed any emphasis, use those inlines, otherwise use what we've built
   val finalInlines = if (processedInlines.nonEmpty) processedInlines else inlines
