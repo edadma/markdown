@@ -22,32 +22,30 @@ def parseInline(text: String): List[Inline] = {
 }
 
 private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
-  var currentNode = nodes.headNode
+  if nodes.nonEmpty then
+    var currentNode = nodes.headNode
 
-  while (currentNode != null && !currentNode.isAfterEnd) {
-    currentNode.element match
-      case C(char) =>
-        val startNode = currentNode
-        val sb        = new StringBuilder()
+    while (currentNode != null && !currentNode.isAfterEnd) {
+      currentNode.element match
+        case C(char) =>
+          val startNode = currentNode
+          val sb        = new StringBuilder()
 
-        // Collect consecutive C nodes
-        while (
-          currentNode != null && !currentNode.isAfterEnd &&
-          currentNode.element.isInstanceOf[C]
-        ) {
-          sb.append(char)
-          currentNode = currentNode.following
-        }
+          // Collect consecutive C nodes
+          while (currentNode.notAfterEnd && currentNode.element.isInstanceOf[C]) {
+            sb.append(currentNode.element.asInstanceOf[C].char)
+            currentNode = currentNode.following
+          }
 
-        // Replace with a single Text node
-        startNode.element = Text(sb.toString())
+          // Replace with a single Text node
+          startNode.element = Text(sb.toString)
 
-        // Remove extra nodes
-        if (startNode.following != currentNode) {
-          startNode.unlinkUntil(currentNode)
-        }
-      case _ => currentNode = currentNode.following
-  }
+          // Remove extra nodes
+          if (startNode.following != currentNode) {
+            startNode.following.unlinkUntil(currentNode)
+          }
+        case _ => currentNode = currentNode.following
+    }
 }
 
 //import scala.collection.mutable
