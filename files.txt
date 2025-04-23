@@ -13,10 +13,8 @@ renderToHTML.scala
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
 InputReaderTest.scala
-InlineParserTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
-Testing.scala
 
 # build config
 ./
