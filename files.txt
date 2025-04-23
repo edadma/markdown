@@ -7,7 +7,6 @@ InputReader.scala
 Node.scala
 package.scala
 parseDocument.scala
-parseInline.scala
 renderToHTML.scala
 
 # test code
