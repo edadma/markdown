@@ -2,7 +2,7 @@ package io.github.edadma.markdown
 
 import io.github.edadma.dllist.DLList
 import pprint.pprintln
-import io.github.edadma.logger.{FileHandler, LogLevel}
+import io.github.edadma.logger.LogLevel
 
 @main def run(): Unit =
   logger.setLogLevel(LogLevel.DEBUG)
