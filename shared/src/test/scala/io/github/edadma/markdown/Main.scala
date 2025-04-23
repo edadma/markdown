@@ -7,4 +7,4 @@ import io.github.edadma.logger.{FileHandler, LogLevel}
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-  pprintln(parseInlineContent("![alt text](image.jpg)"))
+//  pprintln(parseInlineContent("![alt text](image.jpg)"))

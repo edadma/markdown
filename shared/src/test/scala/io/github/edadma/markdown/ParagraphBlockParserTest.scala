@@ -10,12 +10,7 @@ class ParagraphBlockParserTest extends AnyFlatSpec with Matchers {
     val reader   = new InputReader(input)
     val document = parseDocument(reader.stream)
 
-    document.children should have length 1
-    document.children.head shouldBe a[Paragraph]
-    val para = document.children.head.asInstanceOf[Paragraph]
-    para.inlines should have length 1
-    para.inlines.head shouldBe a[Text]
-    para.inlines.head.asInstanceOf[Text].content should be("This is a paragraph.")
+    document shouldBe Document(List(Paragraph(List(Text("This is a paragraph.")))))
   }
 
   it should "parse multiple paragraphs separated by blank lines" in {
@@ -31,8 +26,8 @@ Third paragraph."""
     document.children.foreach(_ shouldBe a[Paragraph])
 
     val paras = document.children.map(_.asInstanceOf[Paragraph])
-    paras(0).inlines.head.asInstanceOf[Text].content should be("First paragraph.")
-    paras(1).inlines.head.asInstanceOf[Text].content should be("Second paragraph.")
+    paras(0).inlines.head.asInstanceOf[Text].content should be("First paragraph.\n")
+    paras(1).inlines.head.asInstanceOf[Text].content should be("Second paragraph.\n")
     paras(2).inlines.head.asInstanceOf[Text].content should be("Third paragraph.")
   }
 

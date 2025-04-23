@@ -54,8 +54,7 @@ private def renderInlines(inlines: List[Inline]): String =
     case AutoLink(destination, text) =>
       s"""<a href="${escapeHtml(destination)}">${escapeHtml(text)}</a>"""
 
-    case RawHTML(content) =>
-      content // Raw HTML is passed through as-is
+    case RawHTML(content) => content // Raw HTML is passed through as-is
   }.mkString
 
 // Helper for image alt text - extracts plain text only
