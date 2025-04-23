@@ -1,5 +1,55 @@
-//package io.github.edadma.markdown
-//
+package io.github.edadma.markdown
+
+import io.github.edadma.dllist.DLList
+
+// Standalone inline parsing function
+def parseInline(text: String): List[Inline] = {
+  // Create initial DLList with character nodes
+  val inlineNodes = new DLList[Inline]()
+
+  // Fill DLList with character nodes
+  for (c <- text) {
+    inlineNodes.append(C(c))
+  }
+
+  // TODO: Add delimiter stack and processing here
+
+  // Convert C nodes to proper Text nodes
+  consolidateCharacters(inlineNodes)
+
+  // Return as List
+  inlineNodes.toList
+}
+
+private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
+  var currentNode = nodes.headNode
+
+  while (currentNode != null && !currentNode.isAfterEnd) {
+    currentNode.element match
+      case C(char) =>
+        val startNode = currentNode
+        val sb        = new StringBuilder()
+
+        // Collect consecutive C nodes
+        while (
+          currentNode != null && !currentNode.isAfterEnd &&
+          currentNode.element.isInstanceOf[C]
+        ) {
+          sb.append(char)
+          currentNode = currentNode.following
+        }
+
+        // Replace with a single Text node
+        startNode.element = Text(sb.toString())
+
+        // Remove extra nodes
+        if (startNode.following != currentNode) {
+          startNode.unlinkUntil(currentNode)
+        }
+      case _ => currentNode = currentNode.following
+  }
+}
+
 //import scala.collection.mutable
 //
 //def parseInline(cursors: mutable.Buffer[Cursor]): List[Inline] = {

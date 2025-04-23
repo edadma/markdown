@@ -55,6 +55,8 @@ private def renderInlines(inlines: List[Inline]): String =
       s"""<a href="${escapeHtml(destination)}">${escapeHtml(text)}</a>"""
 
     case RawHTML(content) => content // Raw HTML is passed through as-is
+
+    case c: C => sys.error(s"unparsed character wrapper: '$c'")
   }.mkString
 
 // Helper for image alt text - extracts plain text only

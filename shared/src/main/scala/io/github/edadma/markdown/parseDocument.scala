@@ -9,10 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 // case class ThematicBreak() extends Block
 
 // Block parser implementation
-def parseDocument(stream: LazyList[Cursor]): Document = {
-  val blocks = parseBlocks(stream)
-  Document(blocks)
-}
+def parseDocument(stream: LazyList[Cursor]): Document = Document(parseBlocks(stream)).processInlines
 
 // The main block parsing function that delegates to specific block parsers
 private def parseBlocks(stream: LazyList[Cursor]): List[Block] = {
