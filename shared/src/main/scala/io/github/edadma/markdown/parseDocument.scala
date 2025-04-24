@@ -1,6 +1,6 @@
 package io.github.edadma.markdown
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 // Add to Node.scala:
@@ -10,18 +10,18 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 // case class ThematicBreak() extends Block
 
 // Block parser implementation
-def parseDocument(stream: LazyList[Cursor]): Document = {
-  val linkRefs = new mutable.HashMap[String, LinkReference]
-  val blocks   = parseBlocks(stream, linkRefs)
-
+def parseDocument(stream: LazyList[Cursor]): (Document, immutable.Map[String, LinkReference]) = {
+  val linkRefs      = new mutable.HashMap[String, LinkReference]
+  val blocks        = parseBlocks(stream, linkRefs)
   val immutableRefs = linkRefs.toMap // Convert to immutable map
-  Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs)))
+
+  (Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs))), immutableRefs)
 }
 
 // The main block parsing function that delegates to specific block parsers
 private def parseBlocks(
     stream: LazyList[Cursor],
-    linkRefs: scala.collection.mutable.Map[String, LinkReference],
+    linkRefs: mutable.Map[String, LinkReference],
 ): List[Block] = {
   // Group the stream into lines
   val lines = groupIntoLines(stream)

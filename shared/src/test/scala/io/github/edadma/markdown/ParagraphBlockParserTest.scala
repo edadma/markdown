@@ -7,10 +7,11 @@ class ParagraphBlockParserTest extends AnyFlatSpec with Matchers {
 
   "The paragraph block parser" should "parse a simple paragraph" in {
     val input    = "This is a paragraph."
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
-    document shouldBe Document(List(Paragraph(List(Text("This is a paragraph.")))))
+    document shouldBe Document(List(
+      Paragraph(List(Text("This is a paragraph."))),
+    ))
   }
 
   it should "parse multiple paragraphs separated by blank lines" in {
@@ -19,8 +20,7 @@ class ParagraphBlockParserTest extends AnyFlatSpec with Matchers {
 Second paragraph.
 
 Third paragraph."""
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       Paragraph(List(Text("First paragraph."), SoftLineBreak())),
@@ -33,22 +33,22 @@ Third paragraph."""
     val input    = """This is a paragraph
 that spans multiple
 lines."""
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
-    document shouldBe Document(List(Paragraph(List(
-      Text("This is a paragraph"),
-      SoftLineBreak(),
-      Text("that spans multiple"),
-      SoftLineBreak(),
-      Text("lines."),
-    ))))
+    document shouldBe Document(List(
+      Paragraph(List(
+        Text("This is a paragraph"),
+        SoftLineBreak(),
+        Text("that spans multiple"),
+        SoftLineBreak(),
+        Text("lines."),
+      )),
+    ))
   }
 
   it should "handle empty documents" in {
     val input    = ""
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List())
   }
@@ -57,8 +57,7 @@ lines."""
     val input    = """
 
 """
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List())
   }
@@ -71,8 +70,7 @@ First paragraph.
 Last paragraph.
 
 """
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       Paragraph(List(Text("First paragraph."), SoftLineBreak())),
@@ -82,8 +80,7 @@ Last paragraph.
 
   it should "handle paragraphs with different line endings" in {
     val input    = "First line.\r\nSecond line.\r\n\r\nNew paragraph."
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       Paragraph(List(
@@ -101,8 +98,7 @@ Last paragraph.
 
 
 Second paragraph."""
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       Paragraph(List(Text("First paragraph."), SoftLineBreak())),
@@ -114,8 +110,7 @@ Second paragraph."""
     val input    = """  Indented paragraph.
 
 Not indented paragraph."""
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       Paragraph(List(Text("  Indented paragraph."), SoftLineBreak())),
