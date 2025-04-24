@@ -3,14 +3,9 @@ package io.github.edadma.markdown
 import io.github.edadma.dllist.DLList
 
 // Standalone inline parsing function
-def parseInline(text: String): List[Inline] = {
+def parseInline(inlines: List[Inline]): List[Inline] = {
   // Create initial DLList with character nodes
-  val inlineNodes = new DLList[Inline]()
-
-  // Fill DLList with character nodes
-  for (c <- text) {
-    inlineNodes.append(C(c))
-  }
+  val inlineNodes = DLList[Inline](inlines*)
 
   // TODO: Add delimiter stack and processing here
 
@@ -27,13 +22,13 @@ private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
 
     while (currentNode != null && !currentNode.isAfterEnd) {
       currentNode.element match
-        case C(char) =>
+        case Cursor(char, _, _, _, _) =>
           val startNode = currentNode
           val sb        = new StringBuilder()
 
           // Collect consecutive C nodes
-          while (currentNode.notAfterEnd && currentNode.element.isInstanceOf[C]) {
-            sb.append(currentNode.element.asInstanceOf[C].char)
+          while (currentNode.notAfterEnd && currentNode.element.isInstanceOf[Cursor]) {
+            sb.append(currentNode.element.asInstanceOf[Cursor].char)
             currentNode = currentNode.following
           }
 

@@ -6,8 +6,7 @@ trait Node {
 
 // Document delegates to its children
 case class Document(children: List[Block]) extends Node {
-  override def processInlines: Document =
-    Document(children.map(_.processInlines.asInstanceOf[Block]))
+  override def processInlines: Document = Document(children.map(_.processInlines))
 }
 
 trait Block extends Node {
@@ -15,23 +14,11 @@ trait Block extends Node {
 }
 
 case class Paragraph(inlines: List[Inline]) extends Block {
-  override def processInlines: Paragraph = {
-    val rawText = inlines.headOption match {
-      case Some(Text(content)) => content
-      case _                   => ""
-    }
-    Paragraph(parseInline(rawText))
-  }
+  override def processInlines: Paragraph = Paragraph(parseInline(inlines))
 }
 
 case class Heading(level: Int, inlines: List[Inline]) extends Block {
-  override def processInlines: Heading = {
-    val rawText = inlines.headOption match {
-      case Some(Text(content)) => content
-      case _                   => ""
-    }
-    Heading(level, parseInline(rawText))
-  }
+  override def processInlines: Heading = Heading(level, parseInline(inlines))
 }
 
 case class BlockQuote(children: List[Block]) extends Block {
@@ -54,4 +41,13 @@ case class Image(destination: String, title: Option[String], inlines: List[Inlin
 case class AutoLink(destination: String, text: String)                              extends Inline
 case class RawHTML(content: String)                                                 extends Inline
 
-private[markdown] case class C(char: Char) extends Inline
+case class Cursor(
+    char: Char,        // The character (possibly transformed)
+    pos: Int,          // Position in original input
+    line: Int,         // Line number (0-based)
+    column: Int,       // Column number (0-based)
+    isLiteral: Boolean, // Whether this should be treated literally (not as syntax)
+) extends Inline
+
+// Sentinel value for end of input
+object EndOfInput extends Cursor('\u0000', -1, -1, -1, false)

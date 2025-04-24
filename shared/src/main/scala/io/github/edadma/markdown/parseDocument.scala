@@ -59,8 +59,6 @@ private def processLines(lines: List[LazyList[Cursor]]): List[Block] = {
   blocks
 }
 
-private def toInline(cursors: List[Cursor]) = List(Text(cursors.map(c => c.char).mkString))
-
 // A parser for paragraph blocks - our first concrete implementation
 object ParagraphBlockParser extends BlockParser {
   def canStart(line: LazyList[Cursor]): Boolean = {
@@ -79,7 +77,7 @@ object ParagraphBlockParser extends BlockParser {
       paragraphLines.length // The paragraph runs to the end
     }
 
-    (Paragraph(toInline(paragraphLines.flatten)), linesConsumed)
+    (Paragraph(paragraphLines.flatten), linesConsumed)
   }
 }
 
