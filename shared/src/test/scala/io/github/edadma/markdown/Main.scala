@@ -10,7 +10,7 @@ import io.github.edadma.logger.LogLevel
 
 //  pprintln(parseInlineContent("![alt text](image.jpg)"))
 
-  val dllist = DLList[Inline](C('a'), C('b'), C('c'))
+  val dllist = DLList[Inline](Cursor('a', 0, 0, 0, false), Cursor('b', 0, 0, 0, false), Cursor('c', 0, 0, 0, false))
 
   consolidateCharacters(dllist)
   pprintln(dllist)
