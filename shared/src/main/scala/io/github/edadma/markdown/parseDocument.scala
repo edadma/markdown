@@ -1,6 +1,7 @@
 package io.github.edadma.markdown
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 // Add to Node.scala:
 // case class Heading(level: Int, inlines: List[Inline]) extends Block
@@ -9,15 +10,24 @@ import scala.collection.mutable.ArrayBuffer
 // case class ThematicBreak() extends Block
 
 // Block parser implementation
-def parseDocument(stream: LazyList[Cursor]): Document = Document(parseBlocks(stream)).processInlines
+def parseDocument(stream: LazyList[Cursor]): Document = {
+  val linkRefs = scala.collection.mutable.Map[String, LinkReference]()
+  val blocks   = parseBlocks(stream, linkRefs)
+
+  val immutableRefs = linkRefs.toMap // Convert to immutable map
+  Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs)))
+}
 
 // The main block parsing function that delegates to specific block parsers
-private def parseBlocks(stream: LazyList[Cursor]): List[Block] = {
+private def parseBlocks(
+    stream: LazyList[Cursor],
+    linkRefs: scala.collection.mutable.Map[String, LinkReference],
+): List[Block] = {
   // Group the stream into lines
   val lines = groupIntoLines(stream)
 
   // Process lines to detect block structures
-  processLines(lines)
+  processLines(lines, linkRefs)
 }
 
 // Interface for block parsers
@@ -27,16 +37,20 @@ trait BlockParser {
 
   // Parse a block starting with the given line
   // Returns the parsed block and the number of lines consumed
-  def parse(lines: List[LazyList[Cursor]]): (Block, Int)
+  def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int)
 }
 
 // Process lines to build blocks
-private def processLines(lines: List[LazyList[Cursor]]): List[Block] = {
-  var blocks: List[Block] = Nil
-  var remainingLines      = lines
+private def processLines(
+    lines: List[LazyList[Cursor]],
+    linkRefs: scala.collection.mutable.Map[String, LinkReference],
+): List[Block] = {
+  val blocks         = new ListBuffer[Block]
+  var remainingLines = lines
 
   // The list of block parsers in priority order
   val blockParsers: List[BlockParser] = List(
+    LinkReferenceDefinitionParser,
     ParagraphBlockParser, // We'll add more parsers here later
   )
 
@@ -46,8 +60,10 @@ private def processLines(lines: List[LazyList[Cursor]]): List[Block] = {
     blockParsers.find(_.canStart(remainingLines.head)) match {
       case Some(parser) =>
         // Parse the block and update remaining lines
-        val (block, linesConsumed) = parser.parse(remainingLines)
-        blocks = blocks :+ block
+        val (block, linesConsumed) = parser.parse(remainingLines, linkRefs)
+        if (block != null) {
+          blocks.addOne(block)
+        }
         remainingLines = remainingLines.drop(linesConsumed)
 
       case None =>
@@ -56,36 +72,7 @@ private def processLines(lines: List[LazyList[Cursor]]): List[Block] = {
     }
   }
 
-  blocks
-}
-
-// A parser for paragraph blocks - our first concrete implementation
-object ParagraphBlockParser extends BlockParser {
-  def canStart(line: LazyList[Cursor]): Boolean = {
-    // A paragraph can start with any non-blank line
-    !isBlankLine(line)
-  }
-
-  def parse(lines: List[LazyList[Cursor]]): (Block, Int) = {
-    // Find the first blank line
-    val paragraphLines = lines.takeWhile(line => !isBlankLine(line))
-
-    // The actual number of lines consumed is the paragraph plus the blank line
-    val linesConsumed = if (paragraphLines.length < lines.length) {
-      paragraphLines.length + 1 // Include the blank line that terminated the paragraph
-    } else {
-      paragraphLines.length // The paragraph runs to the end
-    }
-
-    (Paragraph(paragraphLines.flatten), linesConsumed)
-  }
-}
-
-// Function to check if a line is blank
-private def isBlankLine(line: LazyList[Cursor]): Boolean = {
-  // A blank line contains only whitespace or is empty (excluding newline)
-  val contentChars = line.filter(_.char != '\n')
-  contentChars.isEmpty || contentChars.forall(c => c.char == ' ' || c.char == '\t')
+  blocks.toList
 }
 
 // Group cursor stream into lines
