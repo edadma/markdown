@@ -2,7 +2,6 @@
 
 # app code
 ./shared/src/main/scala/io/github/edadma/markdown
-Cursor.scala
 InputReader.scala
 Node.scala
 package.scala
