@@ -222,6 +222,91 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     return node
   }
 
+  def processHtmlOrAutolink(node: inlineNodes.Node): inlineNodes.Node = {
+    logger.debug(s"Starting HTML/autolink processing on node: ${node.element}")
+
+    // Find the closing '>' if it exists
+    val openingNode = node
+    var current     = node.following
+    var content     = new StringBuilder()
+
+    // Look ahead to find a potential closing '>'
+    while (
+      current.notAfterEnd &&
+      !(current.element.isInstanceOf[Cursor] &&
+        current.element.asInstanceOf[Cursor].char == '>' &&
+        !current.element.asInstanceOf[Cursor].isLiteral)
+    ) {
+
+      current.element match {
+        case c: Cursor =>
+          // For autolinks, we can't have line endings
+          if (c.char == '\n') {
+            logger.debug("Line ending found in potential autolink/HTML - treating as literal")
+            return node // Return original node unchanged
+          }
+          content.append(c.char)
+        case _ => return node // Non-cursor element found, not a valid autolink/HTML
+      }
+      current = current.following
+    }
+
+    // If we didn't find a closing '>', return original
+    if (
+      current.isAfterEnd ||
+      !(current.element.isInstanceOf[Cursor] &&
+        current.element.asInstanceOf[Cursor].char == '>')
+    ) {
+      logger.debug("No closing '>' found")
+      return node
+    }
+
+    val contentStr = content.toString()
+
+    // Check for URI autolink
+    if (isAbsoluteUri(contentStr)) {
+      logger.debug(s"Found URI autolink: $contentStr")
+      openingNode.element = AutoLink(contentStr, contentStr)
+
+      // Remove everything between opening < and closing >
+      if (openingNode.following != current.following) {
+        openingNode.following.unlinkUntil(current.following)
+      }
+
+      return openingNode
+    }
+
+    // Check for email autolink
+    else if (isEmailAddress(contentStr)) {
+      logger.debug(s"Found email autolink: $contentStr")
+      openingNode.element = AutoLink(s"mailto:$contentStr", contentStr)
+
+      // Remove everything between opening < and closing >
+      if (openingNode.following != current.following) {
+        openingNode.following.unlinkUntil(current.following)
+      }
+
+      return openingNode
+    }
+
+    // Check for HTML tag
+    else if (isHtmlTag(contentStr)) {
+      logger.debug(s"Found HTML tag: $contentStr")
+      openingNode.element = RawHTML(s"<$contentStr>")
+
+      // Remove everything between opening < and closing >
+      if (openingNode.following != current.following) {
+        openingNode.following.unlinkUntil(current.following)
+      }
+
+      return openingNode
+    }
+
+    // Not a valid autolink or HTML tag, treat as literal
+    logger.debug("Not a valid autolink or HTML tag")
+    return node
+  }
+
   // Main processing loop - single pass through the document
   if (inlineNodes.nonEmpty) {
     var current = inlineNodes.headNode
@@ -240,10 +325,15 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
                 current = current.following
               }
 
-//            case '<' =>
-//              // Process HTML tag or autolink
-//              current = processHtmlOrAutolink(current, inlineNodes)
-//
+            case '<' =>
+              val oldCurrent = current
+
+              current = processHtmlOrAutolink(current)
+
+              if (current == oldCurrent) {
+                current = current.following
+              }
+
 //            case '*' | '_' =>
 //              // Add to delimiter stack for emphasis processing
 //              val delimiterInfo = analyzeDelimiter(current, inlineNodes)
@@ -317,4 +407,89 @@ private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
           }
         case _ => currentNode = currentNode.following
     }
+}
+
+// Helper to check if string is a valid absolute URI according to spec
+def isAbsoluteUri(str: String): Boolean = {
+  // Simplified implementation - we need to match:
+  // - A scheme (2-32 chars, ASCII letter followed by letters/digits/+/-/.)
+  // - Followed by a colon
+  // - Followed by zero or more non-control, non-space, non-< non-> chars
+  val schemeRegex = "^[a-zA-Z][a-zA-Z0-9+.\\-]{1,31}:"
+  str.matches(schemeRegex + ".*") &&
+  !str.contains(" ") &&
+  !str.contains("\t") &&
+  !str.contains("\n") &&
+  !str.contains("<") &&
+  !str.contains(">")
+}
+
+// Helper to check if string is a valid email address according to spec
+def isEmailAddress(str: String): Boolean = {
+  // This is a simplified version - the real implementation would use
+  // the HTML5 email regex mentioned in the spec
+  val emailRegex =
+    "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+  str.matches(emailRegex)
+}
+
+// Helper to check if string represents a valid HTML tag according to spec
+// Helper to check if string represents a valid HTML tag according to spec
+def isHtmlTag(str: String): Boolean = {
+  logger.debug(s"Checking if '$str' is an HTML tag")
+
+  // Tag name: ASCII letter followed by ASCII letters, digits, or hyphens
+  val tagNameRegex = "[a-zA-Z][a-zA-Z0-9\\-]*"
+
+  // Attribute name: ASCII letter, _, or : followed by ASCII letters, digits, _, ., :, or -
+  val attrNameRegex = "[a-zA-Z_:][a-zA-Z0-9_.:\\-]*"
+
+  // Attribute value: unquoted, single-quoted, or double-quoted
+  val unquotedAttrValueRegex     = "[^\"'=<>`\\s]+"
+  val singleQuotedAttrValueRegex = "'[^']*'"
+  val doubleQuotedAttrValueRegex = "\"[^\"]*\""
+  val attrValueRegex             = s"($unquotedAttrValueRegex|$singleQuotedAttrValueRegex|$doubleQuotedAttrValueRegex)"
+
+  // Attribute: whitespace, name, optional value
+  val attrRegex = s"\\s+$attrNameRegex(?:\\s*=\\s*$attrValueRegex)?"
+
+  // 1. Open tag: <tagname attr* optional-/>, where attributes are optional
+  // Note: we're NOT expecting the closing '>' as part of the input string
+  val openTagRegex = s"^$tagNameRegex(?:$attrRegex)*\\s*/?$$".r
+
+  // 2. Closing tag: </tagname>
+  // Note: we're NOT expecting the closing '>' as part of the input string
+  val closeTagRegex = s"^/$tagNameRegex\\s*$$".r
+
+  // 3. HTML comment: <!-- anything -- (no closing > expected in the string)
+  val commentRegex = """^!--(?:|(?:.|\n)*?--)$$""".r
+
+  // 4. Processing instruction: <?anything? (no closing > expected)
+  val piRegex = """^\?(?:.|\n)*?\?$$""".r
+
+  // 5. Declaration: <!NAME anything (no closing > expected)
+  val declRegex = """^![A-Z][^>]*$$""".r
+
+  // 6. CDATA section: <![CDATA[ anything ]] (no closing > expected)
+  val cdataRegex = """^!\[CDATA\[(?:.|\n)*?\]\]$$""".r
+
+  val isOpenTag  = openTagRegex.matches(str)
+  val isCloseTag = closeTagRegex.matches(str)
+  val isComment  = commentRegex.matches(str)
+  val isPI       = piRegex.matches(str)
+  val isDecl     = declRegex.matches(str)
+  val isCdata    = cdataRegex.matches(str)
+
+  // For debugging
+  if (isOpenTag) logger.debug(s"'$str' matched as open tag")
+  if (isCloseTag) logger.debug(s"'$str' matched as close tag")
+  if (isComment) logger.debug(s"'$str' matched as comment")
+  if (isPI) logger.debug(s"'$str' matched as processing instruction")
+  if (isDecl) logger.debug(s"'$str' matched as declaration")
+  if (isCdata) logger.debug(s"'$str' matched as CDATA")
+
+  val result = isOpenTag || isCloseTag || isComment || isPI || isDecl || isCdata
+  logger.debug(s"HTML tag check result for '$str': $result")
+
+  result
 }

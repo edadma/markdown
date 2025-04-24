@@ -7,4 +7,5 @@ import io.github.edadma.logger.LogLevel
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-  pprintln(parseInlineContent("No escaping inside: `\\`\\``"))
+  pprintln(parseInlineContent("Not autolinks: < https://foo.bar> <foo bar> <https://example.com space>"))
+  println(isHtmlTag("<foo bar>"))
