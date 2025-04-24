@@ -17,165 +17,129 @@ class CodeSpanInlineParserTest extends AnyFlatSpec with Matchers {
   }
 
   it should "handle code spans with backticks inside using double backticks" in {
-    val input    = "Example: ``code with `backtick` inside``"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Example: ``code with `backtick` inside``"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Example: "),
-        CodeSpan("code with `backtick` inside"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Example: "),
+      CodeSpan("code with `backtick` inside"),
+    )
   }
 
   it should "strip one space from both ends when spaces surround content" in {
-    val input    = "Space stripping: ` code with spaces `"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Space stripping: ` code with spaces `"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Space stripping: "),
-        CodeSpan("code with spaces"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Space stripping: "),
+      CodeSpan("code with spaces"),
+    )
   }
 
   it should "only strip one space from each end" in {
-    val input    = "Double spaces: `  multiple spaces  `"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Double spaces: `  multiple spaces  `"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Double spaces: "),
-        CodeSpan(" multiple spaces "),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Double spaces: "),
+      CodeSpan(" multiple spaces "),
+    )
   }
 
   it should "not strip spaces if content only has leading or trailing space" in {
-    val input    = "Leading space only: ` code`\nTrailing space only: `code `"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Leading space only: ` code`\nTrailing space only: `code `"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Leading space only: "),
-        CodeSpan(" code"),
-        SoftLineBreak(),
-        Text("Trailing space only: "),
-        CodeSpan("code "),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Leading space only: "),
+      CodeSpan(" code"),
+      SoftLineBreak(),
+      Text("Trailing space only: "),
+      CodeSpan("code "),
+    )
   }
 
   it should "not strip spaces if code span contains only spaces" in {
-    val input    = "Just spaces: ` ` and `  `"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Just spaces: ` ` and `  `"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Just spaces: "),
-        CodeSpan(" "),
-        Text(" and "),
-        CodeSpan("  "),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Just spaces: "),
+      CodeSpan(" "),
+      Text(" and "),
+      CodeSpan("  "),
+    )
   }
 
   it should "convert line endings in code spans to spaces" in {
-    val input    = "Line breaks: `code\nwith\nline\nbreaks`"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Line breaks: `code\nwith\nline\nbreaks`"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Line breaks: "),
-        CodeSpan("code with line breaks"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Line breaks: "),
+      CodeSpan("code with line breaks"),
+    )
   }
 
   it should "preserve internal spaces in code spans" in {
-    val input    = "Internal spaces: `code   with   multiple   spaces`"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Internal spaces: `code   with   multiple   spaces`"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Internal spaces: "),
-        CodeSpan("code   with   multiple   spaces"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Internal spaces: "),
+      CodeSpan("code   with   multiple   spaces"),
+    )
   }
 
   it should "handle backtick escapes as literal inside code spans" in {
-    val input    = "No escaping inside: `\\`\\``"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "No escaping inside: `\\`\\``"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("No escaping inside: "),
-        CodeSpan(content = "\\"),
-        Text(content = "``"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("No escaping inside: "),
+      CodeSpan("\\"),
+      Text("``"),
+    )
   }
 
   it should "treat unmatched code spans as literal backticks" in {
-    val input    = "Unmatched: `not closed"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Unmatched: `not closed"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Unmatched: `not closed"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Unmatched: `not closed"),
+    )
   }
 
   it should "handle multi-line code spans correctly" in {
-    val input    = "Multi-line: `code\nspan\ncontinues`"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Multi-line: `code\nspan\ncontinues`"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Multi-line: "),
-        CodeSpan("code span continues"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Multi-line: "),
+      CodeSpan("code span continues"),
+    )
   }
 
   it should "handle code spans with different length backtick sequences" in {
-    val input    = "Multiple sequences: ``double`` and ```triple```"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "Multiple sequences: ``double`` and ```triple```"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("Multiple sequences: "),
-        CodeSpan("double"),
-        Text(" and "),
-        CodeSpan("triple"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("Multiple sequences: "),
+      CodeSpan("double"),
+      Text(" and "),
+      CodeSpan("triple"),
+    )
   }
 
   it should "have precedence over emphasis" in {
-    val input    = "*emphasized `code* span`"
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "*emphasized `code* span`"
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("*emphasized "),
-        CodeSpan("code* span"),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("*emphasized "),
+      CodeSpan("code* span"),
+    )
   }
 }
