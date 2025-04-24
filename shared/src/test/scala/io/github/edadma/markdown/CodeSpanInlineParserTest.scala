@@ -6,17 +6,14 @@ import org.scalatest.matchers.should.Matchers
 class CodeSpanInlineParserTest extends AnyFlatSpec with Matchers {
 
   "The inline parser" should "process basic code spans correctly" in {
-    val input    = "This is a `code span` example."
-    val reader   = new InputReader(input)
-    val document = parseDocument(reader.stream)
+    val input   = "This is a `code span` example."
+    val inlines = parseInlineContent(input)
 
-    document shouldBe Document(List(
-      Paragraph(List(
-        Text("This is a "),
-        CodeSpan("code span"),
-        Text(" example."),
-      )),
-    ))
+    inlines shouldBe List(
+      Text("This is a "),
+      CodeSpan("code span"),
+      Text(" example."),
+    )
   }
 
   it should "handle code spans with backticks inside using double backticks" in {
