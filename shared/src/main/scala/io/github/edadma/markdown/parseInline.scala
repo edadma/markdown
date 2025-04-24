@@ -2,6 +2,8 @@ package io.github.edadma.markdown
 
 import io.github.edadma.dllist.DLList
 
+import scala.annotation.tailrec
+
 // Standalone inline parsing function
 def parseInline(inlines: List[Inline]): List[Inline] = {
   // Create initial DLList with character nodes
@@ -88,7 +90,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 //    // If we somehow got here, just return the original node
 //    node
 //  }
-  def processCodeSpan(node: inlineNodes.Node, nodes: DLList[Inline]): inlineNodes.Node = {
+  def processCodeSpan(node: inlineNodes.Node): inlineNodes.Node = {
     logger.debug(s"Starting processCodeSpan on node: ${node.element}")
     // Count the consecutive backticks in the opening delimiter
     val openingNode  = node
@@ -121,22 +123,35 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
         if (
           current.element.isInstanceOf[Cursor] &&
-          current.element.asInstanceOf[Cursor].char == '`' &&
-          !current.element.asInstanceOf[Cursor].isLiteral
+          current.element.asInstanceOf[Cursor].char == '`'
         ) {
           // Count consecutive backticks to see if we have a match
           var closingCount = 0
           var closingStart = current
 
-          while (
-            current.notAfterEnd &&
-            current.element.isInstanceOf[Cursor] &&
-            current.element.asInstanceOf[Cursor].char == '`' &&
-            !current.element.asInstanceOf[Cursor].isLiteral
-          ) {
-            closingCount += 1
-            current = current.following
+          @tailrec
+          def closeCount(): Unit = {
+            println(inlineNodes)
+            if current.notAfterEnd &&
+              current.element.isInstanceOf[Cursor] &&
+              current.element.asInstanceOf[Cursor].char == '`' &&
+              closingCount < openingCount
+            then
+              if current.element.asInstanceOf[Cursor].isLiteral && closingCount == 0 then
+                closingStart = current.follow(current.element.asInstanceOf[Cursor].copy())
+                current.element = current.element.asInstanceOf[Cursor].copy(char = '\\', isLiteral = false)
+                closingCount += 1
+                current = current.following.following
+                closeCount()
+              else if current.element.asInstanceOf[Cursor].isLiteral then
+                current = current.following
+              else
+                closingCount += 1
+                current = current.following
+                closeCount()
           }
+
+          closeCount()
 
           logger.debug(s"Found potential closing delimiter with $closingCount backticks")
 
@@ -230,7 +245,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
               // Process code span (highest precedence)
               val oldCurrent = current // Remember the current node
 
-              current = processCodeSpan(current, inlineNodes)
+              current = processCodeSpan(current)
 
               if (current == oldCurrent) {
                 current = current.following

@@ -122,7 +122,8 @@ class CodeSpanInlineParserTest extends AnyFlatSpec with Matchers {
     document shouldBe Document(List(
       Paragraph(List(
         Text("No escaping inside: "),
-        CodeSpan("\\`\\`"), // Backslashes and backticks are literal
+        CodeSpan(content = "\\"),
+        Text(content = "``"),
       )),
     ))
   }
