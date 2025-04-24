@@ -10,7 +10,86 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
   // Initialize empty delimiter stack (will be used for emphasis/links)
 //  val delimiterStack = DLList[DelimiterInfo]()
 
+//  def processCodeSpan(node: inlineNodes.Node, nodes: DLList[Inline]): inlineNodes.Node = {
+//    // Count the consecutive backticks in the opening delimiter
+//    val openingNode  = node
+//    var openingCount = 0
+//    var current      = node
+//
+//    // Count consecutive backticks in the opening delimiter
+//    while (
+//      current.notAfterEnd &&
+//      current.element.isInstanceOf[Cursor] &&
+//      current.element.asInstanceOf[Cursor].char == '`' &&
+//      !current.element.asInstanceOf[Cursor].isLiteral
+//    ) {
+//      openingCount += 1
+//      current = current.following
+//    }
+//
+//    // If we found an opening delimiter, look for a matching closing one
+//    if (openingCount > 0) {
+//      // Remember where content starts
+//      val contentStart = current
+//      var foundClosing = false
+//
+//      // Look for closing delimiter
+//      while (current.notAfterEnd && !foundClosing) {
+//        if (
+//          current.element.isInstanceOf[Cursor] &&
+//          current.element.asInstanceOf[Cursor].char == '`' &&
+//          !current.element.asInstanceOf[Cursor].isLiteral
+//        ) {
+//
+//          // Count consecutive backticks to see if we have a match
+//          var closingCount = 0
+//          var closingStart = current
+//
+//          while (
+//            current.notAfterEnd &&
+//            current.element.isInstanceOf[Cursor] &&
+//            current.element.asInstanceOf[Cursor].char == '`' &&
+//            !current.element.asInstanceOf[Cursor].isLiteral
+//          ) {
+//            closingCount += 1
+//            current = current.following
+//          }
+//
+//          // If counts match, we found our closing delimiter
+//          if (closingCount == openingCount) {
+//            foundClosing = true
+//            val contentEnd = closingStart
+//
+//            // Extract and process content
+//            val content = extractAndProcessCodeSpanContent(contentStart, contentEnd)
+//
+//            // Replace the opening node with a CodeSpan and unlink everything in between
+//            openingNode.element = CodeSpan(content)
+//
+//            // Unlink everything from after opening delimiter to end of closing delimiter
+//            if (openingNode.following != current) {
+//              openingNode.following.unlinkUntil(current)
+//            }
+//
+//            // Return the CodeSpan node for continued processing
+//            return openingNode
+//          }
+//          // If counts don't match, continue searching
+//        } else {
+//          current = current.following
+//        }
+//      }
+//
+//      // If no matching closing delimiter found, just return the original node unchanged
+//      // The opening backticks will be treated as regular text
+//      return node
+//    }
+//
+//    // If we somehow got here, just return the original node
+//    node
+//  }
   def processCodeSpan(node: inlineNodes.Node, nodes: DLList[Inline]): inlineNodes.Node = {
+    logger.debug(s"Starting processCodeSpan on node: ${node.element}")
     // Count the consecutive backticks in the opening delimiter
     val openingNode  = node
     var openingCount = 0
@@ -27,20 +106,24 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
       current = current.following
     }
 
+    logger.debug(s"Found opening delimiter with $openingCount backticks")
+
     // If we found an opening delimiter, look for a matching closing one
     if (openingCount > 0) {
       // Remember where content starts
       val contentStart = current
       var foundClosing = false
+      var reachedEnd   = false
 
       // Look for closing delimiter
-      while (current.notAfterEnd && !foundClosing) {
+      while (current.notAfterEnd && !foundClosing && !reachedEnd) {
+        logger.debug(s"Checking node for closing: ${current.element}")
+
         if (
           current.element.isInstanceOf[Cursor] &&
           current.element.asInstanceOf[Cursor].char == '`' &&
           !current.element.asInstanceOf[Cursor].isLiteral
         ) {
-
           // Count consecutive backticks to see if we have a match
           var closingCount = 0
           var closingStart = current
@@ -55,6 +138,8 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
             current = current.following
           }
 
+          logger.debug(s"Found potential closing delimiter with $closingCount backticks")
+
           // If counts match, we found our closing delimiter
           if (closingCount == openingCount) {
             foundClosing = true
@@ -62,6 +147,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
             // Extract and process content
             val content = extractAndProcessCodeSpanContent(contentStart, contentEnd)
+            logger.debug(s"Extracted code span content: '$content'")
 
             // Replace the opening node with a CodeSpan and unlink everything in between
             openingNode.element = CodeSpan(content)
@@ -75,11 +161,17 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
             return openingNode
           }
           // If counts don't match, continue searching
+        } else if (current.following.isAfterEnd) {
+          // Check if the next node would be the end sentinel
+          // This is the fix - set a flag to exit the loop when we're at the last node
+          logger.debug("Reached end of input while searching for closing delimiter")
+          reachedEnd = true
         } else {
           current = current.following
         }
       }
 
+      logger.debug("No matching closing delimiter found, returning original node")
       // If no matching closing delimiter found, just return the original node unchanged
       // The opening backticks will be treated as regular text
       return node
@@ -136,7 +228,13 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
           c.char match {
             case '`' =>
               // Process code span (highest precedence)
+              val oldCurrent = current // Remember the current node
+
               current = processCodeSpan(current, inlineNodes)
+
+              if (current == oldCurrent) {
+                current = current.following
+              }
 
 //            case '<' =>
 //              // Process HTML tag or autolink
