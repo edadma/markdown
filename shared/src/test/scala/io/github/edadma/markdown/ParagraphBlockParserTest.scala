@@ -23,8 +23,8 @@ Third paragraph."""
     val document = parseDocument(reader.stream)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("First paragraph.\n"))),
-      Paragraph(List(Text("Second paragraph.\n"))),
+      Paragraph(List(Text("First paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("Second paragraph."), SoftLineBreak())),
       Paragraph(List(Text("Third paragraph."))),
     ))
   }
@@ -36,7 +36,13 @@ lines."""
     val reader   = new InputReader(input)
     val document = parseDocument(reader.stream)
 
-    document shouldBe Document(List(Paragraph(List(Text("This is a paragraph\nthat spans multiple\nlines.")))))
+    document shouldBe Document(List(Paragraph(List(
+      Text("This is a paragraph"),
+      SoftLineBreak(),
+      Text("that spans multiple"),
+      SoftLineBreak(),
+      Text("lines."),
+    ))))
   }
 
   it should "handle empty documents" in {
@@ -69,8 +75,8 @@ Last paragraph.
     val document = parseDocument(reader.stream)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("First paragraph.\n"))),
-      Paragraph(List(Text("Last paragraph.\n"))),
+      Paragraph(List(Text("First paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("Last paragraph."), SoftLineBreak())),
     ))
   }
 
@@ -81,7 +87,10 @@ Last paragraph.
 
     document shouldBe Document(List(
       Paragraph(List(
-        Text("First line.\nSecond line.\n"),
+        Text("First line."),
+        SoftLineBreak(),
+        Text("Second line."),
+        SoftLineBreak(),
       )),
       Paragraph(List(Text("New paragraph."))),
     ))
@@ -96,7 +105,7 @@ Second paragraph."""
     val document = parseDocument(reader.stream)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("First paragraph.\n"))),
+      Paragraph(List(Text("First paragraph."), SoftLineBreak())),
       Paragraph(List(Text("Second paragraph."))),
     ))
   }
@@ -109,7 +118,7 @@ Not indented paragraph."""
     val document = parseDocument(reader.stream)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("  Indented paragraph.\n"))),
+      Paragraph(List(Text("  Indented paragraph."), SoftLineBreak())),
       Paragraph(List(Text("Not indented paragraph."))),
     ))
   }

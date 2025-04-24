@@ -12,84 +12,6 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
   // Initialize empty delimiter stack (will be used for emphasis/links)
 //  val delimiterStack = DLList[DelimiterInfo]()
 
-//  def processCodeSpan(node: inlineNodes.Node, nodes: DLList[Inline]): inlineNodes.Node = {
-//    // Count the consecutive backticks in the opening delimiter
-//    val openingNode  = node
-//    var openingCount = 0
-//    var current      = node
-//
-//    // Count consecutive backticks in the opening delimiter
-//    while (
-//      current.notAfterEnd &&
-//      current.element.isInstanceOf[Cursor] &&
-//      current.element.asInstanceOf[Cursor].char == '`' &&
-//      !current.element.asInstanceOf[Cursor].isLiteral
-//    ) {
-//      openingCount += 1
-//      current = current.following
-//    }
-//
-//    // If we found an opening delimiter, look for a matching closing one
-//    if (openingCount > 0) {
-//      // Remember where content starts
-//      val contentStart = current
-//      var foundClosing = false
-//
-//      // Look for closing delimiter
-//      while (current.notAfterEnd && !foundClosing) {
-//        if (
-//          current.element.isInstanceOf[Cursor] &&
-//          current.element.asInstanceOf[Cursor].char == '`' &&
-//          !current.element.asInstanceOf[Cursor].isLiteral
-//        ) {
-//
-//          // Count consecutive backticks to see if we have a match
-//          var closingCount = 0
-//          var closingStart = current
-//
-//          while (
-//            current.notAfterEnd &&
-//            current.element.isInstanceOf[Cursor] &&
-//            current.element.asInstanceOf[Cursor].char == '`' &&
-//            !current.element.asInstanceOf[Cursor].isLiteral
-//          ) {
-//            closingCount += 1
-//            current = current.following
-//          }
-//
-//          // If counts match, we found our closing delimiter
-//          if (closingCount == openingCount) {
-//            foundClosing = true
-//            val contentEnd = closingStart
-//
-//            // Extract and process content
-//            val content = extractAndProcessCodeSpanContent(contentStart, contentEnd)
-//
-//            // Replace the opening node with a CodeSpan and unlink everything in between
-//            openingNode.element = CodeSpan(content)
-//
-//            // Unlink everything from after opening delimiter to end of closing delimiter
-//            if (openingNode.following != current) {
-//              openingNode.following.unlinkUntil(current)
-//            }
-//
-//            // Return the CodeSpan node for continued processing
-//            return openingNode
-//          }
-//          // If counts don't match, continue searching
-//        } else {
-//          current = current.following
-//        }
-//      }
-//
-//      // If no matching closing delimiter found, just return the original node unchanged
-//      // The opening backticks will be treated as regular text
-//      return node
-//    }
-//
-//    // If we somehow got here, just return the original node
-//    node
-//  }
   def processCodeSpan(node: inlineNodes.Node): inlineNodes.Node = {
     logger.debug(s"Starting processCodeSpan on node: ${node.element}")
     // Count the consecutive backticks in the opening delimiter
@@ -131,7 +53,6 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
           @tailrec
           def closeCount(): Unit = {
-            println(inlineNodes)
             if current.notAfterEnd &&
               current.element.isInstanceOf[Cursor] &&
               current.element.asInstanceOf[Cursor].char == '`' &&
@@ -233,6 +154,74 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     }
   }
 
+  def processLineBreak(node: inlineNodes.Node): inlineNodes.Node = {
+    logger.debug(s"Processing line break at node: ${node.element}")
+
+    // Check for hard break - backslash escape
+    if (
+      node.preceding.notBeforeStart &&
+      node.preceding.element.isInstanceOf[Cursor] &&
+      node.preceding.element.asInstanceOf[Cursor].char == '\\' &&
+      !node.preceding.element.asInstanceOf[Cursor].isLiteral
+    ) {
+
+      logger.debug("Found hard break with backslash")
+
+      // Remove the backslash
+      val backslashNode = node.preceding
+      backslashNode.unlink
+
+      // Replace the newline with a HardLineBreak
+      node.element = HardLineBreak()
+      return node
+    }
+
+    // Check for hard break - two or more spaces
+    var spaceCount = 0
+    var current    = node.preceding
+
+    // Count trailing spaces before the newline
+    while (
+      current.notBeforeStart &&
+      current.element.isInstanceOf[Cursor] &&
+      current.element.asInstanceOf[Cursor].char == ' ' &&
+      !current.element.asInstanceOf[Cursor].isLiteral
+    ) {
+      spaceCount += 1
+      current = current.preceding
+    }
+
+    if (spaceCount >= 2) {
+      logger.debug(s"Found hard break with $spaceCount spaces")
+
+      // Replace the newline with a HardLineBreak
+      node.element = HardLineBreak()
+
+      // Remove the trailing spaces
+      var spacesToRemove = spaceCount
+      var looping        = true
+
+      while (looping && spacesToRemove > 0 && node.preceding.notBeforeStart) {
+        if (
+          node.preceding.element.isInstanceOf[Cursor] &&
+          node.preceding.element.asInstanceOf[Cursor].char == ' '
+        ) {
+          node.preceding.unlink
+          spacesToRemove -= 1
+        } else {
+          looping = false // If we hit a non-space, stop removing
+        }
+      }
+
+      return node
+    }
+
+    // If we get here, it's a soft break
+    logger.debug("Creating soft line break")
+    node.element = SoftLineBreak()
+    return node
+  }
+
   // Main processing loop - single pass through the document
   if (inlineNodes.nonEmpty) {
     var current = inlineNodes.headNode
@@ -276,10 +265,10 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 //            case ']' =>
 //              // Look for link or image
 //              current = lookForLinkOrImage(current, inlineNodes, delimiterStack)
-//
-//            case '\n' =>
-//              // Process line break
-//              current = processLineBreak(current, inlineNodes)
+
+            case '\n' =>
+              // Process line break
+              current = processLineBreak(current)
 
             case _ =>
               // Regular character, just move on

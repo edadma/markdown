@@ -67,7 +67,8 @@ class CodeSpanInlineParserTest extends AnyFlatSpec with Matchers {
       Paragraph(List(
         Text("Leading space only: "),
         CodeSpan(" code"),
-        Text("\nTrailing space only: "),
+        SoftLineBreak(),
+        Text("Trailing space only: "),
         CodeSpan("code "),
       )),
     ))
