@@ -11,7 +11,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 // Block parser implementation
 def parseDocument(stream: LazyList[Cursor]): Document = {
-  val linkRefs = scala.collection.mutable.Map[String, LinkReference]()
+  val linkRefs = new mutable.HashMap[String, LinkReference]
   val blocks   = parseBlocks(stream, linkRefs)
 
   val immutableRefs = linkRefs.toMap // Convert to immutable map

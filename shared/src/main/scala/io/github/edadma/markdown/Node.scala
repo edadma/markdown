@@ -1,12 +1,15 @@
 package io.github.edadma.markdown
 
+import scala.collection.immutable
+
 trait Node {
   def processInlines: Node = this
 }
 
 // Document delegates to its children
 case class Document(children: List[Block]) extends Node {
-  override def processInlines: Document = Document(children.map(_.processInlines))
+  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Document =
+    Document(children.map(_.processInlines))
 }
 
 trait Block extends Node {
