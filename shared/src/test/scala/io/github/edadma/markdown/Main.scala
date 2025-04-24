@@ -13,6 +13,8 @@ import io.github.edadma.logger.LogLevel
   val input =
     """
       |[foo]: /url "title"
-      |[bar]: /url2
+      |[bar]: /url2 'title2'
+      |[baz]: /url3 (title3)
       |""".stripMargin
 
+  pprintln(parseDocumentContentWithRefs(input))

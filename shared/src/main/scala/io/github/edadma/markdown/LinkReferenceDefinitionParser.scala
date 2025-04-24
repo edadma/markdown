@@ -6,48 +6,90 @@ case class LinkReference(destination: String, title: Option[String])
 
 object LinkReferenceDefinitionParser extends BlockParser {
   def canStart(line: LazyList[Cursor]): Boolean = {
-    // Check if the line starts with a potential link reference pattern
     val content = line.takeWhile(_.char != '\n').map(_.char).mkString
     content.trim.startsWith("[") && content.contains("]:")
   }
 
   def parse(
       lines: List[LazyList[Cursor]],
-      linkRefs: mutable.Map[String, LinkReference],
+      linkRefs: scala.collection.mutable.Map[String, LinkReference],
   ): (Block, Int) = {
-    // Process the line as a link reference definition
     val line = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
 
-    // Parse the link reference definition
     parseDefinition(line) match {
       case Some((label, reference)) =>
-        // Store in the map if not already present (first definition wins)
         if (!linkRefs.contains(label)) {
           linkRefs.put(label, reference)
         }
-        // Return no block (None) and consume 1 line
-        (null, 1) // We'll handle null blocks in the main parser
+        (null, 1)
 
       case None =>
-        // Not a valid link reference, consume 0 lines
         (null, 0)
     }
   }
 
   private def parseDefinition(line: String): Option[(String, LinkReference)] = {
-    // Basic regex to extract components
-    val pattern = """^\s*\[(.*?)\]:\s*(?:<([^>]*)>|(\S+))(?:\s+(?:"(.*?)"|(\'(.*?)\')|(\((.*?)\))))?$""".r
+    // Split into label and rest
+    val labelAndRest = """^\s*\[(.*?)\]:\s*(.*)$""".r
 
     line match {
-      case pattern(label, destBracketed, destRaw, dqTitle, sqTitle, _, pTitle, _) =>
+      case labelAndRest(label, rest) =>
         val normalizedLabel = normalizeLabel(label)
-        val destination     = Option(destBracketed).getOrElse(destRaw)
-        val title           = Option(dqTitle).orElse(Option(sqTitle)).orElse(Option(pTitle))
+
+        // Extract destination and remaining title part
+        val (destination, titlePart) = extractDestination(rest)
+
+        // Extract title without delimiters
+        val title = extractTitle(titlePart)
 
         Some(normalizedLabel -> LinkReference(destination, title))
 
       case _ => None
     }
+  }
+
+  private def extractDestination(text: String): (String, String) = {
+    if (text.startsWith("<")) {
+      // Angle-bracketed URL
+      val closingBracket = text.indexOf('>')
+      if (closingBracket >= 0) {
+        val dest = text.substring(1, closingBracket)
+        val rest = text.substring(closingBracket + 1).trim
+        return (dest, rest)
+      }
+    }
+
+    // Space-separated URL
+    val firstSpace = text.indexOf(' ')
+    if (firstSpace >= 0) {
+      val dest = text.substring(0, firstSpace)
+      val rest = text.substring(firstSpace + 1).trim
+      return (dest, rest)
+    }
+
+    // No title part
+    (text.trim, "")
+  }
+
+  private def extractTitle(text: String): Option[String] = {
+    if (text.isEmpty) return None
+
+    // Double quoted title
+    if (text.startsWith("\"") && text.endsWith("\"") && text.length >= 2) {
+      return Some(text.substring(1, text.length - 1))
+    }
+
+    // Single quoted title
+    if (text.startsWith("'") && text.endsWith("'") && text.length >= 2) {
+      return Some(text.substring(1, text.length - 1))
+    }
+
+    // Parenthesized title
+    if (text.startsWith("(") && text.endsWith(")") && text.length >= 2) {
+      return Some(text.substring(1, text.length - 1))
+    }
+
+    None
   }
 
   private def normalizeLabel(label: String): String = {
