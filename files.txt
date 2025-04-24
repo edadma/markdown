@@ -11,10 +11,12 @@ renderToHTML.scala
 
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
+AutolinkAndHtmlTagInlineParserTest.scala
 CodeSpanInlineParserTest.scala
 InputReaderTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
+Testing.scala
 
 # build config
 ./
