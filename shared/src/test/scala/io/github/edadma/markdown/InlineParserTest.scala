@@ -1,9 +1,24 @@
-//package io.github.edadma.markdown
-//
-//import org.scalatest.flatspec.AnyFlatSpec
-//import org.scalatest.matchers.should.Matchers
-//
-//class InlineParserTest extends AnyFlatSpec with Matchers {
+package io.github.edadma.markdown
+
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
+class InlineParserTest extends AnyFlatSpec with Matchers {
+  "The inline parser" should "process basic code spans correctly" in {
+    val input    = "This is a `code span` example."
+    val reader   = new InputReader(input)
+    val document = parseDocument(reader.stream)
+
+    document shouldBe Document(List(
+      Paragraph(List(
+        Text("This is a "),
+        CodeSpan("code span"),
+        Text(" example."),
+      )),
+    ))
+  }
+}
+
 //  // Helper to get string representation of inlines for easier assertions
 //  def inlineToString(inlines: List[Inline]): String = {
 //    inlines.map {
