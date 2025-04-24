@@ -3,30 +3,32 @@ package io.github.edadma.markdown
 import scala.collection.immutable
 
 trait Node {
-  def processInlines: Node = this
+  def processInlines(linkRefs: immutable.Map[String, LinkReference]): Node = this
 }
 
 // Document delegates to its children
 case class Document(children: List[Block]) extends Node {
   override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Document =
-    Document(children.map(_.processInlines))
+    Document(children.map(_.processInlines(linkRefs)))
 }
 
 trait Block extends Node {
-  override def processInlines: Block = this
+  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Block = this
 }
 
 case class Paragraph(inlines: List[Inline]) extends Block {
-  override def processInlines: Paragraph = Paragraph(parseInline(inlines))
+  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Paragraph =
+    Paragraph(parseInline(inlines))
 }
 
 case class Heading(level: Int, inlines: List[Inline]) extends Block {
-  override def processInlines: Heading = Heading(level, parseInline(inlines))
+  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Heading =
+    Heading(level, parseInline(inlines))
 }
 
 case class BlockQuote(children: List[Block]) extends Block {
-  override def processInlines: BlockQuote =
-    BlockQuote(children.map(_.processInlines))
+  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): BlockQuote =
+    BlockQuote(children.map(_.processInlines(linkRefs)))
 }
 
 case class Code(content: String, infoString: Option[String] = None) extends Block

@@ -1,5 +1,7 @@
 package io.github.edadma.markdown
 
+import scala.collection.mutable
+
 // A parser for paragraph blocks - our first concrete implementation
 object ParagraphBlockParser extends BlockParser {
   def canStart(line: LazyList[Cursor]): Boolean = {
@@ -7,7 +9,7 @@ object ParagraphBlockParser extends BlockParser {
     !isBlankLine(line)
   }
 
-  def parse(lines: List[LazyList[Cursor]]): (Block, Int) = {
+  def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
     // Find the first blank line
     val paragraphLines = lines.takeWhile(line => !isBlankLine(line))
 
