@@ -14,6 +14,7 @@ renderToHTML.scala
 AutolinkAndHtmlTagInlineParserTest.scala
 CodeSpanInlineParserTest.scala
 InputReaderTest.scala
+LinkReferenceDefinitionParserTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
 Testing.scala
