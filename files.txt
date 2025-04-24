@@ -11,6 +11,7 @@ renderToHTML.scala
 
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
+CodeSpanInlineParserTest.scala
 InlineParserTest.scala
 InputReaderTest.scala
 Main.scala
