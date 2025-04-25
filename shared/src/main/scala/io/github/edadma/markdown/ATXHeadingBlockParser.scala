@@ -6,7 +6,9 @@ object ATXHeadingBlockParser extends BlockParser {
   def canStart(lines: List[LazyList[Cursor]]): Boolean = {
     if (lines.isEmpty) return false
 
-    val line = lines.head
+    val line =
+      if lines.head.head.char == '\n' then lines.head.dropRight(1)
+      else lines.head
 
     // Check if line starts with at least one # followed by a space
     line.headOption.exists(c => !c.isLiteral && c.char == '#') && {
