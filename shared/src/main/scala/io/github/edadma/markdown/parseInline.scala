@@ -440,7 +440,12 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     }
 
     // After processing all nodes, handle any remaining emphasis delimiters
-    processEmphasis(inlineNodes, delimiterStack, None)
+    if (delimiterStack.nonEmpty) {
+      logger.debug(s"Processing ${delimiterStack.size} delimiters")
+      processEmphasis(inlineNodes, delimiterStack, None)
+    } else {
+      logger.debug("No delimiters to process")
+    }
   }
 
   // Convert remaining character sequences to Text nodes
@@ -591,10 +596,16 @@ def isUnicodePunctuation(c: Char): Boolean = {
 
 // Extract inlines between nodes
 def extractInlinesBetween(start: DLList[Inline]#Node, end: DLList[Inline]#Node): List[Inline] = {
+  if (start == null || end == null) {
+    logger.debug("Received null node in extractInlinesBetween - returning empty list")
+    return List.empty
+  }
+
   var result  = List[Inline]()
   var current = start
 
-  while (current != end) {
+  // Check if current is valid and not at the end node yet
+  while (current != null && current != end && current.notAfterEnd) {
     result = result :+ current.element
     current = current.following
   }
@@ -615,7 +626,10 @@ def processEmphasis(
     delimiterStack: mutable.Stack[DelimiterInfo],
     stackBottom: Option[DelimiterInfo],
 ): Unit = {
-  import scala.collection.mutable
+  if (delimiterStack.isEmpty) {
+    logger.debug("No delimiters to process in processEmphasis")
+    return
+  }
 
   logger.debug(s"Processing emphasis, stack size: ${delimiterStack.size}")
 
@@ -827,6 +841,11 @@ private def createEmphasisNode(
     delimiterCount: Int,
     inlineNodes: DLList[Inline],
 ): Unit = {
+  if (opener == null || closer == null || opener.node == null || closer.node == null) {
+    logger.debug("Null opener or closer in createEmphasisNode - returning")
+    return
+  }
+
   val openerNode = opener.node
 
   // For strong emphasis, we need to skip the opening delimiter characters (**)
