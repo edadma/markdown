@@ -640,7 +640,6 @@ def processEmphasis(
   }
 
   // Track openers bottom for each delimiter type
-  // Key: (delimiter char, length mod 3, can opener also be closer)
   val openersBottom = mutable.Map[(Char, Int, Boolean), Int]().withDefaultValue(-1)
 
   // Process from the beginning of the document (bottom of stack) upward
@@ -663,9 +662,10 @@ def processEmphasis(
     while (currentIdx < delimiterList.size && closer.isEmpty) {
       val candidate = delimiterList(currentIdx)
       if (
+        candidate.isActive &&
         (candidate.delimiterChar == '*' || candidate.delimiterChar == '_') &&
         candidate.canClose &&
-        candidate.isActive
+        isNodeValid(candidate.node) // Check if node is still valid
       ) {
         closer = Some(candidate)
         logger.debug(s"Found potential closer at list index $currentIdx")
@@ -702,7 +702,8 @@ def processEmphasis(
           candidate.isActive &&
           candidate.delimiterChar == closerChar &&
           candidate.canOpen &&
-          isValidEmphasisPair(candidate, closerInfo)
+          isValidEmphasisPair(candidate, closerInfo) &&
+          isNodeValid(candidate.node) // Check if node is still valid
         ) {
           opener = Some(candidate)
           logger.debug(s"Found matching opener at list index $openerIdx")
@@ -720,8 +721,7 @@ def processEmphasis(
         val openerInfo = opener.get
         val openerIdx  = delimiterList.indexOf(openerInfo)
 
-        // Determine if it's emphasis or strong emphasis based on delimiter length
-        // Strong emphasis requires at least 2 delimiters
+        // Determine if it's emphasis or strong emphasis
         val strongEmphasis = (openerInfo.length >= 2 && closerInfo.length >= 2)
         val useDelimiters  = if (strongEmphasis) 2 else 1
         val emphasisType   = if (strongEmphasis) "strong" else "em"
@@ -734,49 +734,28 @@ def processEmphasis(
         // Create emphasis node
         createEmphasisNode(openerInfo, closerInfo, emphasisType, useDelimiters, inlineNodes)
 
-        // Mark these delimiters as inactive or update their lengths in the original stack
-        val openerStackIdx = delimiterStack.indexWhere(d => d.node == openerInfo.node)
-        val closerStackIdx = delimiterStack.indexWhere(d => d.node == closerInfo.node)
+        // After modifying the document structure, ALL delimiters may have stale references
+        // We need to check ALL delimiters in the stack and mark inactive any with invalid nodes
+
+        // First, mark our opener and closer
+        val openerStackIdx = delimiterStack.indexWhere(d => d == openerInfo)
+        val closerStackIdx = delimiterStack.indexWhere(d => d == closerInfo)
 
         if (openerStackIdx >= 0) {
-          if (openerInfo.length > useDelimiters) {
-            // Reduce the length of the opener
-            delimiterStack(openerStackIdx) = DelimiterInfo(
-              openerInfo.node,
-              openerInfo.delimiterChar,
-              openerInfo.length - useDelimiters,
-              isActive = true,
-              openerInfo.canOpen,
-              openerInfo.canClose,
-            )
-            logger.debug(
-              s"Reduced opener length at stack index $openerStackIdx to ${openerInfo.length - useDelimiters}",
-            )
-          } else {
-            // Mark as inactive if fully used
-            delimiterStack(openerStackIdx).isActive = false
-            logger.debug(s"Marked opener at stack index $openerStackIdx as inactive")
-          }
+          delimiterStack(openerStackIdx).isActive = false
+          logger.debug(s"Marked opener at stack index $openerStackIdx as inactive")
         }
 
         if (closerStackIdx >= 0) {
-          if (closerInfo.length > useDelimiters) {
-            // Reduce the length of the closer
-            delimiterStack(closerStackIdx) = DelimiterInfo(
-              closerInfo.node,
-              closerInfo.delimiterChar,
-              closerInfo.length - useDelimiters,
-              isActive = true,
-              closerInfo.canOpen,
-              closerInfo.canClose,
-            )
-            logger.debug(
-              s"Reduced closer length at stack index $closerStackIdx to ${closerInfo.length - useDelimiters}",
-            )
-          } else {
-            // Mark as inactive if fully used
-            delimiterStack(closerStackIdx).isActive = false
-            logger.debug(s"Marked closer at stack index $closerStackIdx as inactive")
+          delimiterStack(closerStackIdx).isActive = false
+          logger.debug(s"Marked closer at stack index $closerStackIdx as inactive")
+        }
+
+        // Now check all delimiters for stale references
+        for (i <- delimiterStack.indices) {
+          if (delimiterStack(i).isActive && !isNodeValid(delimiterStack(i).node)) {
+            delimiterStack(i).isActive = false
+            logger.debug(s"Marked delimiter at stack index $i as inactive due to stale reference")
           }
         }
 
@@ -792,6 +771,19 @@ def processEmphasis(
   delimiterStack.filterInPlace(_.isActive)
 
   logger.debug(s"Emphasis processing completed, stack size: ${delimiterStack.size}")
+}
+
+// Helper method to check if a node is still valid
+private def isNodeValid(node: DLList[Inline]#Node): Boolean = {
+  if (node == null) return false
+
+  try {
+    // Try accessing the element to see if it throws an exception
+    val _ = node.element
+    node.notBeforeStart && node.notAfterEnd
+  } catch {
+    case _: Exception => false
+  }
 }
 
 private def isValidEmphasisPair(opener: DelimiterInfo, closer: DelimiterInfo): Boolean = {
