@@ -9,9 +9,11 @@ import io.github.edadma.logger.LogLevel
 
 //  pprintln(parseInlineContent("***triple emphasis***"))
 
-  val input =
-    """
-      |##    Heading with more spaces   
-      |""".stripMargin
+//  val input =
+//    """
+//      |## a
+//      |""".stripMargin
+//
+//  pprintln(parseDocumentContentWithRefs(input))
 
-  pprintln(parseDocumentContentWithRefs(input))
+  pprintln(parseDocumentContentWithRefs("#\n## \n"))
