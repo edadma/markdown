@@ -7,14 +7,11 @@ import io.github.edadma.logger.LogLevel
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-  pprintln(parseInlineContent("***triple emphasis***"))
+//  pprintln(parseInlineContent("***triple emphasis***"))
 
-//  val input =
-//    """
-//      |[fo\\o]: </url> "ti\\tle"
-//      |[bar]: /url2 'title2'
-//      |[baz]: /url3 (title3)
-//      |[no_title]: /url4 ""
-//      |""".stripMargin
-//
-//  pprintln(parseDocumentContentWithRefs(input))
+  val input =
+    """
+      |##    Heading with more spaces   
+      |""".stripMargin
+
+  pprintln(parseDocumentContentWithRefs(input))

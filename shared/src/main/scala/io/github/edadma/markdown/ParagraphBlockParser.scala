@@ -4,9 +4,9 @@ import scala.collection.mutable
 
 // A parser for paragraph blocks - our first concrete implementation
 object ParagraphBlockParser extends BlockParser {
-  def canStart(line: LazyList[Cursor]): Boolean = {
+  def canStart(lines: List[LazyList[Cursor]]): Boolean = {
     // A paragraph can start with any non-blank line
-    !isBlankLine(line)
+    !isBlankLine(lines.head)
   }
 
   def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {

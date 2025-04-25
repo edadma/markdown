@@ -33,7 +33,7 @@ private def parseBlocks(
 // Interface for block parsers
 trait BlockParser {
   // Check if this parser can handle the given line
-  def canStart(line: LazyList[Cursor]): Boolean
+  def canStart(line: List[LazyList[Cursor]]): Boolean
 
   // Parse a block starting with the given line
   // Returns the parsed block and the number of lines consumed
@@ -51,13 +51,15 @@ private def processLines(
   // The list of block parsers in priority order
   val blockParsers: List[BlockParser] = List(
     LinkReferenceDefinitionParser,
-    ParagraphBlockParser, // We'll add more parsers here later
+    SetextHeadingBlockParser,
+    ATXHeadingBlockParser,
+    ParagraphBlockParser,
   )
 
   // Process lines until none remain
   while (remainingLines.nonEmpty) {
     // Find a parser for the current line
-    blockParsers.find(_.canStart(remainingLines.head)) match {
+    blockParsers.find(_.canStart(remainingLines)) match {
       case Some(parser) =>
         // Parse the block and update remaining lines
         val (block, linesConsumed) = parser.parse(remainingLines, linkRefs)
