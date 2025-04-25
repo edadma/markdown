@@ -7,7 +7,7 @@ import io.github.edadma.logger.LogLevel
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-  pprintln(parseInlineContent("This is *emphasized* text."))
+  pprintln(parseInlineContent("This is *strongly emphasized* text."))
 
 //  val input =
 //    """
