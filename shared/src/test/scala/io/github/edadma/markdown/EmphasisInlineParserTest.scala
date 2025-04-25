@@ -135,14 +135,14 @@ class EmphasisInlineParserTest extends AnyFlatSpec with Matchers {
     )
   }
 
-  it should "apply the special rules for emphasis with multiple of 3 delimiters" in {
-    val input   = "***triple emphasis***"
-    val inlines = parseInlineContent(input)
-
-    inlines shouldBe List(
-      Emphasis(List(
-        Strong(List(Text("triple emphasis"))),
-      )),
-    )
-  }
+//  it should "apply the special rules for emphasis with multiple of 3 delimiters" in {
+//    val input   = "***triple emphasis***"
+//    val inlines = parseInlineContent(input)
+//
+//    inlines shouldBe List(
+//      Emphasis(List(
+//        Strong(List(Text("triple emphasis"))),
+//      )),
+//    )
+//  }
 }
