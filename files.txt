@@ -2,18 +2,25 @@
 
 # app code
 ./shared/src/main/scala/io/github/edadma/markdown
+ATXHeadingBlockParser.scala
 InputReader.scala
+LinkReferenceDefinitionParser.scala
 Node.scala
 package.scala
+ParagraphBlockParser.scala
 parseDocument.scala
 parseInline.scala
 renderToHTML.scala
+SetextHeadingBlockParser.scala
 
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
 AutolinkAndHtmlTagInlineParserTest.scala
 CodeSpanInlineParserTest.scala
+EmphasisInlineParserTest.scala
+HeadingParserTest.scala
 InputReaderTest.scala
+LinkInlineParserTest.scala
 LinkReferenceDefinitionParserTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
