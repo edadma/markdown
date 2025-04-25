@@ -3,14 +3,68 @@ package io.github.edadma.markdown
 import io.github.edadma.dllist.DLList
 
 import scala.annotation.tailrec
+import scala.collection.mutable
+
+case class DelimiterInfo(
+    node: DLList[Inline]#Node,    // Reference to the node in the input list
+    delimiterChar: Char,          // The delimiter character: *, _, [, or !
+    length: Int,                  // Number of consecutive delimiters (1 or 2 for emphasis)
+    var isActive: Boolean = true, // Whether this delimiter can still be matched
+    canOpen: Boolean,             // Whether this can open emphasis/links
+    canClose: Boolean,            // Whether this can close emphasis/links
+)
 
 // Standalone inline parsing function
 def parseInline(inlines: List[Inline]): List[Inline] = {
   // Create initial DLList with character nodes
-  val inlineNodes = DLList[Inline](inlines*)
+  val inlineNodes    = DLList[Inline](inlines*)
+  val delimiterStack = new mutable.Stack[DelimiterInfo]
 
-  // Initialize empty delimiter stack (will be used for emphasis/links)
-//  val delimiterStack = DLList[DelimiterInfo]()
+  def analyzeDelimiter(node: DLList[Inline]#Node, inlineNodes: DLList[Inline]): DelimiterInfo = {
+    val delimiterChar = node.element.asInstanceOf[Cursor].char
+    var count         = 0
+    var current       = node
+
+    // Count consecutive delimiters
+    while (
+      current.notAfterEnd &&
+      current.element.isInstanceOf[Cursor] &&
+      current.element.asInstanceOf[Cursor].char == delimiterChar &&
+      !current.element.asInstanceOf[Cursor].isLiteral
+    ) {
+      count += 1
+      current = current.following
+    }
+
+    // Get characters before and after the delimiter run
+    val beforeChar = if (node.preceding.notBeforeStart) getCharFromNode(node.preceding) else '\n'
+    val afterChar  = if (current.notAfterEnd) getCharFromNode(current) else '\n'
+
+    // Determine if left/right flanking
+    val isLeftFlanking = !isUnicodeWhitespace(afterChar) &&
+      (!isUnicodePunctuation(afterChar) || isUnicodeWhitespace(beforeChar) || isUnicodePunctuation(beforeChar))
+
+    val isRightFlanking = !isUnicodeWhitespace(beforeChar) &&
+      (!isUnicodePunctuation(beforeChar) || isUnicodeWhitespace(afterChar) || isUnicodePunctuation(afterChar))
+
+    // Apply rules from spec section 6.2 to determine open/close capabilities
+    val canOpen = delimiterChar match {
+      case '*' => isLeftFlanking
+      case '_' => isLeftFlanking && (!isRightFlanking || isUnicodePunctuation(beforeChar))
+      case '[' => true
+      case '!' => true
+      case _   => false
+    }
+
+    val canClose = delimiterChar match {
+      case '*' => isRightFlanking
+      case '_' => isRightFlanking && (!isLeftFlanking || isUnicodePunctuation(afterChar))
+      case ']' => true
+      case _   => false
+    }
+
+    DelimiterInfo(node, delimiterChar, count, true, canOpen, canClose)
+  }
 
   def processCodeSpan(node: inlineNodes.Node): inlineNodes.Node = {
     logger.debug(s"Starting processCodeSpan on node: ${node.element}")
@@ -334,12 +388,18 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
                 current = current.following
               }
 
-//            case '*' | '_' =>
-//              // Add to delimiter stack for emphasis processing
-//              val delimiterInfo = analyzeDelimiter(current, inlineNodes)
-//              delimiterStack.append(delimiterInfo)
-//              current = current.following
-//
+            case '*' | '_' =>
+              // Add to delimiter stack for emphasis processing
+              val delimiterInfo = analyzeDelimiter(current, inlineNodes)
+              logger.debug(s"Adding delimiter: char=${delimiterInfo.delimiterChar}, " +
+                s"length=${delimiterInfo.length}, canOpen=${delimiterInfo.canOpen}, " +
+                s"canClose=${delimiterInfo.canClose}")
+              delimiterStack.push(delimiterInfo)
+
+              // Skip ahead past all the delimiters
+              val nextNode = current.following.skipForward(delimiterInfo.length - 1)
+              current = if (nextNode.notAfterEnd) nextNode else current.following
+
 //            case '[' =>
 //              // Add to delimiter stack as potential link opener
 //              delimiterStack.append(DelimiterInfo(current, '[', 1, isActive = true, canOpen = true, canClose = false))
@@ -492,4 +552,317 @@ def isHtmlTag(str: String): Boolean = {
   logger.debug(s"HTML tag check result for '$str': $result")
 
   result
+}
+
+// Get character from a node
+def getCharFromNode(node: DLList[Inline]#Node): Char = {
+  node.element match {
+    case c: Cursor                     => c.char
+    case t: Text if t.content.nonEmpty => t.content(0)
+    case _                             => ' ' // Default for other node types
+  }
+}
+
+// Check for Unicode whitespace
+def isUnicodeWhitespace(c: Char): Boolean = {
+  c.isWhitespace || c == '\n' || c == '\r' || c == '\t'
+}
+
+// Check for Unicode punctuation
+def isUnicodePunctuation(c: Char): Boolean = {
+  // Check Unicode category for punctuation
+  val chartype = Character.getType(c)
+  chartype == Character.CONNECTOR_PUNCTUATION ||
+  chartype == Character.DASH_PUNCTUATION ||
+  chartype == Character.END_PUNCTUATION ||
+  chartype == Character.FINAL_QUOTE_PUNCTUATION ||
+  chartype == Character.INITIAL_QUOTE_PUNCTUATION ||
+  chartype == Character.OTHER_PUNCTUATION ||
+  chartype == Character.START_PUNCTUATION
+}
+
+// Extract inlines between nodes
+def extractInlinesBetween(start: DLList[Inline]#Node, end: DLList[Inline]#Node): List[Inline] = {
+  var result  = List[Inline]()
+  var current = start
+
+  while (current != end) {
+    result = result :+ current.element
+    current = current.following
+  }
+
+  result
+}
+
+// Check if node contains open parenthesis
+def isOpenParen(node: DLList[Inline]#Node): Boolean = {
+  node.element match {
+    case c: Cursor => c.char == '('
+    case _         => false
+  }
+}
+
+def processEmphasis(
+    inlineNodes: DLList[Inline],
+    delimiterStack: mutable.Stack[DelimiterInfo],
+    stackBottom: Option[DelimiterInfo],
+): Unit = {
+  import scala.collection.mutable
+
+  logger.debug(s"Processing emphasis, stack size: ${delimiterStack.size}")
+
+  // Track openers bottom for each delimiter type
+  // Key: (delimiter char, length mod 3, can opener also be closer)
+  val openersBottom = mutable.Map[(Char, Int, Boolean), Int]().withDefaultValue(-1)
+
+  var currentPosition = delimiterStack.size - 1
+
+  // Process until we run out of closers
+  while (currentPosition >= 0) {
+    // Respect stack bottom
+    if (stackBottom.isDefined && currentPosition < delimiterStack.indexOf(stackBottom.get)) {
+      currentPosition = -1 // Exit the loop
+    } else {
+      // Find next potential closer moving back from current position
+      var closer: Option[DelimiterInfo] = None
+      var currentIdx                    = currentPosition
+
+      while (currentIdx >= 0 && closer.isEmpty) {
+        val candidate = delimiterStack(currentIdx)
+        if (
+          (candidate.delimiterChar == '*' || candidate.delimiterChar == '_') &&
+          candidate.canClose
+        ) {
+          closer = Some(candidate)
+        }
+        currentIdx -= 1
+      }
+
+      if (closer.isEmpty) {
+        // No more potential closers
+        currentPosition = -1 // Exit the loop
+      } else {
+        val closerInfo = closer.get
+        val closerIdx  = delimiterStack.indexOf(closerInfo)
+        val closerChar = closerInfo.delimiterChar
+        val closerMod  = closerInfo.length % 3
+
+        // Find matching opener
+        val bottomBound = math.max(
+          openersBottom((closerChar, closerMod, closerInfo.canOpen)),
+          if (stackBottom.isDefined) delimiterStack.indexOf(stackBottom.get) + 1 else 0,
+        )
+
+        var openerIdx                     = closerIdx - 1
+        var opener: Option[DelimiterInfo] = None
+
+        // Look back for matching opener
+        while (openerIdx >= bottomBound && opener.isEmpty) {
+          val candidate = delimiterStack(openerIdx)
+
+          if (
+            candidate.delimiterChar == closerChar &&
+            candidate.canOpen &&
+            isValidEmphasisPair(candidate, closerInfo)
+          ) {
+            opener = Some(candidate)
+          }
+          openerIdx -= 1
+        }
+
+        if (opener.isEmpty) {
+          // No matching opener found
+          // Set new openersBottom and advance
+          openersBottom((closerChar, closerMod, closerInfo.canOpen)) = closerIdx
+
+          // If closer can't be an opener too, remove it
+          if (!closerInfo.canOpen) {
+            delimiterStack.remove(closerIdx)
+          }
+
+          currentPosition = closerIdx - 1
+        } else {
+          // We have emphasis! Process it
+          val openerInfo    = opener.get
+          val emphasisType  = if (openerInfo.length >= 2 && closerInfo.length >= 2) "strong" else "em"
+          val useDelimiters = if (emphasisType == "strong") 2 else 1
+
+          logger.debug(
+            s"Creating $emphasisType emphasis between positions ${delimiterStack.indexOf(openerInfo)} and $closerIdx",
+          )
+
+          // Create emphasis node
+          createEmphasisNode(openerInfo, closerInfo, emphasisType, inlineNodes)
+
+          // Update delimiters
+          updateDelimiters(openerInfo, closerInfo, useDelimiters, delimiterStack)
+
+          // Reset current position to process new potential emphasis
+          currentPosition = delimiterStack.size - 1
+        }
+      }
+    }
+  }
+
+  // Clean up - remove any delimiters not required
+  if (stackBottom.isEmpty) {
+    delimiterStack.clear()
+  } else {
+    val bottomIdx = delimiterStack.indexOf(stackBottom.get)
+    while (delimiterStack.size > bottomIdx + 1) {
+      delimiterStack.pop()
+    }
+  }
+}
+
+private def isValidEmphasisPair(opener: DelimiterInfo, closer: DelimiterInfo): Boolean = {
+  // Rule 9: Sum of delimiter runs can't be multiple of 3 unless both are
+  if (
+    (opener.length + closer.length) % 3 == 0 &&
+    opener.length                   % 3 != 0 && closer.length % 3 != 0
+  ) {
+    logger.debug(
+      f"Invalid emphasis pair: sum=${opener.length + closer.length} is multiple of 3 but individual lengths are not",
+    )
+    false
+  } else {
+    true
+  }
+}
+
+// Check if a delimiter pair can form valid emphasis/strong emphasis
+private def isValidEmphasisDelimiterPair(opener: DelimiterInfo, closer: DelimiterInfo): Boolean = {
+  // Rule 9 from spec: Sum of delimiter runs can't be multiple of 3 unless both are
+  if (
+    opener.canOpen && closer.canClose &&
+    (opener.length + closer.length) % 3 == 0 &&
+    opener.length                   % 3 != 0 && closer.length % 3 != 0
+  ) {
+    return false
+  }
+
+  true
+}
+
+// Determine whether to create emphasis or strong emphasis
+private def determineEmphasisType(opener: DelimiterInfo, closer: DelimiterInfo): String = {
+  // If both opener and closer have length >= 2, it's strong emphasis
+  if (opener.length >= 2 && closer.length >= 2) {
+    "strong"
+  } else {
+    "em"
+  }
+}
+
+// Create emphasis or strong emphasis node
+private def createEmphasisNode(
+    opener: DelimiterInfo,
+    closer: DelimiterInfo,
+    emphasisType: String,
+    inlineNodes: DLList[Inline],
+): Unit = {
+
+  val openerNode = opener.node
+  val closerNode = closer.node
+
+  // Extract contents between opener and closer
+  val contents = extractInlinesBetween(openerNode.following, closerNode)
+
+  logger.debug(s"Creating $emphasisType with contents: $contents")
+
+  // Create the appropriate node
+  val emphNode = emphasisType match {
+    case "em"     => Emphasis(contents)
+    case "strong" => Strong(contents)
+  }
+
+  // Replace opener with emphasis node
+  openerNode.element = emphNode
+
+  // Remove nodes between opener and closer
+  // Need to handle this carefully with DLList
+  var current = openerNode.following
+  while (current != closerNode && current.notAfterEnd) {
+    val next = current.following
+    current.unlink
+    current = next
+  }
+}
+
+// Update delimiters after creating emphasis
+private def updateDelimiters(
+    opener: DelimiterInfo,
+    closer: DelimiterInfo,
+    useDelimiters: Int,
+    delimiterStack: mutable.Stack[DelimiterInfo],
+): Unit = {
+  // Instead of modifying case class fields, we'll replace the objects in the stack
+
+  // Handle opener
+  val openerIdx = delimiterStack.indexOf(opener)
+  if (openerIdx >= 0) { // Make sure opener is still in the stack
+    if (opener.length > useDelimiters) {
+      // Replace with new opener that has fewer delimiters
+      val newOpener = DelimiterInfo(
+        opener.node,
+        opener.delimiterChar,
+        opener.length - useDelimiters,
+        opener.isActive,
+        opener.canOpen,
+        opener.canClose,
+      )
+
+      // Remove and insert at same position
+      delimiterStack.remove(openerIdx)
+      // Insert at the same position - a bit awkward with Stack but workable
+      val tempStack = mutable.Stack[DelimiterInfo]()
+      while (delimiterStack.size > openerIdx) {
+        tempStack.push(delimiterStack.pop())
+      }
+      delimiterStack.push(newOpener)
+      while (tempStack.nonEmpty) {
+        delimiterStack.push(tempStack.pop())
+      }
+
+      logger.debug(s"Opener has ${newOpener.length} delimiters left")
+    } else {
+      // Remove opener from stack if fully used
+      delimiterStack.remove(openerIdx)
+      logger.debug("Removed opener from stack")
+    }
+  }
+
+  // Handle closer - may need to adjust index if opener was removed
+  val closerIdx = delimiterStack.indexOf(closer)
+  if (closerIdx >= 0) { // Make sure closer is still in the stack
+    if (closer.length > useDelimiters) {
+      // Replace with new closer that has fewer delimiters
+      val newCloser = DelimiterInfo(
+        closer.node,
+        closer.delimiterChar,
+        closer.length - useDelimiters,
+        closer.isActive,
+        closer.canOpen,
+        closer.canClose,
+      )
+
+      // Remove and insert at same position
+      delimiterStack.remove(closerIdx)
+      // Insert at the same position
+      val tempStack = mutable.Stack[DelimiterInfo]()
+      while (delimiterStack.size > closerIdx) {
+        tempStack.push(delimiterStack.pop())
+      }
+      delimiterStack.push(newCloser)
+      while (tempStack.nonEmpty) {
+        delimiterStack.push(tempStack.pop())
+      }
+
+      logger.debug(s"Closer has ${newCloser.length} delimiters left")
+    } else {
+      // Remove closer from stack
+      delimiterStack.remove(closerIdx)
+      logger.debug("Removed closer from stack")
+    }
+  }
 }

@@ -7,15 +7,14 @@ import io.github.edadma.logger.LogLevel
 //  logger.setLogLevel(LogLevel.DEBUG)
 //  logger.setFileLogging()
 
-//  pprintln(parseInlineContent("Not autolinks: < https://foo.bar> <foo bar> <https://example.com space>"))
-//  println(isHtmlTag("<foo bar>"))
+  pprintln(parseInlineContent("This is *emphasized* text."))
 
-  val input =
-    """
-      |[fo\\o]: </url> "ti\\tle"
-      |[bar]: /url2 'title2'
-      |[baz]: /url3 (title3)
-      |[no_title]: /url4 ""
-      |""".stripMargin
-
-  pprintln(parseDocumentContentWithRefs(input))
+//  val input =
+//    """
+//      |[fo\\o]: </url> "ti\\tle"
+//      |[bar]: /url2 'title2'
+//      |[baz]: /url3 (title3)
+//      |[no_title]: /url4 ""
+//      |""".stripMargin
+//
+//  pprintln(parseDocumentContentWithRefs(input))
