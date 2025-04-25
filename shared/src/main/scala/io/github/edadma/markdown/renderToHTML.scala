@@ -56,7 +56,7 @@ private def renderInlines(inlines: List[Inline]): String =
 
     case RawHTML(content) => content // Raw HTML is passed through as-is
 
-    case c: Cursor => sys.error(s"unparsed character wrapper: '$c'")
+    case c: C => sys.error(s"unparsed character wrapper: '$c'")
   }.mkString
 
 // Helper for image alt text - extracts plain text only

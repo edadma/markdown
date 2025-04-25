@@ -10,7 +10,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 // case class ThematicBreak() extends Block
 
 // Block parser implementation
-def parseDocument(stream: LazyList[Cursor]): (Document, immutable.Map[String, LinkReference]) = {
+def parseDocument(stream: LazyList[C]): (Document, immutable.Map[String, LinkReference]) = {
   val linkRefs      = new mutable.HashMap[String, LinkReference]
   val blocks        = parseBlocks(stream, linkRefs)
   val immutableRefs = linkRefs.toMap // Convert to immutable map
@@ -42,8 +42,8 @@ def inlinesToPlainText(inlines: List[Inline]): String = {
 
 // The main block parsing function that delegates to specific block parsers
 private def parseBlocks(
-    stream: LazyList[Cursor],
-    linkRefs: mutable.Map[String, LinkReference],
+                         stream: LazyList[C],
+                         linkRefs: mutable.Map[String, LinkReference],
 ): List[Block] = {
   // Group the stream into lines
   val lines = groupIntoLines(stream)
@@ -55,17 +55,17 @@ private def parseBlocks(
 // Interface for block parsers
 trait BlockParser {
   // Check if this parser can handle the given line
-  def canStart(line: List[LazyList[Cursor]]): Boolean
+  def canStart(line: List[LazyList[C]]): Boolean
 
   // Parse a block starting with the given line
   // Returns the parsed block and the number of lines consumed
-  def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int)
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int)
 }
 
 // Process lines to build blocks
 private def processLines(
-    lines: List[LazyList[Cursor]],
-    linkRefs: scala.collection.mutable.Map[String, LinkReference],
+                          lines: List[LazyList[C]],
+                          linkRefs: scala.collection.mutable.Map[String, LinkReference],
 ): List[Block] = {
   val blocks         = new ListBuffer[Block]
   var remainingLines = lines
@@ -100,9 +100,9 @@ private def processLines(
 }
 
 // Group cursor stream into lines
-private def groupIntoLines(stream: LazyList[Cursor]): List[LazyList[Cursor]] = {
-  var lines: List[LazyList[Cursor]] = Nil
-  var currentLine: List[Cursor]     = Nil
+private def groupIntoLines(stream: LazyList[C]): List[LazyList[C]] = {
+  var lines: List[LazyList[C]] = Nil
+  var currentLine: List[C]     = Nil
 
   // Process each cursor
   stream.foreach { cursor =>

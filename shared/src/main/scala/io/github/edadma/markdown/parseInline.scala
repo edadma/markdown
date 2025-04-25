@@ -21,7 +21,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
   val delimiterStack = new mutable.Stack[DelimiterInfo]
 
   def analyzeDelimiter(node: DLList[Inline]#Node, inlineNodes: DLList[Inline]): DelimiterInfo = {
-    val delimiterChar = node.element.asInstanceOf[Cursor].char
+    val delimiterChar = node.element.asInstanceOf[C].char
     var count         = 0
     var current       = node
 
@@ -30,9 +30,9 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     // Count consecutive delimiters
     while (
       current.notAfterEnd &&
-      current.element.isInstanceOf[Cursor] &&
-      current.element.asInstanceOf[Cursor].char == delimiterChar &&
-      !current.element.asInstanceOf[Cursor].isLiteral
+      current.element.isInstanceOf[C] &&
+      current.element.asInstanceOf[C].char == delimiterChar &&
+      !current.element.asInstanceOf[C].isLiteral
     ) {
       count += 1
       current = current.following
@@ -84,9 +84,9 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     // Count consecutive backticks in the opening delimiter
     while (
       current.notAfterEnd &&
-      current.element.isInstanceOf[Cursor] &&
-      current.element.asInstanceOf[Cursor].char == '`' &&
-      !current.element.asInstanceOf[Cursor].isLiteral
+      current.element.isInstanceOf[C] &&
+      current.element.asInstanceOf[C].char == '`' &&
+      !current.element.asInstanceOf[C].isLiteral
     ) {
       openingCount += 1
       current = current.following
@@ -106,8 +106,8 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
         logger.debug(s"Checking node for closing: ${current.element}")
 
         if (
-          current.element.isInstanceOf[Cursor] &&
-          current.element.asInstanceOf[Cursor].char == '`'
+          current.element.isInstanceOf[C] &&
+          current.element.asInstanceOf[C].char == '`'
         ) {
           // Count consecutive backticks to see if we have a match
           var closingCount = 0
@@ -116,17 +116,17 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
           @tailrec
           def closeCount(): Unit = {
             if current.notAfterEnd &&
-              current.element.isInstanceOf[Cursor] &&
-              current.element.asInstanceOf[Cursor].char == '`' &&
+              current.element.isInstanceOf[C] &&
+              current.element.asInstanceOf[C].char == '`' &&
               closingCount < openingCount
             then
-              if current.element.asInstanceOf[Cursor].isLiteral && closingCount == 0 then
-                closingStart = current.follow(current.element.asInstanceOf[Cursor].copy())
-                current.element = current.element.asInstanceOf[Cursor].copy(char = '\\', isLiteral = false)
+              if current.element.asInstanceOf[C].isLiteral && closingCount == 0 then
+                closingStart = current.follow(current.element.asInstanceOf[C].copy())
+                current.element = current.element.asInstanceOf[C].copy(char = '\\', isLiteral = false)
                 closingCount += 1
                 current = current.following.following
                 closeCount()
-              else if current.element.asInstanceOf[Cursor].isLiteral then
+              else if current.element.asInstanceOf[C].isLiteral then
                 current = current.following
               else
                 closingCount += 1
@@ -187,7 +187,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
     while (current != end) {
       current.element match {
-        case c: Cursor =>
+        case c: C =>
           // Convert newlines to spaces
           if (c.char == '\n') {
             builder.append(' ')
@@ -222,9 +222,9 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     // Check for hard break - backslash escape
     if (
       node.preceding.notBeforeStart &&
-      node.preceding.element.isInstanceOf[Cursor] &&
-      node.preceding.element.asInstanceOf[Cursor].char == '\\' &&
-      !node.preceding.element.asInstanceOf[Cursor].isLiteral
+      node.preceding.element.isInstanceOf[C] &&
+      node.preceding.element.asInstanceOf[C].char == '\\' &&
+      !node.preceding.element.asInstanceOf[C].isLiteral
     ) {
 
       logger.debug("Found hard break with backslash")
@@ -245,9 +245,9 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     // Count trailing spaces before the newline
     while (
       current.notBeforeStart &&
-      current.element.isInstanceOf[Cursor] &&
-      current.element.asInstanceOf[Cursor].char == ' ' &&
-      !current.element.asInstanceOf[Cursor].isLiteral
+      current.element.isInstanceOf[C] &&
+      current.element.asInstanceOf[C].char == ' ' &&
+      !current.element.asInstanceOf[C].isLiteral
     ) {
       spaceCount += 1
       current = current.preceding
@@ -265,8 +265,8 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
       while (looping && spacesToRemove > 0 && node.preceding.notBeforeStart) {
         if (
-          node.preceding.element.isInstanceOf[Cursor] &&
-          node.preceding.element.asInstanceOf[Cursor].char == ' '
+          node.preceding.element.isInstanceOf[C] &&
+          node.preceding.element.asInstanceOf[C].char == ' '
         ) {
           node.preceding.unlink
           spacesToRemove -= 1
@@ -295,13 +295,13 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     // Look ahead to find a potential closing '>'
     while (
       current.notAfterEnd &&
-      !(current.element.isInstanceOf[Cursor] &&
-        current.element.asInstanceOf[Cursor].char == '>' &&
-        !current.element.asInstanceOf[Cursor].isLiteral)
+      !(current.element.isInstanceOf[C] &&
+        current.element.asInstanceOf[C].char == '>' &&
+        !current.element.asInstanceOf[C].isLiteral)
     ) {
 
       current.element match {
-        case c: Cursor =>
+        case c: C =>
           // For autolinks, we can't have line endings
           if (c.char == '\n') {
             logger.debug("Line ending found in potential autolink/HTML - treating as literal")
@@ -316,8 +316,8 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     // If we didn't find a closing '>', return original
     if (
       current.isAfterEnd ||
-      !(current.element.isInstanceOf[Cursor] &&
-        current.element.asInstanceOf[Cursor].char == '>')
+      !(current.element.isInstanceOf[C] &&
+        current.element.asInstanceOf[C].char == '>')
     ) {
       logger.debug("No closing '>' found")
       return node
@@ -375,7 +375,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
     while (current.notAfterEnd) {
       current.element match {
-        case c: Cursor if !c.isLiteral =>
+        case c: C if !c.isLiteral =>
           c.char match {
             case '`' =>
               // Process code span (highest precedence)
@@ -461,13 +461,13 @@ private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
 
     while (currentNode != null && !currentNode.isAfterEnd) {
       currentNode.element match
-        case Cursor(char, _, _, _, _) =>
+        case C(char, _, _, _, _) =>
           val startNode = currentNode
           val sb        = new StringBuilder()
 
           // Collect consecutive C nodes
-          while (currentNode.notAfterEnd && currentNode.element.isInstanceOf[Cursor]) {
-            sb.append(currentNode.element.asInstanceOf[Cursor].char)
+          while (currentNode.notAfterEnd && currentNode.element.isInstanceOf[C]) {
+            sb.append(currentNode.element.asInstanceOf[C].char)
             currentNode = currentNode.following
           }
 
@@ -570,7 +570,7 @@ def isHtmlTag(str: String): Boolean = {
 // Get character from a node
 def getCharFromNode(node: DLList[Inline]#Node): Char = {
   node.element match {
-    case c: Cursor                     => c.char
+    case c: C                     => c.char
     case t: Text if t.content.nonEmpty => t.content(0)
     case _                             => ' ' // Default for other node types
   }
@@ -618,7 +618,7 @@ def extractInlinesBetween(start: DLList[Inline]#Node, end: DLList[Inline]#Node):
 // Check if node contains open parenthesis
 def isOpenParen(node: DLList[Inline]#Node): Boolean = {
   node.element match {
-    case c: Cursor => c.char == '('
+    case c: C => c.char == '('
     case _         => false
   }
 }
@@ -1061,7 +1061,7 @@ private def consolidateTextInContents(inlines: List[Inline]): List[Inline] = {
 
   // Process each inline element
   inlines.foreach {
-    case c: Cursor =>
+    case c: C =>
       // Add character to current text buffer
       currentText.append(c.char)
 

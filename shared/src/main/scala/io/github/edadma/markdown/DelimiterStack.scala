@@ -22,7 +22,7 @@ class Delimiter(
     var next: Option[Delimiter] = None,
 )
 
-class DelimiterStack(cursors: LazyList[Cursor]) {
+class DelimiterStack(cursors: LazyList[C]) {
   // Bottom and top of the stack
   private var bottom: Option[Delimiter] = None
   private var top: Option[Delimiter]    = None

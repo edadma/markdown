@@ -46,7 +46,7 @@ case class Image(destination: String, title: Option[String], inlines: List[Inlin
 case class AutoLink(destination: String, text: String)                              extends Inline
 case class RawHTML(content: String)                                                 extends Inline
 
-case class Cursor(
+case class C(
     char: Char,        // The character (possibly transformed)
     pos: Int,          // Position in original input
     line: Int,         // Line number (0-based)
@@ -55,4 +55,4 @@ case class Cursor(
 ) extends Inline
 
 // Sentinel value for end of input
-object EndOfInput extends Cursor('\u0000', -1, -1, -1, false)
+object EndOfInput extends C('\u0000', -1, -1, -1, false)

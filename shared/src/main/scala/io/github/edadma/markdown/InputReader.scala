@@ -7,7 +7,7 @@ class InputReader(input: String) {
   private val normalizedInput = normalizeInput(input)
 
   // Main public stream of cursors
-  lazy val stream: LazyList[Cursor] = processToCursors(normalizedInput)
+  lazy val stream: LazyList[C] = processToCursors(normalizedInput)
 
   // Normalize input - handle null characters and line endings
   private def normalizeInput(input: String): String = {
@@ -17,8 +17,8 @@ class InputReader(input: String) {
   }
 
   // Process input into a stream of cursors
-  private def processToCursors(input: String): LazyList[Cursor] = {
-    def process(index: Int, pos: Int, line: Int, col: Int): LazyList[Cursor] = {
+  private def processToCursors(input: String): LazyList[C] = {
+    def process(index: Int, pos: Int, line: Int, col: Int): LazyList[C] = {
       if (index >= input.length) {
         LazyList(EndOfInput) // End of input marker
       } else {
@@ -29,11 +29,11 @@ class InputReader(input: String) {
           val next = input.charAt(index + 1)
           if (isAsciiPunctuation(next)) {
             // Create cursor for the escaped character
-            val cursor = Cursor(next, pos + 1, line, col + 1, true)
+            val cursor = C(next, pos + 1, line, col + 1, true)
             cursor #:: process(index + 2, pos + 2, line, col + 2)
           } else {
             // Not escaped, just a regular backslash
-            val cursor = Cursor(current, pos, line, col, false)
+            val cursor = C(current, pos, line, col, false)
             cursor #:: process(index + 1, pos + 1, line, col + 1)
           }
         }
@@ -42,29 +42,29 @@ class InputReader(input: String) {
           val entityResult = parseEntityReference(input, index)
           if (entityResult.isDefined) {
             val (entityChar, entityLength) = entityResult.get
-            val cursor                     = Cursor(entityChar, pos, line, col, false)
+            val cursor                     = C(entityChar, pos, line, col, false)
             cursor #:: process(index + entityLength, pos + entityLength, line, col + 1)
           } else {
             // Not a valid entity, treat as regular character
-            val cursor = Cursor(current, pos, line, col, false)
+            val cursor = C(current, pos, line, col, false)
             cursor #:: process(index + 1, pos + 1, line, col + 1)
           }
         }
         // Handle line endings
         else if (current == '\n') {
-          val cursor = Cursor(current, pos, line, col, false)
+          val cursor = C(current, pos, line, col, false)
           cursor #:: process(index + 1, pos + 1, line + 1, 0) // Reset column, increment line
         }
         // Handle tabs (in base stream they're passed through)
         else if (current == '\t') {
-          val cursor = Cursor(current, pos, line, col, false)
+          val cursor = C(current, pos, line, col, false)
           // Tab advances to next tab stop (multiples of 4)
           val nextCol = col + (4 - (col % 4))
           cursor #:: process(index + 1, pos + 1, line, nextCol)
         }
         // Regular character
         else {
-          val cursor = Cursor(current, pos, line, col, false)
+          val cursor = C(current, pos, line, col, false)
           cursor #:: process(index + 1, pos + 1, line, col + 1)
         }
       }
@@ -117,13 +117,13 @@ class InputReader(input: String) {
   }
 
   // Get a stream with tabs expanded to spaces in block structure contexts
-  def getStreamWithExpandedTabs(): LazyList[Cursor] = {
+  def getStreamWithExpandedTabs(): LazyList[C] = {
     expandTabsInStream(stream)
   }
 
   // Expand tabs to spaces in a stream of cursors
-  private def expandTabsInStream(stream: LazyList[Cursor]): LazyList[Cursor] = {
-    def expand(remaining: LazyList[Cursor], col: Int): LazyList[Cursor] = {
+  private def expandTabsInStream(stream: LazyList[C]): LazyList[C] = {
+    def expand(remaining: LazyList[C], col: Int): LazyList[C] = {
       if (remaining.isEmpty) {
         LazyList.empty
       } else {
@@ -135,7 +135,7 @@ class InputReader(input: String) {
 
           // Create cursors for the spaces
           val spaceCursors = (0 until spacesNeeded).map { i =>
-            Cursor(' ', cursor.pos, cursor.line, col + i, cursor.isLiteral)
+            C(' ', cursor.pos, cursor.line, col + i, cursor.isLiteral)
           }
 
           // Append the space cursors and continue

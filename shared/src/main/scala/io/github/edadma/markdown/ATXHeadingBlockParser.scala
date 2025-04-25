@@ -3,7 +3,7 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object ATXHeadingBlockParser extends BlockParser {
-  def canStart(lines: List[LazyList[Cursor]]): Boolean = {
+  def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.isEmpty) return false
 
     val line =
@@ -22,7 +22,7 @@ object ATXHeadingBlockParser extends BlockParser {
     }
   }
 
-  def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
     val line = lines.head
 
     // Count heading level (1-6 #s)

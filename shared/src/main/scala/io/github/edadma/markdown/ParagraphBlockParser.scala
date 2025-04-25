@@ -4,12 +4,12 @@ import scala.collection.mutable
 
 // A parser for paragraph blocks - our first concrete implementation
 object ParagraphBlockParser extends BlockParser {
-  def canStart(lines: List[LazyList[Cursor]]): Boolean = {
+  def canStart(lines: List[LazyList[C]]): Boolean = {
     // A paragraph can start with any non-blank line
     !isBlankLine(lines.head) && !ATXHeadingBlockParser.canStart(lines)
   }
 
-  def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
     var atxHeadingTerminated = false
 
     // Find the first blank line
@@ -33,7 +33,7 @@ object ParagraphBlockParser extends BlockParser {
 }
 
 // Function to check if a line is blank
-private def isBlankLine(line: LazyList[Cursor]): Boolean = {
+private def isBlankLine(line: LazyList[C]): Boolean = {
   // A blank line contains only whitespace or is empty (excluding newline)
   val contentChars = line.filter(_.char != '\n')
   contentChars.isEmpty || contentChars.forall(c => c.char == ' ' || c.char == '\t')

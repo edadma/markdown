@@ -7,7 +7,7 @@ object SetextHeadingBlockParser extends BlockParser {
   private val SetextLevel1Pattern = """^=+[ \t]*$""".r // Level 1 with =
   private val SetextLevel2Pattern = """^-+[ \t]*$""".r // Level 2 with -
 
-  def canStart(lines: List[LazyList[Cursor]]): Boolean = {
+  def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.size < 2) return false
 
     // Need at least two lines - content and underline
@@ -22,7 +22,7 @@ object SetextHeadingBlockParser extends BlockParser {
     SetextLevel1Pattern.matches(secondLineText) || SetextLevel2Pattern.matches(secondLineText)
   }
 
-  def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
     // Get the content from the first line
     val contentLine = lines.head
 
@@ -39,12 +39,12 @@ object SetextHeadingBlockParser extends BlockParser {
   }
 
   // Helper function to check for blank lines
-  private def isBlankLine(line: LazyList[Cursor]): Boolean = {
+  private def isBlankLine(line: LazyList[C]): Boolean = {
     line.forall(c => c.char == ' ' || c.char == '\t' || c.char == '\n')
   }
 
   // Helper function to convert line to string
-  private def lineToString(line: LazyList[Cursor]): String = {
+  private def lineToString(line: LazyList[C]): String = {
     line.takeWhile(_.char != '\n').map(_.char).mkString
   }
 }
