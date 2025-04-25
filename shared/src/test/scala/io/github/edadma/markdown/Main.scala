@@ -7,7 +7,7 @@ import io.github.edadma.logger.LogLevel
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-  pprintln(parseInlineContent("*foo _bar* baz_"))
+  pprintln(parseInlineContent("***triple emphasis***"))
 
 //  val input =
 //    """
