@@ -18,6 +18,28 @@ def parseDocument(stream: LazyList[Cursor]): (Document, immutable.Map[String, Li
   (Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs))), immutableRefs)
 }
 
+def extractHeaders(document: Document): List[(Int, String)] = {
+  val headers = collection.mutable.ListBuffer[(Int, String)]()
+
+  def visit(node: Node): Unit = node match {
+    case Document(children)      => children.foreach(visit)
+    case Heading(level, inlines) => headers += ((level, inlinesToPlainText(inlines)))
+    case _                       => // Skip other node types
+  }
+
+  visit(document)
+  headers.toList
+}
+
+def inlinesToPlainText(inlines: List[Inline]): String = {
+  inlines.map {
+    case Text(content)      => content
+    case Emphasis(children) => inlinesToPlainText(children)
+    case Strong(children)   => inlinesToPlainText(children)
+    case _                  => ""
+  }.mkString
+}
+
 // The main block parsing function that delegates to specific block parsers
 private def parseBlocks(
     stream: LazyList[Cursor],

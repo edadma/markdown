@@ -11,13 +11,20 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |Testing
-      |-------
+      |Overview
+      |========
       |
       |This is a little *test* document with some **boring** text.
+      |
+      |Advice
+      |------
+      |
       |It should _not_ be taken __seriously__.
       |""".stripMargin
 
-  pprintln(parseDocumentContentWithRefs(input))
+  val (doc, refs) = parseDocumentContentWithRefs(input)
+
+  pprintln(doc)
+  pprintln(extractHeaders(doc))
 
 //  pprintln(parseDocumentContentWithRefs("#\n## \n"))
