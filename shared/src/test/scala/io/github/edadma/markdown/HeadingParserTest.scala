@@ -90,8 +90,8 @@ This is \## not a heading either"""
         SoftLineBreak(),
         Text("##Also not a heading"),
         SoftLineBreak(),
-        Text("### This is a heading"),
       )),
+      Heading(3, List(Text("This is a heading"))),
     ))
   }
 

@@ -4,8 +4,8 @@ import pprint.pprintln
 import io.github.edadma.logger.LogLevel
 
 @main def run(): Unit =
-  logger.setLogLevel(LogLevel.DEBUG)
-  logger.setFileLogging()
+//  logger.setLogLevel(LogLevel.DEBUG)
+//  logger.setFileLogging()
 
 //  pprintln(parseInlineContent("***triple emphasis***"))
 
@@ -31,4 +31,4 @@ import io.github.edadma.logger.LogLevel
 //  pprintln(doc)
 //  pprintln(extractHeaders(doc))
 
-  pprintln(parseDocumentContentWithRefs("#\n\n## a\n"))
+  pprintln(parseDocumentContentWithRefs("#\n##"))

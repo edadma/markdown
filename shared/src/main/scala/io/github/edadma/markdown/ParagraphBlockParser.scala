@@ -6,7 +6,7 @@ import scala.collection.mutable
 object ParagraphBlockParser extends BlockParser {
   def canStart(lines: List[LazyList[Cursor]]): Boolean = {
     // A paragraph can start with any non-blank line
-    !isBlankLine(lines.head)
+    !isBlankLine(lines.head) && !ATXHeadingBlockParser.canStart(lines)
   }
 
   def parse(lines: List[LazyList[Cursor]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
@@ -14,10 +14,10 @@ object ParagraphBlockParser extends BlockParser {
 
     // Find the first blank line
     val paragraphLines = lines.takeWhile(line => {
-      val atxHeading = !ATXHeadingBlockParser.canStart(List(line))
+      val atxHeading = ATXHeadingBlockParser.canStart(List(line))
 
       atxHeadingTerminated |= atxHeading
-      !isBlankLine(line) && atxHeading
+      !isBlankLine(line) && !atxHeading
     })
 
     // The actual number of lines consumed is the paragraph plus the blank line

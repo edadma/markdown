@@ -7,7 +7,7 @@ object ATXHeadingBlockParser extends BlockParser {
     if (lines.isEmpty) return false
 
     val line =
-      if lines.head.head.char == '\n' then lines.head.dropRight(1)
+      if lines.head.last.char == '\n' then lines.head.dropRight(1)
       else lines.head
 
     // Check if line starts with at least one # followed by a space
