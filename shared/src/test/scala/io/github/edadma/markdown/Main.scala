@@ -9,11 +9,15 @@ import io.github.edadma.logger.LogLevel
 
 //  pprintln(parseInlineContent("***triple emphasis***"))
 
-//  val input =
-//    """
-//      |## a
-//      |""".stripMargin
-//
-//  pprintln(parseDocumentContentWithRefs(input))
+  val input =
+    """
+      |Testing
+      |-------
+      |
+      |This is a little *test* document with some **boring** text.
+      |It should _not_ be taken __seriously__.
+      |""".stripMargin
 
-  pprintln(parseDocumentContentWithRefs("#\n## \n"))
+  pprintln(parseDocumentContentWithRefs(input))
+
+//  pprintln(parseDocumentContentWithRefs("#\n## \n"))
