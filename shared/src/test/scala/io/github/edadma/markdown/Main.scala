@@ -31,4 +31,4 @@ import io.github.edadma.logger.LogLevel
 //  pprintln(doc)
 //  pprintln(extractHeaders(doc))
 
-  pprintln(parseDocumentContentWithRefs("#\n##"))
+  pprintln(parseDocumentContent("asdf"))

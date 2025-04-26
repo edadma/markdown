@@ -1,12 +1,12 @@
 package io.github.edadma.markdown
 
-import io.github.edadma.dllist.DLList
+import io.github.edadma.dllist.{DLList, DLListNode}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 
 case class DelimiterInfo(
-    node: DLList[Inline]#Node,    // Reference to the node in the input list
+    node: DLListNode[Inline],     // Reference to the node in the input list
     delimiterChar: Char,          // The delimiter character: *, _, [, or !
     length: Int,                  // Number of consecutive delimiters (1 or 2 for emphasis)
     var isActive: Boolean = true, // Whether this delimiter can still be matched
@@ -20,7 +20,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
   val inlineNodes    = DLList[Inline](inlines*)
   val delimiterStack = new mutable.Stack[DelimiterInfo]
 
-  def analyzeDelimiter(node: DLList[Inline]#Node, inlineNodes: DLList[Inline]): DelimiterInfo = {
+  def analyzeDelimiter(node: DLListNode[Inline], inlineNodes: DLList[Inline]): DelimiterInfo = {
     val delimiterChar = node.element.asInstanceOf[C].char
     var count         = 0
     var current       = node
@@ -74,7 +74,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     DelimiterInfo(node, delimiterChar, count, true, canOpen, canClose)
   }
 
-  def processCodeSpan(node: inlineNodes.Node): inlineNodes.Node = {
+  def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
     logger.debug(s"Starting processCodeSpan on node: ${node.element}")
     // Count the consecutive backticks in the opening delimiter
     val openingNode  = node
@@ -180,7 +180,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
   }
 
   // Helper function to extract and process code span content according to spec
-  def extractAndProcessCodeSpanContent(start: DLList[Inline]#Node, end: DLList[Inline]#Node): String = {
+  def extractAndProcessCodeSpanContent(start: DLListNode[Inline], end: DLListNode[Inline]): String = {
     // Build the content string from nodes between start and end
     val builder = new StringBuilder
     var current = start
@@ -216,7 +216,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     }
   }
 
-  def processLineBreak(node: inlineNodes.Node): inlineNodes.Node = {
+  def processLineBreak(node: DLListNode[Inline]): DLListNode[Inline] = {
     logger.debug(s"Processing line break at node: ${node.element}")
 
     // Check for hard break - backslash escape
@@ -284,7 +284,7 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
     return node
   }
 
-  def processHtmlOrAutolink(node: inlineNodes.Node): inlineNodes.Node = {
+  def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
     logger.debug(s"Starting HTML/autolink processing on node: ${node.element}")
 
     // Find the closing '>' if it exists
@@ -568,9 +568,9 @@ def isHtmlTag(str: String): Boolean = {
 }
 
 // Get character from a node
-def getCharFromNode(node: DLList[Inline]#Node): Char = {
+def getCharFromNode(node: DLListNode[Inline]): Char = {
   node.element match {
-    case c: C                     => c.char
+    case c: C                          => c.char
     case t: Text if t.content.nonEmpty => t.content(0)
     case _                             => ' ' // Default for other node types
   }
@@ -595,7 +595,7 @@ def isUnicodePunctuation(c: Char): Boolean = {
 }
 
 // Extract inlines between nodes
-def extractInlinesBetween(start: DLList[Inline]#Node, end: DLList[Inline]#Node): List[Inline] = {
+def extractInlinesBetween(start: DLListNode[Inline], end: DLListNode[Inline]): List[Inline] = {
   logger.debug(s"extractInlinesBetween from $start to $end")
 
   if (start == null || end == null) {
@@ -616,10 +616,10 @@ def extractInlinesBetween(start: DLList[Inline]#Node, end: DLList[Inline]#Node):
 }
 
 // Check if node contains open parenthesis
-def isOpenParen(node: DLList[Inline]#Node): Boolean = {
+def isOpenParen(node: DLListNode[Inline]): Boolean = {
   node.element match {
     case c: C => c.char == '('
-    case _         => false
+    case _    => false
   }
 }
 
@@ -796,7 +796,7 @@ def processEmphasis(
 }
 
 // Helper method to check if a node is still valid
-private def isNodeValid(node: DLList[Inline]#Node): Boolean = {
+private def isNodeValid(node: DLListNode[Inline]): Boolean = {
   if (node == null) return false
 
   try {

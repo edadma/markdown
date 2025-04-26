@@ -61,7 +61,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 //      "com.github.scopt" %%% "scopt" % "4.1.0",
       "com.lihaoyi"      %%% "pprint" % "0.9.0" /*% "test"*/,
       "io.github.edadma" %%% "logger" % "0.0.9",
-      "io.github.edadma" %%% "dllist" % "0.0.1",
+      "io.github.edadma" %%% "dllist" % "0.0.6",
     ),
     publishMavenStyle      := true,
     Test / publishArtifact := false,
