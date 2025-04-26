@@ -43,6 +43,7 @@ import io.github.edadma.logger.LogLevel
     """
       |```
       |Code
+      |``` this should be a paragraph
       |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
