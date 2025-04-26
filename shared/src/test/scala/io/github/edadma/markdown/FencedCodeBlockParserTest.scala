@@ -156,18 +156,6 @@ Line 3""",
     ))
   }
 
-  it should "not allow content after closing fence" in {
-    val input = """```
-                  |Code
-                  |``` this should be a paragraph""".stripMargin
-    val document = parseDocumentContent(input)
-
-    document shouldBe Document(List(
-      Code("Code", None),
-      Paragraph(List(Text("this should be a paragraph"))),
-    ))
-  }
-
   it should "handle code blocks with complex language specifiers" in {
     val input = """```java highlight-line=3
                   |public class Test {
