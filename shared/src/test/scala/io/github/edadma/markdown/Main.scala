@@ -7,7 +7,7 @@ import io.github.edadma.logger.LogLevel
 //  logger.setLogLevel(LogLevel.DEBUG)
 //  logger.setFileLogging()
 
-//  pprintln(parseInlineContent("***triple emphasis***"))
+  pprintln(parseInlineContent("**a *b* c**"))
 
 //  val input =
 //    """
@@ -31,4 +31,4 @@ import io.github.edadma.logger.LogLevel
 //  pprintln(doc)
 //  pprintln(extractHeaders(doc))
 
-  pprintln(parseDocumentContent("asdf"))
+//  pprintln(parseDocumentContent("asdf"))
