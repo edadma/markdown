@@ -459,7 +459,7 @@ private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
 
     while (currentNode != null && !currentNode.isAfterEnd) {
       currentNode.element match
-        case C(char, _, _, _, _) =>
+        case _: C =>
           val startNode = currentNode
           val sb        = new StringBuilder()
 
