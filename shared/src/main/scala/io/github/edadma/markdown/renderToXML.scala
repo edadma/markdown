@@ -2,14 +2,14 @@ package io.github.edadma.markdown
 
 private val NS = "http://commonmark.org/xml/1.0"
 
-def renderToXML(doc: Document): String = {
+def renderToXML(doc: Document, system: String = "document"): String = {
   val sb = new StringBuilder
   sb.append("""<?xml version="1.0" encoding="UTF-8"?>""").append("\n")
-    .append("""<!DOCTYPE document SYSTEM "CommonMark.dtd">""").append("\n")
+    .append(s"""<!DOCTYPE $system SYSTEM "CommonMark.dtd">""").append("\n")
     .append(s"<document xmlns=\"$NS\">").append("\n")
   doc.children.foreach(blockToXml(_, sb, 2))
   sb.append("</document>")
-  sb.toString()
+  sb.toString
 }
 
 private def blockToXml(b: Block, sb: StringBuilder, indent: Int): Unit = b match {
@@ -54,7 +54,7 @@ private def itemToXml(item: ListItem, sb: StringBuilder, indent: Int): Unit = {
 }
 
 private def inlineToXml(inl: Inline, sb: StringBuilder, indent: Int): Unit = inl match {
-  case Text(t)         => sb.append(escapeXml(t))
+  case Text(t)         => sb.append("<text>").append(escapeXml(t)).append("</text>")
   case SoftLineBreak() => sb.append("\n")
   case HardLineBreak() => sb.append("\n")
   case CodeSpan(c)     => sb.append("<codespan>").append(escapeXml(c)).append("</codespan>")
