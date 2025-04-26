@@ -59,9 +59,10 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
     libraryDependencies ++= Seq(
 //      "com.github.scopt" %%% "scopt" % "4.1.0",
-      "com.lihaoyi"      %%% "pprint" % "0.9.0" /*% "test"*/,
-      "io.github.edadma" %%% "logger" % "0.0.10",
-      "io.github.edadma" %%% "dllist" % "0.0.6",
+      "com.lihaoyi"      %%% "pprint"         % "0.9.0" /*% "test"*/,
+      "io.github.edadma" %%% "logger"         % "0.0.10",
+      "io.github.edadma" %%% "dllist"         % "0.0.6",
+      "io.github.edadma" %%% "cross-platform" % "0.0.3",
     ),
     publishMavenStyle      := true,
     Test / publishArtifact := false,
