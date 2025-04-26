@@ -1195,7 +1195,14 @@ private def processInlineLink(
   }
 
   // Extract raw link text
-  val linkText = extractInlinesBetween(opener.node.following, closeBracket)
+  val altTextStart = if (isImage) {
+    // For images, skip both '!' and '[' characters
+    opener.node.following.following
+  } else {
+    // For regular links, skip only the '[' character
+    opener.node.following
+  }
+  val linkText = extractInlinesBetween(altTextStart, closeBracket)
 
   // Process emphasis and other formatting within the link text
   val processedLinkText = parseInline(linkText, Map())
@@ -1438,7 +1445,14 @@ private def processReferenceLink(
   }
 
   // Create link/image node with everything between opener and closeBracket
-  val linkText = extractInlinesBetween(opener.node.following, closeBracket)
+  val altTextStart = if (isImage) {
+    // For images, skip both '!' and '[' characters
+    opener.node.following.following
+  } else {
+    // For regular links, skip only the '[' character
+    opener.node.following
+  }
+  val linkText = extractInlinesBetween(altTextStart, closeBracket)
 
   // Process emphasis within the link text (with stack_bottom = opener)
   val processedLinkText = parseInline(linkText, Map())
