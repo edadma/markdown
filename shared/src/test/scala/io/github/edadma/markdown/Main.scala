@@ -41,10 +41,9 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |> First line
-      |> > Nested line
-      |continued without a marker
-      |> Back to the first level""".stripMargin
+      |- asdf
+      |    - qwer
+      |- zxvc""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)

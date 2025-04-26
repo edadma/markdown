@@ -3,12 +3,6 @@ package io.github.edadma.markdown
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-// Add to Node.scala:
-// case class Heading(level: Int, inlines: List[Inline]) extends Block
-// case class CodeBlock(content: String, infoString: Option[String] = None) extends Block
-// case class BlockQuote(children: List[Block]) extends Block
-// case class ThematicBreak() extends Block
-
 // Block parser implementation
 def parseDocument(stream: LazyList[C]): (Document, immutable.Map[String, LinkReference]) = {
   val linkRefs      = new mutable.HashMap[String, LinkReference]
@@ -95,6 +89,7 @@ private def processLines(
     IndentedCodeBlockParser,
     FencedCodeBlockParser,
     BlockQuoteParser,
+    ListBlockParser,
     ParagraphBlockParser,
   )
 
