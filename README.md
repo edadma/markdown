@@ -1,4 +1,4 @@
-# Scala CommonMark
+# markdown
 
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown_sjs1_3)
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
