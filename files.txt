@@ -4,6 +4,7 @@
 ./shared/src/main/scala/io/github/edadma/markdown
 ATXHeadingBlockParser.scala
 HTMLBlockParser.scala
+IndentedCodeBlockParser.scala
 InputReader.scala
 LinkReferenceDefinitionParser.scala
 Node.scala
@@ -23,6 +24,7 @@ EmphasisInlineParserTest.scala
 HeadingParserTest.scala
 HTMLBlockParserTest.scala
 ImageInlineParserTest.scala
+IndentedCodeBlockParserTest.scala
 InputReaderTest.scala
 LinkInlineParserTest.scala
 LinkReferenceDefinitionParserTest.scala
