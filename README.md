@@ -7,12 +7,12 @@
 ![Scala Native Version](https://img.shields.io/badge/Scala_Native-5.7-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
 
-A fast, minimal **Scala 3** library for parsing and rendering [CommonMark 0.29] Markdown.  
+A fast, minimal **Scala 3** library for parsing and rendering [CommonMark 0.31.2] Markdown.  
 Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
 
 ## Features
 
-- **Core CommonMark 0.29 compliance**: ATX & Setext headings, lists, block quotes, fenced & indented code, HTML blocks, thematic breaks, reference definitions
+- **Core CommonMark 0.31.2 compliance**: ATX & Setext headings, lists, block quotes, fenced & indented code, HTML blocks, thematic breaks, reference definitions
 - **Inline parsing**: emphasis, strong, code spans, inline & reference links/images, autolinks, raw HTML, entity references
 - **HTML entity decoding** outside of code, with literal preservation inside code spans/blocks
 - **HTML rendering**: safe escaping for `<`, `>`, `&`, and `"`; outputs standard tags (`<p>`, `<h1–6>`, `<ul>`, `<ol>`, `<pre><code>`, `<blockquote>`, `<a>`, `<img>`, etc.)
