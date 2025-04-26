@@ -4,8 +4,8 @@ import scala.collection.mutable
 
 object SetextHeadingBlockParser extends BlockParser {
   // Regex patterns for setext underlines
-  private val SetextLevel1Pattern = """^=+[ \t]*$""".r // Level 1 with =
-  private val SetextLevel2Pattern = """^-+[ \t]*$""".r // Level 2 with -
+  private val SetextLevel1Pattern = """^ {0,3}=+[ \t]*$""".r // Level 1 with =
+  private val SetextLevel2Pattern = """^ {0,3}-+[ \t]*$""".r // Level 2 with -
 
   def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.size < 2) return false
