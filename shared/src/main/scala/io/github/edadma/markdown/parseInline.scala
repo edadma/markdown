@@ -1135,7 +1135,7 @@ def lookForLinkOrImage(
   // Case 4: Shortcut reference link/image [foo]
   else {
     logger.debug("Checking for shortcut reference link/image")
-    processShortcutReferenceLink(openerInfo, current, isImage, inlineNodes, delimiterStack, linkRefs)
+    processShortcutReferenceLink(openerInfo, current, isImage, delimiterStack, linkRefs)
   }
 }
 
@@ -1543,7 +1543,6 @@ private def processShortcutReferenceLink(
     opener: DelimiterInfo,
     closeBracket: DLListNode[Inline],
     isImage: Boolean,
-    inlineNodes: DLList[Inline],
     delimiterStack: mutable.Stack[DelimiterInfo],
     linkRefs: immutable.Map[String, LinkReference],
 ): DLListNode[Inline] = {
@@ -1643,22 +1642,6 @@ private def extractReferenceLabel(labelStart: DLListNode[Inline]): (String, DLLi
 private def normalizeLabel(label: String): String = {
   // Unicode case fold, collapse whitespace
   label.trim.toLowerCase.replaceAll("\\s+", " ")
-}
-
-// Convert inlines to plain text for label
-private def inlinesToPlainText(inlines: List[Inline]): String = {
-  val sb = new StringBuilder
-
-  inlines.foreach {
-    case Text(content)      => sb.append(content)
-    case CodeSpan(content)  => sb.append(content)
-    case Emphasis(children) => sb.append(inlinesToPlainText(children))
-    case Strong(children)   => sb.append(inlinesToPlainText(children))
-    case c: C               => sb.append(c.char)
-    case _                  => // Ignore other types
-  }
-
-  sb.toString
 }
 
 // Set all [ delimiters inactive

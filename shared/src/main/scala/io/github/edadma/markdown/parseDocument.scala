@@ -34,16 +34,18 @@ def extractHeaders(document: Document): List[(Int, String)] = {
 def inlinesToPlainText(inlines: List[Inline]): String = {
   inlines.map {
     case Text(content)      => content
+    case CodeSpan(content)  => content
     case Emphasis(children) => inlinesToPlainText(children)
     case Strong(children)   => inlinesToPlainText(children)
+    case c: C               => c.char.toString
     case _                  => ""
   }.mkString
 }
 
 // The main block parsing function that delegates to specific block parsers
 private def parseBlocks(
-                         stream: LazyList[C],
-                         linkRefs: mutable.Map[String, LinkReference],
+    stream: LazyList[C],
+    linkRefs: mutable.Map[String, LinkReference],
 ): List[Block] = {
   // Group the stream into lines
   val lines = groupIntoLines(stream)
@@ -64,8 +66,8 @@ trait BlockParser {
 
 // Process lines to build blocks
 private def processLines(
-                          lines: List[LazyList[C]],
-                          linkRefs: scala.collection.mutable.Map[String, LinkReference],
+    lines: List[LazyList[C]],
+    linkRefs: scala.collection.mutable.Map[String, LinkReference],
 ): List[Block] = {
   val blocks         = new ListBuffer[Block]
   var remainingLines = lines

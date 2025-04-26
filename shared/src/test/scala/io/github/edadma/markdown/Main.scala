@@ -7,12 +7,12 @@ import io.github.edadma.logger.LogLevel
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-//  val linkRefs = Map("ref" -> LinkReference("http://example.com", None))
-//  val input    = "This is a [ref]."
-//
-//  pprintln(parseInlineContent(input, linkRefs))
+  val linkRefs = Map("ref" -> LinkReference("image.jpg", None))
+  val input    = "Shortcut image: ![ref]"
 
-  pprintln(parseInlineContent("""[![alt text](image.jpg)](https://example.com)"""))
+  pprintln(parseInlineContent(input, linkRefs))
+
+//  pprintln(parseInlineContent("""[![alt text](image.jpg)](https://example.com)"""))
 
 //  val input =
 //    """
