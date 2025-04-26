@@ -92,6 +92,7 @@ private def processLines(
     ATXHeadingBlockParser,
     ThematicBreakBlockParser,
     HTMLBlockParser,
+    IndentedCodeBlockParser,
     ParagraphBlockParser,
   )
 

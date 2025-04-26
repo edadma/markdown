@@ -41,10 +41,8 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |asdf
-      |<script>
-      |console.log(\"hello\");
-      |</script>
+      |	  Code indented with tab and spaces
+      | 	 Also code with space-tab-space
       |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
@@ -52,4 +50,4 @@ import io.github.edadma.logger.LogLevel
 
 //  pprintln(extractHeaders(doc))
 
-//  pprintln(parseDocumentContent("<![CDATA[<tag>some data</tag>]]"))
+//  pprintln(parseDocumentContent("	This is indented with a tab."))
