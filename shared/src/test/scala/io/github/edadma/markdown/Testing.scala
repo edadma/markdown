@@ -6,15 +6,3 @@ def parseInlineContent(input: String, linkRefs: Map[String, LinkReference] = Map
 
   parseInline(streamWithoutEOI, linkRefs)
 }
-
-def parseDocumentContent(input: String): Document = {
-  val (document, _) = parseDocumentContentWithRefs(input)
-
-  document
-}
-
-def parseDocumentContentWithRefs(input: String): (Document, Map[String, LinkReference]) = {
-  val reader = new InputReader(input)
-
-  parseDocument(reader.stream)
-}
