@@ -14,360 +14,9 @@ case class DelimiterInfo(
     canClose: Boolean,            // Whether this can close emphasis/links
 )
 
-// Standalone inline parsing function
 def parseInline(inlines: List[Inline]): List[Inline] = {
-  // Create initial DLList with character nodes
   val inlineNodes    = DLList[Inline](inlines*)
   val delimiterStack = new mutable.Stack[DelimiterInfo]
-
-  def analyzeDelimiter(node: DLListNode[Inline], inlineNodes: DLList[Inline]): DelimiterInfo = {
-    val delimiterChar = node.element.asInstanceOf[C].char
-    var count         = 0
-    var current       = node
-
-    logger.debug(s"Analyzing delimiter starting at: ${current.element}")
-
-    // Count consecutive delimiters
-    while (
-      current.notAfterEnd &&
-      current.element.isInstanceOf[C] &&
-      current.element.asInstanceOf[C].char == delimiterChar &&
-      !current.element.asInstanceOf[C].isLiteral
-    ) {
-      count += 1
-      current = current.following
-    }
-
-    // Get characters before and after the delimiter run
-    val beforeChar = if (node.preceding.notBeforeStart) getCharFromNode(node.preceding) else '\n'
-    val afterChar  = if (current.notAfterEnd) getCharFromNode(current) else '\n'
-
-    logger.debug(s"Delimiter run: '$delimiterChar' x $count, before: '$beforeChar', after: '$afterChar'")
-
-    // Determine if left/right flanking
-    val isLeftFlanking = !isUnicodeWhitespace(afterChar) &&
-      (!isUnicodePunctuation(afterChar) || isUnicodeWhitespace(beforeChar) || isUnicodePunctuation(beforeChar))
-
-    val isRightFlanking = !isUnicodeWhitespace(beforeChar) &&
-      (!isUnicodePunctuation(beforeChar) || isUnicodeWhitespace(afterChar) || isUnicodePunctuation(afterChar))
-
-    logger.debug(s"Flanking analysis: left=$isLeftFlanking, right=$isRightFlanking")
-
-    // Apply rules from spec section 6.2 to determine open/close capabilities
-    val canOpen = delimiterChar match {
-      case '*' => isLeftFlanking
-      case '_' => isLeftFlanking && (!isRightFlanking || isUnicodePunctuation(beforeChar))
-      case '[' => true
-      case '!' => true
-      case _   => false
-    }
-
-    val canClose = delimiterChar match {
-      case '*' => isRightFlanking
-      case '_' => isRightFlanking && (!isLeftFlanking || isUnicodePunctuation(afterChar))
-      case ']' => true
-      case _   => false
-    }
-
-    logger.debug(s"Delimiter capabilities: canOpen=$canOpen, canClose=$canClose")
-
-    DelimiterInfo(node, delimiterChar, count, true, canOpen, canClose)
-  }
-
-  def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
-    logger.debug(s"Starting processCodeSpan on node: ${node.element}")
-    // Count the consecutive backticks in the opening delimiter
-    val openingNode  = node
-    var openingCount = 0
-    var current      = node
-
-    // Count consecutive backticks in the opening delimiter
-    while (
-      current.notAfterEnd &&
-      current.element.isInstanceOf[C] &&
-      current.element.asInstanceOf[C].char == '`' &&
-      !current.element.asInstanceOf[C].isLiteral
-    ) {
-      openingCount += 1
-      current = current.following
-    }
-
-    logger.debug(s"Found opening delimiter with $openingCount backticks")
-
-    // If we found an opening delimiter, look for a matching closing one
-    if (openingCount > 0) {
-      // Remember where content starts
-      val contentStart = current
-      var foundClosing = false
-      var reachedEnd   = false
-
-      // Look for closing delimiter
-      while (current.notAfterEnd && !foundClosing && !reachedEnd) {
-        logger.debug(s"Checking node for closing: ${current.element}")
-
-        if (
-          current.element.isInstanceOf[C] &&
-          current.element.asInstanceOf[C].char == '`'
-        ) {
-          // Count consecutive backticks to see if we have a match
-          var closingCount = 0
-          var closingStart = current
-
-          @tailrec
-          def closeCount(): Unit = {
-            if current.notAfterEnd &&
-              current.element.isInstanceOf[C] &&
-              current.element.asInstanceOf[C].char == '`' &&
-              closingCount < openingCount
-            then
-              if current.element.asInstanceOf[C].isLiteral && closingCount == 0 then
-                closingStart = current.follow(current.element.asInstanceOf[C].copy())
-                current.element = current.element.asInstanceOf[C].copy(char = '\\', isLiteral = false)
-                closingCount += 1
-                current = current.following.following
-                closeCount()
-              else if current.element.asInstanceOf[C].isLiteral then
-                current = current.following
-              else
-                closingCount += 1
-                current = current.following
-                closeCount()
-          }
-
-          closeCount()
-
-          logger.debug(s"Found potential closing delimiter with $closingCount backticks")
-
-          // If counts match, we found our closing delimiter
-          if (closingCount == openingCount) {
-            foundClosing = true
-            val contentEnd = closingStart
-
-            // Extract and process content
-            val content = extractAndProcessCodeSpanContent(contentStart, contentEnd)
-            logger.debug(s"Extracted code span content: '$content'")
-
-            // Replace the opening node with a CodeSpan and unlink everything in between
-            openingNode.element = CodeSpan(content)
-
-            // Unlink everything from after opening delimiter to end of closing delimiter
-            if (openingNode.following != current) {
-              openingNode.following.unlinkUntil(current)
-            }
-
-            // Return the CodeSpan node for continued processing
-            return openingNode
-          }
-          // If counts don't match, continue searching
-        } else if (current.following.isAfterEnd) {
-          // Check if the next node would be the end sentinel
-          // This is the fix - set a flag to exit the loop when we're at the last node
-          logger.debug("Reached end of input while searching for closing delimiter")
-          reachedEnd = true
-        } else {
-          current = current.following
-        }
-      }
-
-      logger.debug("No matching closing delimiter found, returning original node")
-      // If no matching closing delimiter found, just return the original node unchanged
-      // The opening backticks will be treated as regular text
-      return node
-    }
-
-    // If we somehow got here, just return the original node
-    node
-  }
-
-  // Helper function to extract and process code span content according to spec
-  def extractAndProcessCodeSpanContent(start: DLListNode[Inline], end: DLListNode[Inline]): String = {
-    // Build the content string from nodes between start and end
-    val builder = new StringBuilder
-    var current = start
-
-    while (current != end) {
-      current.element match {
-        case c: C =>
-          // Convert newlines to spaces
-          if (c.char == '\n') {
-            builder.append(' ')
-          } else {
-            builder.append(c.char)
-          }
-        case t: Text => builder.append(t.content)
-        case _       => // Other inline elements shouldn't be here, but ignore if they are
-      }
-      current = current.following
-    }
-
-    val content = builder.toString
-
-    // Handle special case: if content begins and ends with a space, and isn't all spaces,
-    // remove one space from each end
-    if (
-      content.nonEmpty &&
-      content.startsWith(" ") &&
-      content.endsWith(" ") &&
-      content.trim.nonEmpty
-    ) {
-      content.substring(1, content.length - 1)
-    } else {
-      content
-    }
-  }
-
-  def processLineBreak(node: DLListNode[Inline]): DLListNode[Inline] = {
-    logger.debug(s"Processing line break at node: ${node.element}")
-
-    // Check for hard break - backslash escape
-    if (
-      node.preceding.notBeforeStart &&
-      node.preceding.element.isInstanceOf[C] &&
-      node.preceding.element.asInstanceOf[C].char == '\\' &&
-      !node.preceding.element.asInstanceOf[C].isLiteral
-    ) {
-
-      logger.debug("Found hard break with backslash")
-
-      // Remove the backslash
-      val backslashNode = node.preceding
-      backslashNode.unlink
-
-      // Replace the newline with a HardLineBreak
-      node.element = HardLineBreak()
-      return node
-    }
-
-    // Check for hard break - two or more spaces
-    var spaceCount = 0
-    var current    = node.preceding
-
-    // Count trailing spaces before the newline
-    while (
-      current.notBeforeStart &&
-      current.element.isInstanceOf[C] &&
-      current.element.asInstanceOf[C].char == ' ' &&
-      !current.element.asInstanceOf[C].isLiteral
-    ) {
-      spaceCount += 1
-      current = current.preceding
-    }
-
-    if (spaceCount >= 2) {
-      logger.debug(s"Found hard break with $spaceCount spaces")
-
-      // Replace the newline with a HardLineBreak
-      node.element = HardLineBreak()
-
-      // Remove the trailing spaces
-      var spacesToRemove = spaceCount
-      var looping        = true
-
-      while (looping && spacesToRemove > 0 && node.preceding.notBeforeStart) {
-        if (
-          node.preceding.element.isInstanceOf[C] &&
-          node.preceding.element.asInstanceOf[C].char == ' '
-        ) {
-          node.preceding.unlink
-          spacesToRemove -= 1
-        } else {
-          looping = false // If we hit a non-space, stop removing
-        }
-      }
-
-      return node
-    }
-
-    // If we get here, it's a soft break
-    logger.debug("Creating soft line break")
-    node.element = SoftLineBreak()
-    return node
-  }
-
-  def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
-    logger.debug(s"Starting HTML/autolink processing on node: ${node.element}")
-
-    // Find the closing '>' if it exists
-    val openingNode = node
-    var current     = node.following
-    var content     = new StringBuilder()
-
-    // Look ahead to find a potential closing '>'
-    while (
-      current.notAfterEnd &&
-      !(current.element.isInstanceOf[C] &&
-        current.element.asInstanceOf[C].char == '>' &&
-        !current.element.asInstanceOf[C].isLiteral)
-    ) {
-
-      current.element match {
-        case c: C =>
-          // For autolinks, we can't have line endings
-          if (c.char == '\n') {
-            logger.debug("Line ending found in potential autolink/HTML - treating as literal")
-            return node // Return original node unchanged
-          }
-          content.append(c.char)
-        case _ => return node // Non-cursor element found, not a valid autolink/HTML
-      }
-      current = current.following
-    }
-
-    // If we didn't find a closing '>', return original
-    if (
-      current.isAfterEnd ||
-      !(current.element.isInstanceOf[C] &&
-        current.element.asInstanceOf[C].char == '>')
-    ) {
-      logger.debug("No closing '>' found")
-      return node
-    }
-
-    val contentStr = content.toString()
-
-    // Check for URI autolink
-    if (isAbsoluteUri(contentStr)) {
-      logger.debug(s"Found URI autolink: $contentStr")
-      openingNode.element = AutoLink(contentStr, contentStr)
-
-      // Remove everything between opening < and closing >
-      if (openingNode.following != current.following) {
-        openingNode.following.unlinkUntil(current.following)
-      }
-
-      return openingNode
-    }
-
-    // Check for email autolink
-    else if (isEmailAddress(contentStr)) {
-      logger.debug(s"Found email autolink: $contentStr")
-      openingNode.element = AutoLink(s"mailto:$contentStr", contentStr)
-
-      // Remove everything between opening < and closing >
-      if (openingNode.following != current.following) {
-        openingNode.following.unlinkUntil(current.following)
-      }
-
-      return openingNode
-    }
-
-    // Check for HTML tag
-    else if (isHtmlTag(contentStr)) {
-      logger.debug(s"Found HTML tag: $contentStr")
-      openingNode.element = RawHTML(s"<$contentStr>")
-
-      // Remove everything between opening < and closing >
-      if (openingNode.following != current.following) {
-        openingNode.following.unlinkUntil(current.following)
-      }
-
-      return openingNode
-    }
-
-    // Not a valid autolink or HTML tag, treat as literal
-    logger.debug("Not a valid autolink or HTML tag")
-    return node
-  }
 
   // Main processing loop - single pass through the document
   if (inlineNodes.nonEmpty) {
@@ -453,6 +102,355 @@ def parseInline(inlines: List[Inline]): List[Inline] = {
 
   // Return as List
   inlineNodes.toList
+}
+
+def analyzeDelimiter(node: DLListNode[Inline], inlineNodes: DLList[Inline]): DelimiterInfo = {
+  val delimiterChar = node.element.asInstanceOf[C].char
+  var count         = 0
+  var current       = node
+
+  logger.debug(s"Analyzing delimiter starting at: ${current.element}")
+
+  // Count consecutive delimiters
+  while (
+    current.notAfterEnd &&
+    current.element.isInstanceOf[C] &&
+    current.element.asInstanceOf[C].char == delimiterChar &&
+    !current.element.asInstanceOf[C].isLiteral
+  ) {
+    count += 1
+    current = current.following
+  }
+
+  // Get characters before and after the delimiter run
+  val beforeChar = if (node.preceding.notBeforeStart) getCharFromNode(node.preceding) else '\n'
+  val afterChar  = if (current.notAfterEnd) getCharFromNode(current) else '\n'
+
+  logger.debug(s"Delimiter run: '$delimiterChar' x $count, before: '$beforeChar', after: '$afterChar'")
+
+  // Determine if left/right flanking
+  val isLeftFlanking = !isUnicodeWhitespace(afterChar) &&
+    (!isUnicodePunctuation(afterChar) || isUnicodeWhitespace(beforeChar) || isUnicodePunctuation(beforeChar))
+
+  val isRightFlanking = !isUnicodeWhitespace(beforeChar) &&
+    (!isUnicodePunctuation(beforeChar) || isUnicodeWhitespace(afterChar) || isUnicodePunctuation(afterChar))
+
+  logger.debug(s"Flanking analysis: left=$isLeftFlanking, right=$isRightFlanking")
+
+  // Apply rules from spec section 6.2 to determine open/close capabilities
+  val canOpen = delimiterChar match {
+    case '*' => isLeftFlanking
+    case '_' => isLeftFlanking && (!isRightFlanking || isUnicodePunctuation(beforeChar))
+    case '[' => true
+    case '!' => true
+    case _   => false
+  }
+
+  val canClose = delimiterChar match {
+    case '*' => isRightFlanking
+    case '_' => isRightFlanking && (!isLeftFlanking || isUnicodePunctuation(afterChar))
+    case ']' => true
+    case _   => false
+  }
+
+  logger.debug(s"Delimiter capabilities: canOpen=$canOpen, canClose=$canClose")
+
+  DelimiterInfo(node, delimiterChar, count, true, canOpen, canClose)
+}
+
+def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
+  logger.debug(s"Starting processCodeSpan on node: ${node.element}")
+  // Count the consecutive backticks in the opening delimiter
+  val openingNode  = node
+  var openingCount = 0
+  var current      = node
+
+  // Count consecutive backticks in the opening delimiter
+  while (
+    current.notAfterEnd &&
+    current.element.isInstanceOf[C] &&
+    current.element.asInstanceOf[C].char == '`' &&
+    !current.element.asInstanceOf[C].isLiteral
+  ) {
+    openingCount += 1
+    current = current.following
+  }
+
+  logger.debug(s"Found opening delimiter with $openingCount backticks")
+
+  // If we found an opening delimiter, look for a matching closing one
+  if (openingCount > 0) {
+    // Remember where content starts
+    val contentStart = current
+    var foundClosing = false
+    var reachedEnd   = false
+
+    // Look for closing delimiter
+    while (current.notAfterEnd && !foundClosing && !reachedEnd) {
+      logger.debug(s"Checking node for closing: ${current.element}")
+
+      if (
+        current.element.isInstanceOf[C] &&
+        current.element.asInstanceOf[C].char == '`'
+      ) {
+        // Count consecutive backticks to see if we have a match
+        var closingCount = 0
+        var closingStart = current
+
+        @tailrec
+        def closeCount(): Unit = {
+          if current.notAfterEnd &&
+            current.element.isInstanceOf[C] &&
+            current.element.asInstanceOf[C].char == '`' &&
+            closingCount < openingCount
+          then
+            if current.element.asInstanceOf[C].isLiteral && closingCount == 0 then
+              closingStart = current.follow(current.element.asInstanceOf[C].copy())
+              current.element = current.element.asInstanceOf[C].copy(char = '\\', isLiteral = false)
+              closingCount += 1
+              current = current.following.following
+              closeCount()
+            else if current.element.asInstanceOf[C].isLiteral then
+              current = current.following
+            else
+              closingCount += 1
+              current = current.following
+              closeCount()
+        }
+
+        closeCount()
+
+        logger.debug(s"Found potential closing delimiter with $closingCount backticks")
+
+        // If counts match, we found our closing delimiter
+        if (closingCount == openingCount) {
+          foundClosing = true
+          val contentEnd = closingStart
+
+          // Extract and process content
+          val content = extractAndProcessCodeSpanContent(contentStart, contentEnd)
+          logger.debug(s"Extracted code span content: '$content'")
+
+          // Replace the opening node with a CodeSpan and unlink everything in between
+          openingNode.element = CodeSpan(content)
+
+          // Unlink everything from after opening delimiter to end of closing delimiter
+          if (openingNode.following != current) {
+            openingNode.following.unlinkUntil(current)
+          }
+
+          // Return the CodeSpan node for continued processing
+          return openingNode
+        }
+        // If counts don't match, continue searching
+      } else if (current.following.isAfterEnd) {
+        // Check if the next node would be the end sentinel
+        // This is the fix - set a flag to exit the loop when we're at the last node
+        logger.debug("Reached end of input while searching for closing delimiter")
+        reachedEnd = true
+      } else {
+        current = current.following
+      }
+    }
+
+    logger.debug("No matching closing delimiter found, returning original node")
+    // If no matching closing delimiter found, just return the original node unchanged
+    // The opening backticks will be treated as regular text
+    return node
+  }
+
+  // If we somehow got here, just return the original node
+  node
+}
+
+// Helper function to extract and process code span content according to spec
+def extractAndProcessCodeSpanContent(start: DLListNode[Inline], end: DLListNode[Inline]): String = {
+  // Build the content string from nodes between start and end
+  val builder = new StringBuilder
+  var current = start
+
+  while (current != end) {
+    current.element match {
+      case c: C =>
+        // Convert newlines to spaces
+        if (c.char == '\n') {
+          builder.append(' ')
+        } else {
+          builder.append(c.char)
+        }
+      case t: Text => builder.append(t.content)
+      case _       => // Other inline elements shouldn't be here, but ignore if they are
+    }
+    current = current.following
+  }
+
+  val content = builder.toString
+
+  // Handle special case: if content begins and ends with a space, and isn't all spaces,
+  // remove one space from each end
+  if (
+    content.nonEmpty &&
+    content.startsWith(" ") &&
+    content.endsWith(" ") &&
+    content.trim.nonEmpty
+  ) {
+    content.substring(1, content.length - 1)
+  } else {
+    content
+  }
+}
+
+def processLineBreak(node: DLListNode[Inline]): DLListNode[Inline] = {
+  logger.debug(s"Processing line break at node: ${node.element}")
+
+  // Check for hard break - backslash escape
+  if (
+    node.preceding.notBeforeStart &&
+    node.preceding.element.isInstanceOf[C] &&
+    node.preceding.element.asInstanceOf[C].char == '\\' &&
+    !node.preceding.element.asInstanceOf[C].isLiteral
+  ) {
+
+    logger.debug("Found hard break with backslash")
+
+    // Remove the backslash
+    val backslashNode = node.preceding
+    backslashNode.unlink
+
+    // Replace the newline with a HardLineBreak
+    node.element = HardLineBreak()
+    return node
+  }
+
+  // Check for hard break - two or more spaces
+  var spaceCount = 0
+  var current    = node.preceding
+
+  // Count trailing spaces before the newline
+  while (
+    current.notBeforeStart &&
+    current.element.isInstanceOf[C] &&
+    current.element.asInstanceOf[C].char == ' ' &&
+    !current.element.asInstanceOf[C].isLiteral
+  ) {
+    spaceCount += 1
+    current = current.preceding
+  }
+
+  if (spaceCount >= 2) {
+    logger.debug(s"Found hard break with $spaceCount spaces")
+
+    // Replace the newline with a HardLineBreak
+    node.element = HardLineBreak()
+
+    // Remove the trailing spaces
+    var spacesToRemove = spaceCount
+    var looping        = true
+
+    while (looping && spacesToRemove > 0 && node.preceding.notBeforeStart) {
+      if (
+        node.preceding.element.isInstanceOf[C] &&
+        node.preceding.element.asInstanceOf[C].char == ' '
+      ) {
+        node.preceding.unlink
+        spacesToRemove -= 1
+      } else {
+        looping = false // If we hit a non-space, stop removing
+      }
+    }
+
+    return node
+  }
+
+  // If we get here, it's a soft break
+  logger.debug("Creating soft line break")
+  node.element = SoftLineBreak()
+  return node
+}
+
+def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
+  logger.debug(s"Starting HTML/autolink processing on node: ${node.element}")
+
+  // Find the closing '>' if it exists
+  val openingNode = node
+  var current     = node.following
+  var content     = new StringBuilder()
+
+  // Look ahead to find a potential closing '>'
+  while (
+    current.notAfterEnd &&
+    !(current.element.isInstanceOf[C] &&
+      current.element.asInstanceOf[C].char == '>' &&
+      !current.element.asInstanceOf[C].isLiteral)
+  ) {
+
+    current.element match {
+      case c: C =>
+        // For autolinks, we can't have line endings
+        if (c.char == '\n') {
+          logger.debug("Line ending found in potential autolink/HTML - treating as literal")
+          return node // Return original node unchanged
+        }
+        content.append(c.char)
+      case _ => return node // Non-cursor element found, not a valid autolink/HTML
+    }
+    current = current.following
+  }
+
+  // If we didn't find a closing '>', return original
+  if (
+    current.isAfterEnd ||
+    !(current.element.isInstanceOf[C] &&
+      current.element.asInstanceOf[C].char == '>')
+  ) {
+    logger.debug("No closing '>' found")
+    return node
+  }
+
+  val contentStr = content.toString()
+
+  // Check for URI autolink
+  if (isAbsoluteUri(contentStr)) {
+    logger.debug(s"Found URI autolink: $contentStr")
+    openingNode.element = AutoLink(contentStr, contentStr)
+
+    // Remove everything between opening < and closing >
+    if (openingNode.following != current.following) {
+      openingNode.following.unlinkUntil(current.following)
+    }
+
+    return openingNode
+  }
+
+  // Check for email autolink
+  else if (isEmailAddress(contentStr)) {
+    logger.debug(s"Found email autolink: $contentStr")
+    openingNode.element = AutoLink(s"mailto:$contentStr", contentStr)
+
+    // Remove everything between opening < and closing >
+    if (openingNode.following != current.following) {
+      openingNode.following.unlinkUntil(current.following)
+    }
+
+    return openingNode
+  }
+
+  // Check for HTML tag
+  else if (isHtmlTag(contentStr)) {
+    logger.debug(s"Found HTML tag: $contentStr")
+    openingNode.element = RawHTML(s"<$contentStr>")
+
+    // Remove everything between opening < and closing >
+    if (openingNode.following != current.following) {
+      openingNode.following.unlinkUntil(current.following)
+    }
+
+    return openingNode
+  }
+
+  // Not a valid autolink or HTML tag, treat as literal
+  logger.debug("Not a valid autolink or HTML tag")
+  return node
 }
 
 private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
@@ -759,7 +757,7 @@ def processEmphasis(
         logger.debug(s"Closer node before: ${closerInfo.node}, valid=${isNodeValid(closerInfo.node)}")
 
         // Create emphasis node
-        createEmphasisNode(openerInfo, closerInfo, emphasisType, useDelimiters, inlineNodes, delimiterStack)
+        createEmphasisNode(openerInfo, closerInfo, emphasisType, useDelimiters, delimiterStack)
 
         // After creating an emphasis node, we need to update delimiters and mark any stale ones inactive
         logger.debug(s"Checking all delimiters for stale references")
@@ -827,37 +825,12 @@ private def isValidEmphasisPair(opener: DelimiterInfo, closer: DelimiterInfo): B
   }
 }
 
-// Check if a delimiter pair can form valid emphasis/strong emphasis
-private def isValidEmphasisDelimiterPair(opener: DelimiterInfo, closer: DelimiterInfo): Boolean = {
-  // Rule 9 from spec: Sum of delimiter runs can't be multiple of 3 unless both are
-  if (
-    opener.canOpen && closer.canClose &&
-    (opener.length + closer.length) % 3 == 0 &&
-    opener.length                   % 3 != 0 && closer.length % 3 != 0
-  ) {
-    return false
-  }
-
-  true
-}
-
-// Determine whether to create emphasis or strong emphasis
-private def determineEmphasisType(opener: DelimiterInfo, closer: DelimiterInfo): String = {
-  // If both opener and closer have length >= 2, it's strong emphasis
-  if (opener.length >= 2 && closer.length >= 2) {
-    "strong"
-  } else {
-    "em"
-  }
-}
-
 // Create emphasis or strong emphasis node
 private def createEmphasisNode(
     opener: DelimiterInfo,
     closer: DelimiterInfo,
     emphasisType: String,
     delimiterCount: Int,
-    inlineNodes: DLList[Inline],
     delimiterStack: mutable.Stack[DelimiterInfo],
 ): Unit = {
   logger.debug(s"==== createEmphasisNode START ====")
