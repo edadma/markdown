@@ -4,7 +4,7 @@
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
 ![Scala Version](https://img.shields.io/badge/scala-3.6.4-blue.svg)
 ![ScalaJS Version](https://img.shields.io/badge/scalajs-1.18.2-blue.svg)
-![Scala Native Version](https://img.shields.io/badge/scalanative-5.7-blue.svg)
+![Scala Native Version](https://img.shields.io/badge/Scala_Native-5.7-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
 
 A fast, minimal **Scala 3** library for parsing and rendering [CommonMark 0.29] Markdown.  
