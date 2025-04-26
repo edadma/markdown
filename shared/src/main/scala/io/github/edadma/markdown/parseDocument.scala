@@ -77,6 +77,7 @@ private def processLines(
     LinkReferenceDefinitionParser,
     SetextHeadingBlockParser,
     ATXHeadingBlockParser,
+    ThematicBreakBlockParser,
     ParagraphBlockParser,
   )
 
