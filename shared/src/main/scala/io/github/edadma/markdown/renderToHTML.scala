@@ -21,6 +21,7 @@ def renderToHTML(node: Node): String = node match {
     s"<pre><code$languageClass>${escapeHtml(content)}</code></pre>"
   case BlockQuote(children) => s"<blockquote>\n${children.map(renderToHTML).mkString("\n")}\n</blockquote>"
   case ThematicBreak()      => "<hr />"
+  case HTMLBlock(content)   => content
   case n: Inline            => sys.error(s"inline node in block position: '$n'")
 }
 
