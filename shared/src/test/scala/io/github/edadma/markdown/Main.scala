@@ -41,10 +41,9 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |    Code block line.
-      |
-      |
-      |Regular paragraph.
+      |   ```
+      |   This block is indented with 3 spaces
+      |   ```
       |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 

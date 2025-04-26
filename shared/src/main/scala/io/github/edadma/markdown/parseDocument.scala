@@ -93,6 +93,7 @@ private def processLines(
     ThematicBreakBlockParser,
     HTMLBlockParser,
     IndentedCodeBlockParser,
+    FencedCodeBlockParser,
     ParagraphBlockParser,
   )
 
