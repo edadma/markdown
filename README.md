@@ -1,8 +1,9 @@
 # Scala CommonMark
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown)](https://search.maven.org/artifact/io.github.edadma/markdown)  
-[![CI](https://github.com/your-org/scala-commonmark/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/scala-commonmark/actions)  
-[![License](https://img.shields.io/github/license/edada/markdown)](LICENSE)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown_sjs1_3)
+![GitHub](https://img.shields.io/github/license/edadma/markdown)
+![Scala Version](https://img.shields.io/badge/scala-3.6.4-blue.svg)
+![ScalaJS Version](https://img.shields.io/badge/scalajs-1.18.2-blue.svg)
 
 A fast, minimal **Scala 3** library for parsing and rendering [CommonMark 0.29] Markdown.  
 Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
