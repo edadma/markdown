@@ -1430,8 +1430,6 @@ private def processReferenceLink(
   val normalizedLabel = normalizeLabel(label)
   val reference       = linkRefs.get(normalizedLabel)
 
-  println(linkRefs)
-  println((reference, normalizedLabel))
   if (reference.isEmpty) {
     // Reference not found
     logger.debug(s"Reference not found for label: $normalizedLabel")
