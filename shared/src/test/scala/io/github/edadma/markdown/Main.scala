@@ -48,6 +48,7 @@ import io.github.edadma.logger.LogLevel
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)
+  println(renderToXML(doc))
 
 //  pprintln(extractHeaders(doc))
 
