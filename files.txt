@@ -9,6 +9,7 @@ HTMLBlockParser.scala
 IndentedCodeBlockParser.scala
 InputReader.scala
 LinkReferenceDefinitionParser.scala
+ListBlockParser.scala
 Node.scala
 package.scala
 ParagraphBlockParser.scala
@@ -32,6 +33,7 @@ IndentedCodeBlockParserTest.scala
 InputReaderTest.scala
 LinkInlineParserTest.scala
 LinkReferenceDefinitionParserTest.scala
+ListBlockParserTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
 Testing.scala

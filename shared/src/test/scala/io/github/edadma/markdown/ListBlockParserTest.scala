@@ -182,9 +182,9 @@ class ListBlockParserTest extends AnyFlatSpec with Matchers {
 
   it should "parse nested lists" in {
     val input = """- Item 1
-                     |  - Nested 1.1
-                     |  - Nested 1.2
-                     |- Item 2""".stripMargin
+                  |  - Nested 1.1
+                  |  - Nested 1.2
+                  |- Item 2""".stripMargin
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
