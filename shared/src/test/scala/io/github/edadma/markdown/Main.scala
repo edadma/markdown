@@ -7,7 +7,10 @@ import io.github.edadma.logger.LogLevel
   logger.setLogLevel(LogLevel.DEBUG)
   logger.setFileLogging()
 
-  pprintln(parseInlineContent("This is a [*emphasized link*](https://example.com) in text."))
+  val linkRefs = Map("ref" -> LinkReference("http://example.com", None))
+  val input    = "This is a [reference link](ref)."
+
+  pprintln(parseInlineContent(input, linkRefs))
 
 //  val input =
 //    """

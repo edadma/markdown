@@ -1,33 +1,31 @@
 package io.github.edadma.markdown
 
-import scala.collection.immutable
-
 trait Node {
-  def processInlines(linkRefs: immutable.Map[String, LinkReference]): Node = this
+  def processInlines(linkRefs: Map[String, LinkReference]): Node = this
 }
 
 // Document delegates to its children
 case class Document(children: List[Block]) extends Node {
-  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Document =
+  override def processInlines(linkRefs: Map[String, LinkReference]): Document =
     Document(children.map(_.processInlines(linkRefs)))
 }
 
 trait Block extends Node {
-  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Block = this
+  override def processInlines(linkRefs: Map[String, LinkReference]): Block = this
 }
 
 case class Paragraph(inlines: List[Inline]) extends Block {
-  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Paragraph =
+  override def processInlines(linkRefs: Map[String, LinkReference]): Paragraph =
     Paragraph(parseInline(inlines, linkRefs))
 }
 
 case class Heading(level: Int, inlines: List[Inline]) extends Block {
-  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Heading =
+  override def processInlines(linkRefs: Map[String, LinkReference]): Heading =
     Heading(level, parseInline(inlines, linkRefs))
 }
 
 case class BlockQuote(children: List[Block]) extends Block {
-  override def processInlines(linkRefs: immutable.Map[String, LinkReference]): BlockQuote =
+  override def processInlines(linkRefs: Map[String, LinkReference]): BlockQuote =
     BlockQuote(children.map(_.processInlines(linkRefs)))
 }
 

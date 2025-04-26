@@ -1200,7 +1200,7 @@ private def processInlineLink(
   val linkText = extractInlinesBetween(opener.node.following, closeBracket)
 
   // Process emphasis and other formatting within the link text
-  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+  val processedLinkText = parseInline(linkText, Map())
 
   val linkNode = if (isImage)
     Image(destination, title, processedLinkText)
