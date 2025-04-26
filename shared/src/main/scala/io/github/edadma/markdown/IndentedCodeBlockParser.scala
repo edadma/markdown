@@ -31,18 +31,17 @@ object IndentedCodeBlockParser extends BlockParser {
     var currentLines   = lines
     var inCodeBlock    = true
 
-    // Track whether we've found any non-blank indented lines
-    var hasContent = false
+    // Track the content and pending blank lines separately
+    var hasContent        = false
+    var pendingBlankLines = 0
 
     // Process lines until we find one that's not part of the code block
     while (inCodeBlock && currentLines.nonEmpty) {
       val line = currentLines.head
 
       if (isBlankLine(line)) {
-        // Include blank lines in the code block content
-        if (hasContent) {
-          contentBuilder.append("\n")
-        }
+        // Don't append blank line yet - track it as pending
+        pendingBlankLines += 1
         lineCount += 1
         currentLines = currentLines.tail
       } else {
@@ -50,7 +49,15 @@ object IndentedCodeBlockParser extends BlockParser {
         val virtualIndent = countVirtualIndent(line)
 
         if (virtualIndent >= 4) {
-          // Add newline between content lines
+          // This is a content line - first add any pending blank lines
+          for (_ <- 0 until pendingBlankLines) {
+            if (hasContent) {
+              contentBuilder.append("\n")
+            }
+          }
+          pendingBlankLines = 0
+
+          // Add newline between content lines (if not the first content line)
           if (hasContent) {
             contentBuilder.append("\n")
           }
