@@ -9,6 +9,7 @@ case class ListData(
     startNumber: Option[Int] = None, // For ordered lists: the starting number
     delimiter: Option[Char] = None,  // For ordered lists: . or )
     isTight: Boolean = true,         // Default to tight list
+    indent: Int,
 )
 
 // A list item contains one or more blocks
@@ -75,14 +76,16 @@ object ListBlockParser extends BlockParser {
   private def extractListData(line: String): ListData = {
     // Try to match unordered list marker
     UnorderedListMarker.findFirstMatchIn(line).map { m =>
+      val leading    = m.group(1).length
       val bulletChar = m.group(2).charAt(0)
-      ListData(isOrdered = false, bulletChar = Some(bulletChar))
+      ListData(isOrdered = false, bulletChar = Some(bulletChar), indent = leading)
     }.getOrElse {
       // Must be an ordered list marker
       val matches   = OrderedListMarker.findFirstMatchIn(line).get
+      val leading   = matches.group(1).length
       val number    = matches.group(2).toInt
       val delimiter = matches.group(3).charAt(0)
-      ListData(isOrdered = true, startNumber = Some(number), delimiter = Some(delimiter))
+      ListData(isOrdered = true, startNumber = Some(number), delimiter = Some(delimiter), indent = leading)
     }
   }
 
@@ -114,17 +117,20 @@ object ListBlockParser extends BlockParser {
   }
 
   private def isMatchingListItemStart(line: LazyList[C], listData: ListData): Boolean = {
-    val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
+    // Convert the line to String (excluding newline)
+    val text = line.takeWhile(_.char != '\n').map(_.char).mkString
 
-    if (listData.isOrdered) {
-      // Check for ordered list marker with any number but matching delimiter
-      OrderedListMarker.findFirstMatchIn(lineText).exists { m =>
-        m.group(3).charAt(0) == listData.delimiter.get
+    if (!listData.isOrdered) {
+      // Unordered: must match the same bullet char and the same indent
+      UnorderedListMarker.findFirstMatchIn(text).exists { m =>
+        val leading = m.group(1).length
+        m.group(2).charAt(0) == listData.bulletChar.get && leading == listData.indent
       }
     } else {
-      // Check for unordered list marker with matching bullet
-      UnorderedListMarker.findFirstMatchIn(lineText).exists { m =>
-        m.group(2).charAt(0) == listData.bulletChar.get
+      // Ordered: must match the same delimiter and the same indent
+      OrderedListMarker.findFirstMatchIn(text).exists { m =>
+        val leading = m.group(1).length
+        m.group(3).charAt(0) == listData.delimiter.get && leading == listData.indent
       }
     }
   }

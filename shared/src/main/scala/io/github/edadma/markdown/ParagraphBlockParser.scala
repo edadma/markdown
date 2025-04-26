@@ -47,7 +47,8 @@ object ParagraphBlockParser extends BlockParser {
         !HTMLBlockParser.canStart(List(line)) &&
         !IndentedCodeBlockParser.canStart(List(line)) &&
         !FencedCodeBlockParser.canStart(List(line)) &&
-        !BlockQuoteParser.canStart(List(line))
+        !BlockQuoteParser.canStart(List(line)) &&
+        !ListBlockParser.canStart(List(line))
 
     // split into the leading paragraph lines, and the remainder
     val (paraLines, rest) = lines.span(isParaLine)
