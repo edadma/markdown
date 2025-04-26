@@ -3,6 +3,7 @@
 # app code
 ./shared/src/main/scala/io/github/edadma/markdown
 ATXHeadingBlockParser.scala
+BlockQuoteParser.scala
 FencedCodeBlockParser.scala
 HTMLBlockParser.scala
 IndentedCodeBlockParser.scala
@@ -20,6 +21,7 @@ ThematicBreakBlockParser.scala
 # test code
 ./shared/src/test/scala/io/github/edadma/markdown
 AutolinkAndHtmlTagInlineParserTest.scala
+BlockQuoteParserTest.scala
 CodeSpanInlineParserTest.scala
 EmphasisInlineParserTest.scala
 FencedCodeBlockParserTest.scala
