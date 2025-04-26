@@ -94,6 +94,7 @@ private def processLines(
     HTMLBlockParser,
     IndentedCodeBlockParser,
     FencedCodeBlockParser,
+    BlockQuoteParser,
     ParagraphBlockParser,
   )
 

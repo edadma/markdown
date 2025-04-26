@@ -41,9 +41,9 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |```
-      |Code
-      |``` this should be a paragraph
+      |> This is a paragraph
+      |that continues on the next line.
+      |> This is another paragraph.
       |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
