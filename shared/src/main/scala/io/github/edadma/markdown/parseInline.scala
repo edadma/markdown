@@ -3,7 +3,7 @@ package io.github.edadma.markdown
 import io.github.edadma.dllist.{DLList, DLListNode}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 
 case class DelimiterInfo(
     node: DLListNode[Inline],     // Reference to the node in the input list
@@ -14,7 +14,7 @@ case class DelimiterInfo(
     canClose: Boolean,            // Whether this can close emphasis/links
 )
 
-def parseInline(inlines: List[Inline]): List[Inline] = {
+def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkReference]): List[Inline] = {
   val inlineNodes    = DLList[Inline](inlines*)
   val delimiterStack = new mutable.Stack[DelimiterInfo]
 

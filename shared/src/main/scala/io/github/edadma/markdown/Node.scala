@@ -18,12 +18,12 @@ trait Block extends Node {
 
 case class Paragraph(inlines: List[Inline]) extends Block {
   override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Paragraph =
-    Paragraph(parseInline(inlines))
+    Paragraph(parseInline(inlines, linkRefs))
 }
 
 case class Heading(level: Int, inlines: List[Inline]) extends Block {
   override def processInlines(linkRefs: immutable.Map[String, LinkReference]): Heading =
-    Heading(level, parseInline(inlines))
+    Heading(level, parseInline(inlines, linkRefs))
 }
 
 case class BlockQuote(children: List[Block]) extends Block {
