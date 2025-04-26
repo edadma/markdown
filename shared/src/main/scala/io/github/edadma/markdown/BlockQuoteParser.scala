@@ -45,18 +45,22 @@ object BlockQuoteParser extends BlockParser {
       // Check if this line starts with a block quote marker
       val isBlockQuoteLine = "^ {0,3}>.*$".r.matches(lineText)
 
+      // Check if this line is blank (only whitespace)
+      val isBlank = lineText.trim.isEmpty
+
       if (isBlockQuoteLine) {
         // Line starts with >, add it
         result = result :+ line
         count += 1
-        inParagraph = !lineText.matches("^ {0,3}>[ \t]*$") // Track if we're in a paragraph
+        // Check if it's a blank line with just a > marker or content
+        val contentAfterMarker = lineText.replaceFirst("^ {0,3}>[ \t]?", "")
+        inParagraph = contentAfterMarker.trim.nonEmpty // Track if we're in a paragraph
         currentLines = currentLines.tail
-      } else if (isBlankLine(line)) {
-        // Blank line: include it if not at the end
-        result = result :+ line
-        count += 1
-        inParagraph = false
-        currentLines = currentLines.tail
+      } else if (isBlank) {
+        // Blank line without a > marker
+        // According to CommonMark spec, this separates blockquotes
+        continueCollecting = false
+        // Don't increment count here - we don't consume the blank line
       } else if (inParagraph) {
         // Lazy continuation: include non-marker line if it continues a paragraph
         result = result :+ line
@@ -68,19 +72,7 @@ object BlockQuoteParser extends BlockParser {
       }
     }
 
-    // Handle trailing blank lines (they shouldn't be part of the blockquote)
-    val nonBlankLineIndex = result.lastIndexWhere(line =>
-      !isBlankLine(line),
-    )
-
-    val finalResult = if (nonBlankLineIndex >= 0 && nonBlankLineIndex < result.length - 1) {
-      // Remove trailing blank lines
-      result.take(nonBlankLineIndex + 1)
-    } else {
-      result
-    }
-
-    (finalResult, count)
+    (result, count)
   }
 
   /** Process block quote content by removing the > markers */
@@ -113,10 +105,5 @@ object BlockQuoteParser extends BlockParser {
       linkRefs: mutable.Map[String, LinkReference],
   ): List[Block] = {
     processLines(lines, linkRefs)
-  }
-
-  /** Helper to check if a line is blank */
-  private def isBlankLine(line: LazyList[C]): Boolean = {
-    line.takeWhile(_.char != '\n').forall(c => c.char == ' ' || c.char == '\t')
   }
 }

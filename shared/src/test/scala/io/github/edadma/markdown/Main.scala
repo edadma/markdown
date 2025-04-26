@@ -41,10 +41,10 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |> This is a paragraph
-      |that continues on the next line.
-      |> This is another paragraph.
-      |""".stripMargin
+      |> First line
+      |> > Nested line
+      |continued without a marker
+      |> Back to the first level""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)

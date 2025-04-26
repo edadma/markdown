@@ -131,7 +131,7 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
                   |> First line
                   |> > Nested line
                   |continued without a marker
-                  |> Back to the first level""".stripMargin
+                  |> Last line of inner block quote""".stripMargin
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
@@ -146,9 +146,9 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
             SoftLineBreak(),
             Text("continued without a marker"),
             SoftLineBreak(),
+            Text("Last line of inner block quote"),
           )),
         )),
-        Paragraph(List(Text("Back to the first level"))),
       )),
     ))
   }
