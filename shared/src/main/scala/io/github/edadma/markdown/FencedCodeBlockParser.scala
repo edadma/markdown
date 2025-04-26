@@ -58,13 +58,14 @@ object FencedCodeBlockParser extends BlockParser {
     var currentIndex   = 1 // Start from the second line
 
     // Track if we've found a closing fence
-    var closedBlock = false
+    var closedBlock        = false
+    var isFirstContentLine = true
 
     while (currentIndex < lines.length && !closedBlock) {
       val line     = lines(currentIndex)
       val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 
-      // Check if this is a closing fence (rename variable to avoid conflict with method)
+      // Check if this is a closing fence
       val foundClosingFence = isClosingFence(lineText, fenceChar, fenceLength, leadingIndent)
 
       if (foundClosingFence) {
@@ -73,12 +74,15 @@ object FencedCodeBlockParser extends BlockParser {
       } else {
         // Regular content line - add to content
 
-        // For the first content line, don't add a newline
-        if (lineCount > 1) {
+        // Add a newline between content lines
+        if (!isFirstContentLine) {
           contentBuilder.append('\n')
         }
+        isFirstContentLine = false
 
-        contentBuilder.append(lineText)
+        // Remove up to N spaces indentation where N is the opening fence indentation
+        val processedLine = removeIndentation(lineText, leadingIndent)
+        contentBuilder.append(processedLine)
       }
 
       lineCount += 1
@@ -87,6 +91,16 @@ object FencedCodeBlockParser extends BlockParser {
 
     // Create the code block
     (Code(contentBuilder.toString, infoString), lineCount)
+  }
+
+  /** Remove up to N spaces of indentation from a line
+    */
+  private def removeIndentation(line: String, maxSpacesToRemove: Int): String = {
+    // Count leading spaces to remove (up to maxSpacesToRemove)
+    val leadingSpaces = line.takeWhile(_ == ' ').length min maxSpacesToRemove
+
+    // Remove the spaces
+    line.substring(leadingSpaces)
   }
 
   /** Check if a line is a valid closing fence for a fenced code block
