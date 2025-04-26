@@ -1,6 +1,6 @@
 # Scala CommonMark
 
-![Maven Central](https://img.shields.io/maven_central/v/io.github.edadma/markdown_sjs1_3)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown_sjs1_3)
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
 ![Scala Version](https://img.shields.io/badge/Scala-3.6.4-blue.svg)
 ![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.18.2-blue.svg)
