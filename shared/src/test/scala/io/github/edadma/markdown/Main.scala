@@ -41,9 +41,12 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- asdf
-      |    - qwer
-      |- zxvc""".stripMargin
+      |* Asterisk item
+      |+ Plus item
+      |- Hyphen item
+      |
+      |1) Parenthesis item
+      |2) Another item""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)
