@@ -56,11 +56,24 @@ private def parseBlocks(
 
 // Interface for block parsers
 trait BlockParser {
-  // Check if this parser can handle the given line
+
+  /** Can this parser start on the given lines?
+    * @param lines
+    *   a list of lines, each as a LazyList[C]
+    * @return
+    *   true if this parser should handle the first line
+    */
   def canStart(line: List[LazyList[C]]): Boolean
 
-  // Parse a block starting with the given line
-  // Returns the parsed block and the number of lines consumed
+  /** Parse a block starting at the head of `lines`.
+    *
+    * @param lines
+    *   the remaining lines in the document
+    * @param linkRefs
+    *   mutable map of link reference definitions
+    * @return
+    *   a tuple of the parsed Block and the number of lines consumed
+    */
   def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int)
 }
 
@@ -78,6 +91,7 @@ private def processLines(
     SetextHeadingBlockParser,
     ATXHeadingBlockParser,
     ThematicBreakBlockParser,
+    HTMLBlockParser,
     ParagraphBlockParser,
   )
 

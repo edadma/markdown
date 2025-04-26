@@ -31,6 +31,7 @@ case class BlockQuote(children: List[Block]) extends Block {
 
 case class Code(content: String, infoString: Option[String] = None) extends Block
 case class ThematicBreak()                                          extends Block
+case class HTMLBlock(content: String)                               extends Block
 
 sealed trait Inline                                                                 extends Node
 case class Text(content: String)                                                    extends Inline

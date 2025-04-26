@@ -14,30 +14,42 @@ import io.github.edadma.logger.LogLevel
 
 //  pprintln(parseInlineContent("""[![alt text](image.jpg)](https://example.com)"""))
 
-  val input =
-    """
-      |Overview
-      |========
-      |
-      |This is a little *test* document with some **boring** text.
-      |
-      |Advice
-      |------
-      |
-      |It should _not_ be taken __seriously__.
-      |""".stripMargin
-
-  println(renderToHTML(input))
+//  val input =
+//    """
+//      |Overview
+//      |========
+//      |
+//      |This is a little *test* document with some **boring** text.
+//      |
+//      |Advice
+//      |------
+//      |
+//      |It should _not_ be taken __seriously__.
+//      |""".stripMargin
+//
+//  println(renderToHTML(input))
 
 //  val input =
 //    """
-//      |asdf
+//      |<div>
+//      |Hello
+//      |</div>
 //      |
-//      |---
+//      |This is a paragraph.
 //      |""".stripMargin
 //  val (doc, refs) = parseDocumentContentWithRefs(input)
-//
-//  pprintln(doc)
+
+  val input =
+    """
+      |asdf
+      |<script>
+      |console.log(\"hello\");
+      |</script>
+      |""".stripMargin
+  val (doc, refs) = parseDocumentContentWithRefs(input)
+
+  pprintln(doc)
+
 //  pprintln(extractHeaders(doc))
 
-//  pprintln(parseDocumentContent("asdf"))
+//  pprintln(parseDocumentContent("<![CDATA[<tag>some data</tag>]]"))
