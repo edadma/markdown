@@ -58,22 +58,35 @@ def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkRefer
               current = if (nextNode.notAfterEnd) nextNode else current.following
 
             case '[' =>
-              // Add to delimiter stack as potential link opener
-              val delimiterInfo = DelimiterInfo(current, '[', 1, isActive = true, canOpen = true, canClose = false)
-              logger.debug(s"Adding link opener to delimiter stack: ${delimiterInfo}")
-              delimiterStack.push(delimiterInfo)
-              current = current.following
+              // If this '[' is really an image opener (i.e. ![ ), unlink the '!' and record an image delimiter
+              val prev = current.preceding
+              val (delimChar, unlinkPrev) =
+                if (
+                  prev.notBeforeStart &&
+                  prev.element.isInstanceOf[C] &&
+                  prev.element.asInstanceOf[C].char == '!' &&
+                  !prev.element.asInstanceOf[C].isLiteral
+                ) {
+                  // it's an image: unlink the '!'
+                  ('!', true)
+                } else {
+                  ('[', false)
+                }
 
-            case '!'
-                if current.following.notAfterEnd &&
-                  current.following.element.isInstanceOf[C] &&
-                  current.following.element.asInstanceOf[C].char == '[' &&
-                  !current.following.element.asInstanceOf[C].isLiteral =>
-              // Add to delimiter stack as potential image opener
-              val delimiterInfo = DelimiterInfo(current, '!', 1, isActive = true, canOpen = true, canClose = false)
-              logger.debug(s"Adding image opener to delimiter stack: ${delimiterInfo}")
+              if (unlinkPrev) prev.unlink
+
+              // Push exactly one delimiter, either for '[' or for '!'
+              val delimiterInfo = DelimiterInfo(
+                current,
+                delimChar,
+                1,
+                isActive = true,
+                canOpen = true,
+                canClose = false,
+              )
               delimiterStack.push(delimiterInfo)
-              current = current.following.following // Skip both ! and [
+
+              current = current.following
 
             case ']' =>
               // Look for link or image
@@ -1065,34 +1078,31 @@ def lookForLinkOrImage(
   logger.debug(s"lookForLinkOrImage at node: ${current.element}")
 
   // Find opening delimiter ([ or ![) on the stack using tail recursion
-  @scala.annotation.tailrec
-  def findOpener(index: Int): Option[DelimiterInfo] = {
-    if (index < 0) None
+  // Find opening delimiter ([ or ![) on the stack
+  @tailrec
+  def findOpenerOf(char: Char, idx: Int): Option[DelimiterInfo] = {
+    if (idx < 0) None
     else {
-      val delimiter = delimiterStack(index)
-      if (
-        (delimiter.delimiterChar == '[' || delimiter.delimiterChar == '!') &&
-        delimiter.isActive && isNodeValid(delimiter.node)
-      ) {
-        logger.debug(s"Found opener: ${delimiter.delimiterChar} at stack index $index")
-        Some(delimiter)
-      } else {
-        findOpener(index - 1)
-      }
+      val d = delimiterStack(idx)
+      if (d.delimiterChar == char && d.isActive && isNodeValid(d.node)) Some(d)
+      else findOpenerOf(char, idx - 1)
     }
   }
 
-  // Try to find a valid opener
-  val opener = findOpener(delimiterStack.size - 1)
-
-  // If no opener found, return literal ]
-  if (opener.isEmpty) {
-    logger.debug("No opener found for ]")
-    return current.following
+  // Try to close an image first (looking for '!['), otherwise a link '['
+  val (openerInfo, isImage) = findOpenerOf('!', delimiterStack.size - 1) match {
+    case Some(imgDelim) =>
+      (imgDelim, true)
+    case None =>
+      findOpenerOf('[', delimiterStack.size - 1) match {
+        case Some(linkDelim) =>
+          (linkDelim, false)
+        case None =>
+          // No matching opener at all → literal `]`
+          logger.debug("No opener found for ]")
+          return current.following
+      }
   }
-
-  val openerInfo = opener.get
-  val isImage    = openerInfo.delimiterChar == '!'
 
   // If we found one, but it's not active, remove it and return literal `]`
   if (!openerInfo.isActive) {
