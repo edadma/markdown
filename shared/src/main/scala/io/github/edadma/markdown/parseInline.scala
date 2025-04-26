@@ -1094,7 +1094,7 @@ def lookForLinkOrImage(
   val openerInfo = opener.get
   val isImage    = openerInfo.delimiterChar == '!'
 
-  // If we found one but it's not active, remove it and return literal ]
+  // If we found one, but it's not active, remove it and return literal `]`
   if (!openerInfo.isActive) {
     logger.debug("Found inactive opener")
     delimiterStack.remove(delimiterStack.indexOf(openerInfo))
@@ -1107,25 +1107,25 @@ def lookForLinkOrImage(
   // Case 1: Inline link/image [foo](url "title")
   if (isInlineLinkStart(next)) {
     logger.debug("Detected inline link/image")
-    return processInlineLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+    processInlineLink(openerInfo, current, next, isImage, delimiterStack)
   }
 
   // Case 2: Full reference link/image [foo][bar]
   else if (isFullReferenceLinkStart(next)) {
     logger.debug("Detected full reference link/image")
-    return processReferenceLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+    processReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs)
   }
 
   // Case 3: Collapsed reference link/image [foo][]
   else if (isCollapsedReferenceLinkStart(next)) {
     logger.debug("Detected collapsed reference link/image")
-    return processCollapsedReferenceLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+    processCollapsedReferenceLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
   }
 
   // Case 4: Shortcut reference link/image [foo]
   else {
     logger.debug("Checking for shortcut reference link/image")
-    return processShortcutReferenceLink(openerInfo, current, isImage, inlineNodes, delimiterStack, linkRefs)
+    processShortcutReferenceLink(openerInfo, current, isImage, inlineNodes, delimiterStack, linkRefs)
   }
 }
 
@@ -1180,9 +1180,7 @@ private def processInlineLink(
     closeBracket: DLListNode[Inline],
     openParen: DLListNode[Inline],
     isImage: Boolean,
-    inlineNodes: DLList[Inline],
     delimiterStack: mutable.Stack[DelimiterInfo],
-    linkRefs: immutable.Map[String, LinkReference],
 ): DLListNode[Inline] = {
   logger.debug("Processing inline link")
 
@@ -1413,7 +1411,6 @@ private def processReferenceLink(
     closeBracket: DLListNode[Inline],
     labelStart: DLListNode[Inline],
     isImage: Boolean,
-    inlineNodes: DLList[Inline],
     delimiterStack: mutable.Stack[DelimiterInfo],
     linkRefs: immutable.Map[String, LinkReference],
 ): DLListNode[Inline] = {
@@ -1433,6 +1430,8 @@ private def processReferenceLink(
   val normalizedLabel = normalizeLabel(label)
   val reference       = linkRefs.get(normalizedLabel)
 
+  println(linkRefs)
+  println((reference, normalizedLabel))
   if (reference.isEmpty) {
     // Reference not found
     logger.debug(s"Reference not found for label: $normalizedLabel")
@@ -1444,7 +1443,7 @@ private def processReferenceLink(
   val linkText = extractInlinesBetween(opener.node.following, closeBracket)
 
   // Process emphasis within the link text (with stack_bottom = opener)
-  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+  val processedLinkText = parseInline(linkText, Map())
 
   val linkNode = if (isImage)
     Image(reference.get.destination, reference.get.title, processedLinkText)
@@ -1489,7 +1488,7 @@ private def processCollapsedReferenceLink(
   val labelText = inlinesToPlainText(linkText)
 
   // Skip the empty label []
-  var afterEmptyLabel = labelStart.following.following
+  val afterEmptyLabel = labelStart.following.following
 
   // Look up reference in linkRefs
   val normalizedLabel = normalizeLabel(labelText)
@@ -1503,7 +1502,7 @@ private def processCollapsedReferenceLink(
   }
 
   // Process emphasis within the link text (with stack_bottom = opener)
-  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+  val processedLinkText = parseInline(linkText, Map())
 
   val linkNode = if (isImage)
     Image(reference.get.destination, reference.get.title, processedLinkText)
@@ -1558,7 +1557,7 @@ private def processShortcutReferenceLink(
   }
 
   // Process emphasis within the link text (with stack_bottom = opener)
-  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+  val processedLinkText = parseInline(linkText, Map())
 
   val linkNode = if (isImage)
     Image(reference.get.destination, reference.get.title, processedLinkText)
@@ -1652,36 +1651,6 @@ private def inlinesToPlainText(inlines: List[Inline]): String = {
   }
 
   sb.toString
-}
-
-// Process nested emphasis within link text
-private def processNestedInlines(
-    inlines: List[Inline],
-    opener: DelimiterInfo,
-    delimiterStack: mutable.Stack[DelimiterInfo],
-): List[Inline] = {
-  // Create a new sub-list from the original inlines
-  val subList = DLList[Inline](inlines*)
-
-  // Find active delimiters for processing
-  val activeDelimiters = delimiterStack.filter(d =>
-    d.isActive && (d.delimiterChar == '*' || d.delimiterChar == '_') && d != opener,
-  )
-
-  // Process emphasis with stack_bottom = opener
-  if (activeDelimiters.nonEmpty) {
-    val subDelimStack = mutable.Stack[DelimiterInfo]()
-    subDelimStack.pushAll(activeDelimiters)
-
-    // Process emphasis within this sublist
-    processEmphasis(subDelimStack)
-  }
-
-  // Consolidate characters into Text nodes
-  consolidateCharacters(subList)
-
-  // Convert back to List and return
-  subList.toList
 }
 
 // Set all [ delimiters inactive

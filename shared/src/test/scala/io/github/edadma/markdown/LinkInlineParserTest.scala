@@ -95,14 +95,15 @@ class LinkInlineParserTest extends AnyFlatSpec with Matchers {
 
   // These would require the link reference map to be implemented
   it should "handle reference links" in {
-    val linkRefs = Map("ref" -> LinkReference("http://example.com", None))
+    val linkRefs = Map("ref" -> LinkReference("http://example.com", Some("title")))
     val input    = "This is a [reference link][ref]."
     val inlines  = parseInlineContent(input, linkRefs)
 
     // Until reference links are fully implemented, this will just show the literal syntax
     inlines shouldBe List(
       Text("This is a "),
-      Text("[reference link][ref]."),
+      Link("http://example.com", Some("title"), List(Text("reference link"))),
+      Text("."),
     )
   }
 }

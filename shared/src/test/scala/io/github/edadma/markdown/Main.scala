@@ -8,7 +8,7 @@ import io.github.edadma.logger.LogLevel
   logger.setFileLogging()
 
   val linkRefs = Map("ref" -> LinkReference("http://example.com", None))
-  val input    = "This is a [reference link](ref)."
+  val input    = "This is a [ref]."
 
   pprintln(parseInlineContent(input, linkRefs))
 

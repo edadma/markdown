@@ -4,7 +4,7 @@ def parseInlineContent(input: String, linkRefs: Map[String, LinkReference] = Map
   val reader           = new InputReader(input)
   val streamWithoutEOI = reader.stream.takeWhile(_ != EndOfInput).toList
 
-  parseInline(streamWithoutEOI, Map())
+  parseInline(streamWithoutEOI, linkRefs)
 }
 
 def parseDocumentContent(input: String): Document = {
