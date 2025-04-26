@@ -57,21 +57,28 @@ def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkRefer
               val nextNode = current.following.skipForward(delimiterInfo.length - 1)
               current = if (nextNode.notAfterEnd) nextNode else current.following
 
-//            case '[' =>
-//              // Add to delimiter stack as potential link opener
-//              delimiterStack.append(DelimiterInfo(current, '[', 1, isActive = true, canOpen = true, canClose = false))
-//              current = current.following
-//
-//            case '!' if current.following.notAfterEnd &&
-//              current.following.element.isInstanceOf[Cursor] &&
-//              current.following.element.asInstanceOf[Cursor].char == '[' =>
-//              // Add to delimiter stack as potential image opener
-//              delimiterStack.append(DelimiterInfo(current, '!', 1, isActive = true, canOpen = true, canClose = false))
-//              current = current.following
-//
-//            case ']' =>
-//              // Look for link or image
-//              current = lookForLinkOrImage(current, inlineNodes, delimiterStack)
+            case '[' =>
+              // Add to delimiter stack as potential link opener
+              val delimiterInfo = DelimiterInfo(current, '[', 1, isActive = true, canOpen = true, canClose = false)
+              logger.debug(s"Adding link opener to delimiter stack: ${delimiterInfo}")
+              delimiterStack.push(delimiterInfo)
+              current = current.following
+
+            case '!'
+                if current.following.notAfterEnd &&
+                  current.following.element.isInstanceOf[C] &&
+                  current.following.element.asInstanceOf[C].char == '[' &&
+                  !current.following.element.asInstanceOf[C].isLiteral =>
+              // Add to delimiter stack as potential image opener
+              val delimiterInfo = DelimiterInfo(current, '!', 1, isActive = true, canOpen = true, canClose = false)
+              logger.debug(s"Adding image opener to delimiter stack: ${delimiterInfo}")
+              delimiterStack.push(delimiterInfo)
+              current = current.following.following // Skip both ! and [
+
+            case ']' =>
+              // Look for link or image
+              logger.debug(s"Found closing bracket, looking for link or image")
+              current = lookForLinkOrImage(current, inlineNodes, delimiterStack, linkRefs)
 
             case '\n' =>
               // Process line break
@@ -1047,4 +1054,642 @@ private def consolidateTextInContents(inlines: List[Inline]): List[Inline] = {
   }
 
   result.toList
+}
+
+def lookForLinkOrImage(
+    current: DLListNode[Inline],
+    inlineNodes: DLList[Inline],
+    delimiterStack: mutable.Stack[DelimiterInfo],
+    linkRefs: immutable.Map[String, LinkReference],
+): DLListNode[Inline] = {
+  logger.debug(s"lookForLinkOrImage at node: ${current.element}")
+
+  // Find opening delimiter ([ or ![) on the stack using tail recursion
+  @scala.annotation.tailrec
+  def findOpener(index: Int): Option[DelimiterInfo] = {
+    if (index < 0) None
+    else {
+      val delimiter = delimiterStack(index)
+      if (
+        (delimiter.delimiterChar == '[' || delimiter.delimiterChar == '!') &&
+        delimiter.isActive && isNodeValid(delimiter.node)
+      ) {
+        logger.debug(s"Found opener: ${delimiter.delimiterChar} at stack index $index")
+        Some(delimiter)
+      } else {
+        findOpener(index - 1)
+      }
+    }
+  }
+
+  // Try to find a valid opener
+  val opener = findOpener(delimiterStack.size - 1)
+
+  // If no opener found, return literal ]
+  if (opener.isEmpty) {
+    logger.debug("No opener found for ]")
+    return current.following
+  }
+
+  val openerInfo = opener.get
+  val isImage    = openerInfo.delimiterChar == '!'
+
+  // If we found one but it's not active, remove it and return literal ]
+  if (!openerInfo.isActive) {
+    logger.debug("Found inactive opener")
+    delimiterStack.remove(delimiterStack.indexOf(openerInfo))
+    return current.following
+  }
+
+  // Parse ahead to see what kind of link/image we have
+  val next = current.following
+
+  // Case 1: Inline link/image [foo](url "title")
+  if (isInlineLinkStart(next)) {
+    logger.debug("Detected inline link/image")
+    return processInlineLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+  }
+
+  // Case 2: Full reference link/image [foo][bar]
+  else if (isFullReferenceLinkStart(next)) {
+    logger.debug("Detected full reference link/image")
+    return processReferenceLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+  }
+
+  // Case 3: Collapsed reference link/image [foo][]
+  else if (isCollapsedReferenceLinkStart(next)) {
+    logger.debug("Detected collapsed reference link/image")
+    return processCollapsedReferenceLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+  }
+
+  // Case 4: Shortcut reference link/image [foo]
+  else {
+    logger.debug("Checking for shortcut reference link/image")
+    return processShortcutReferenceLink(openerInfo, current, isImage, inlineNodes, delimiterStack, linkRefs)
+  }
+}
+
+// Helper to check if we're at the start of an inline link
+private def isInlineLinkStart(node: DLListNode[Inline]): Boolean = {
+  if (node.isAfterEnd) return false
+
+  node.element match {
+    case c: C if !c.isLiteral && c.char == '(' => true
+    case _                                     => false
+  }
+}
+
+// Helper to check if we're at the start of a full reference link
+private def isFullReferenceLinkStart(node: DLListNode[Inline]): Boolean = {
+  if (node.isAfterEnd) return false
+
+  node.element match {
+    case c: C if !c.isLiteral && c.char == '[' => true
+    case _                                     => false
+  }
+}
+
+// Helper to check if we're at the start of a collapsed reference link
+private def isCollapsedReferenceLinkStart(node: DLListNode[Inline]): Boolean = {
+  if (node.isAfterEnd) return false
+
+  // Check for []
+  if (
+    node.element.isInstanceOf[C] &&
+    !node.element.asInstanceOf[C].isLiteral &&
+    node.element.asInstanceOf[C].char == '['
+  ) {
+
+    val next = node.following
+    if (
+      !next.isAfterEnd &&
+      next.element.isInstanceOf[C] &&
+      !next.element.asInstanceOf[C].isLiteral &&
+      next.element.asInstanceOf[C].char == ']'
+    ) {
+      return true
+    }
+  }
+
+  false
+}
+
+// Update the processInlineLink function
+private def processInlineLink(
+    opener: DelimiterInfo,
+    closeBracket: DLListNode[Inline],
+    openParen: DLListNode[Inline],
+    isImage: Boolean,
+    inlineNodes: DLList[Inline],
+    delimiterStack: mutable.Stack[DelimiterInfo],
+    linkRefs: immutable.Map[String, LinkReference],
+): DLListNode[Inline] = {
+  logger.debug("Processing inline link")
+
+  // Extract link destination and title
+  val (destination, title, afterLinkEnd) = parseInlineLinkDestination(openParen)
+
+  if (destination == null) {
+    // Not a valid link destination
+    logger.debug("Invalid link destination")
+    delimiterStack.remove(delimiterStack.indexOf(opener))
+    return closeBracket.following
+  }
+
+  // Extract raw link text
+  val linkText = extractInlinesBetween(opener.node.following, closeBracket)
+
+  // Process emphasis and other formatting within the link text
+  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+
+  val linkNode = if (isImage)
+    Image(destination, title, processedLinkText)
+  else
+    Link(destination, title, processedLinkText)
+
+  logger.debug(s"Created ${if (isImage) "image" else "link"} node with destination: $destination")
+
+  // Replace opener node with link node
+  opener.node.element = linkNode
+
+  // Remove everything between opener and end position
+  if (opener.node.following != afterLinkEnd) {
+    opener.node.following.unlinkUntil(afterLinkEnd)
+  }
+
+  // Remove opener from stack
+  delimiterStack.remove(delimiterStack.indexOf(opener))
+
+  // If link (not image), set all previous [ delimiters inactive
+  if (!isImage) {
+    deactivateLinkDelimiters(delimiterStack)
+  }
+
+  opener.node.following
+}
+
+// Parse link destination and title from an inline link
+private def parseInlineLinkDestination(openParen: DLListNode[Inline]): (String, Option[String], DLListNode[Inline]) = {
+  logger.debug("Parsing inline link destination")
+
+  @scala.annotation.tailrec
+  def skipWhitespace(node: DLListNode[Inline]): DLListNode[Inline] = {
+    if (
+      node.notAfterEnd && node.element.isInstanceOf[C] &&
+      (node.element.asInstanceOf[C].char == ' ' ||
+        node.element.asInstanceOf[C].char == '\t' ||
+        node.element.asInstanceOf[C].char == '\n')
+    ) {
+      skipWhitespace(node.following)
+    } else {
+      node
+    }
+  }
+
+  // Skip initial whitespace
+  var current = skipWhitespace(openParen.following)
+
+  // Check for angle-bracketed destination
+  val destination      = new StringBuilder
+  var useAngleBrackets = false
+
+  if (
+    current.notAfterEnd && current.element.isInstanceOf[C] &&
+    !current.element.asInstanceOf[C].isLiteral &&
+    current.element.asInstanceOf[C].char == '<'
+  ) {
+
+    useAngleBrackets = true
+    current = current.following
+
+    // Parse until closing angle bracket using tail recursion
+    @scala.annotation.tailrec
+    def parseAngleBracketedDestination(node: DLListNode[Inline], dest: StringBuilder): (String, DLListNode[Inline]) = {
+      if (node.isAfterEnd) {
+        (null, openParen.following) // No closing bracket found
+      } else if (
+        node.element.isInstanceOf[C] &&
+        !node.element.asInstanceOf[C].isLiteral &&
+        node.element.asInstanceOf[C].char == '>'
+      ) {
+        (dest.toString, node.following) // Found closing bracket
+      } else if (node.element.isInstanceOf[C]) {
+        val c = node.element.asInstanceOf[C]
+        // Check for invalid characters
+        if (c.char == '\n' || (c.char == '<' && !c.isLiteral) || (c.char == '>' && !c.isLiteral)) {
+          (null, openParen.following) // Invalid character
+        } else {
+          dest.append(c.char)
+          parseAngleBracketedDestination(node.following, dest)
+        }
+      } else {
+        (null, openParen.following) // Non-cursor element
+      }
+    }
+
+    val (destContent, afterDestNode) = parseAngleBracketedDestination(current, destination)
+
+    if (destContent == null) {
+      return (null, None, openParen.following)
+    }
+
+    current = afterDestNode
+  }
+  // No angle brackets - parse until whitespace or closing paren
+  else {
+    // Parse regular destination using tail recursion
+    @scala.annotation.tailrec
+    def parseRegularDestination(
+        node: DLListNode[Inline],
+        dest: StringBuilder,
+        openParens: Int,
+    ): (String, DLListNode[Inline]) = {
+      if (node.isAfterEnd) {
+        (dest.toString, node) // End of input
+      } else if (node.element.isInstanceOf[C]) {
+        val c = node.element.asInstanceOf[C]
+
+        // End destination at whitespace or closing paren (if no open parens)
+        if (
+          (c.char == ' ' || c.char == '\t' || c.char == '\n') ||
+          (c.char == ')' && openParens == 0 && !c.isLiteral)
+        ) {
+          (dest.toString, node)
+        } else {
+          // Track nested parens
+          val newOpenParens = if (!c.isLiteral) {
+            if (c.char == '(') openParens + 1
+            else if (c.char == ')' && openParens > 0) openParens - 1
+            else openParens
+          } else {
+            openParens
+          }
+
+          dest.append(c.char)
+          parseRegularDestination(node.following, dest, newOpenParens)
+        }
+      } else {
+        (dest.toString, node) // Non-cursor element
+      }
+    }
+
+    val (destContent, afterDestNode) = parseRegularDestination(current, destination, 0)
+    current = afterDestNode
+  }
+
+  // If destination is empty, it's invalid
+  if (destination.isEmpty) {
+    return (null, None, openParen.following)
+  }
+
+  // Skip whitespace after destination
+  current = skipWhitespace(current)
+
+  // Check for title
+  val (title, afterTitle) =
+    if (
+      current.notAfterEnd && current.element.isInstanceOf[C] &&
+      !current.element.asInstanceOf[C].isLiteral &&
+      (current.element.asInstanceOf[C].char == '"' ||
+        current.element.asInstanceOf[C].char == '\'' ||
+        current.element.asInstanceOf[C].char == '(')
+    ) {
+
+      val titleDelim   = current.element.asInstanceOf[C].char
+      val closingDelim = if (titleDelim == '(') ')' else titleDelim
+      val titleContent = new StringBuilder
+
+      // Parse title using tail recursion
+      @scala.annotation.tailrec
+      def parseTitle(node: DLListNode[Inline], content: StringBuilder): (Option[String], DLListNode[Inline]) = {
+        if (node.isAfterEnd) {
+          (None, current.following) // No closing delimiter
+        } else if (
+          node.element.isInstanceOf[C] &&
+          !node.element.asInstanceOf[C].isLiteral &&
+          node.element.asInstanceOf[C].char == closingDelim
+        ) {
+          (Some(content.toString), node.following) // Found closing delimiter
+        } else if (node.element.isInstanceOf[C]) {
+          content.append(node.element.asInstanceOf[C].char)
+          parseTitle(node.following, content)
+        } else {
+          (None, current.following) // Non-cursor element
+        }
+      }
+
+      parseTitle(current.following, titleContent)
+    } else {
+      (None, current)
+    }
+
+  if (title.isDefined) {
+    current = afterTitle
+  }
+
+  // Skip whitespace after title
+  current = skipWhitespace(current)
+
+  // Check for closing paren
+  if (
+    current.isAfterEnd ||
+    !current.element.isInstanceOf[C] ||
+    current.element.asInstanceOf[C].isLiteral ||
+    current.element.asInstanceOf[C].char != ')'
+  ) {
+    // No closing paren
+    return (null, None, openParen.following)
+  }
+
+  // Move past closing paren
+  current = current.following
+
+  (destination.toString, title, current)
+}
+
+// Process reference link [foo][bar]
+private def processReferenceLink(
+    opener: DelimiterInfo,
+    closeBracket: DLListNode[Inline],
+    labelStart: DLListNode[Inline],
+    isImage: Boolean,
+    inlineNodes: DLList[Inline],
+    delimiterStack: mutable.Stack[DelimiterInfo],
+    linkRefs: immutable.Map[String, LinkReference],
+): DLListNode[Inline] = {
+  logger.debug("Processing reference link")
+
+  // Extract label
+  val (label, afterLabelEnd) = extractReferenceLabel(labelStart)
+
+  if (label == null) {
+    // Not a valid reference label
+    logger.debug("Invalid reference label")
+    delimiterStack.remove(delimiterStack.indexOf(opener))
+    return closeBracket.following
+  }
+
+  // Look up reference in linkRefs
+  val normalizedLabel = normalizeLabel(label)
+  val reference       = linkRefs.get(normalizedLabel)
+
+  if (reference.isEmpty) {
+    // Reference not found
+    logger.debug(s"Reference not found for label: $normalizedLabel")
+    delimiterStack.remove(delimiterStack.indexOf(opener))
+    return closeBracket.following
+  }
+
+  // Create link/image node with everything between opener and closeBracket
+  val linkText = extractInlinesBetween(opener.node.following, closeBracket)
+
+  // Process emphasis within the link text (with stack_bottom = opener)
+  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+
+  val linkNode = if (isImage)
+    Image(reference.get.destination, reference.get.title, processedLinkText)
+  else
+    Link(reference.get.destination, reference.get.title, processedLinkText)
+
+  logger.debug(s"Created ${if (isImage) "image" else "link"} node with reference: ${reference.get.destination}")
+
+  // Replace opener node with link node
+  opener.node.element = linkNode
+
+  // Remove everything between opener and end position
+  if (opener.node.following != afterLabelEnd) {
+    opener.node.following.unlinkUntil(afterLabelEnd)
+  }
+
+  // Remove opener from stack
+  delimiterStack.remove(delimiterStack.indexOf(opener))
+
+  // If link (not image), set all previous [ delimiters inactive
+  if (!isImage) {
+    deactivateLinkDelimiters(delimiterStack)
+  }
+
+  opener.node.following
+}
+
+// Process collapsed reference link [foo][]
+private def processCollapsedReferenceLink(
+    opener: DelimiterInfo,
+    closeBracket: DLListNode[Inline],
+    labelStart: DLListNode[Inline],
+    isImage: Boolean,
+    inlineNodes: DLList[Inline],
+    delimiterStack: mutable.Stack[DelimiterInfo],
+    linkRefs: immutable.Map[String, LinkReference],
+): DLListNode[Inline] = {
+  logger.debug("Processing collapsed reference link")
+
+  // Extract text between opener and closeBracket to use as label
+  val linkText  = extractInlinesBetween(opener.node.following, closeBracket)
+  val labelText = inlinesToPlainText(linkText)
+
+  // Skip the empty label []
+  var afterEmptyLabel = labelStart.following.following
+
+  // Look up reference in linkRefs
+  val normalizedLabel = normalizeLabel(labelText)
+  val reference       = linkRefs.get(normalizedLabel)
+
+  if (reference.isEmpty) {
+    // Reference not found
+    logger.debug(s"Reference not found for label: $normalizedLabel")
+    delimiterStack.remove(delimiterStack.indexOf(opener))
+    return closeBracket.following
+  }
+
+  // Process emphasis within the link text (with stack_bottom = opener)
+  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+
+  val linkNode = if (isImage)
+    Image(reference.get.destination, reference.get.title, processedLinkText)
+  else
+    Link(reference.get.destination, reference.get.title, processedLinkText)
+
+  logger.debug(s"Created ${if (isImage) "image" else "link"} node with reference: ${reference.get.destination}")
+
+  // Replace opener node with link node
+  opener.node.element = linkNode
+
+  // Remove everything between opener and end position
+  if (opener.node.following != afterEmptyLabel) {
+    opener.node.following.unlinkUntil(afterEmptyLabel)
+  }
+
+  // Remove opener from stack
+  delimiterStack.remove(delimiterStack.indexOf(opener))
+
+  // If link (not image), set all previous [ delimiters inactive
+  if (!isImage) {
+    deactivateLinkDelimiters(delimiterStack)
+  }
+
+  opener.node.following
+}
+
+// Process shortcut reference link [foo]
+private def processShortcutReferenceLink(
+    opener: DelimiterInfo,
+    closeBracket: DLListNode[Inline],
+    isImage: Boolean,
+    inlineNodes: DLList[Inline],
+    delimiterStack: mutable.Stack[DelimiterInfo],
+    linkRefs: immutable.Map[String, LinkReference],
+): DLListNode[Inline] = {
+  logger.debug("Processing shortcut reference link")
+
+  // Extract text between opener and closeBracket to use as label
+  val linkText  = extractInlinesBetween(opener.node.following, closeBracket)
+  val labelText = inlinesToPlainText(linkText)
+
+  // Look up reference in linkRefs
+  val normalizedLabel = normalizeLabel(labelText)
+  val reference       = linkRefs.get(normalizedLabel)
+
+  if (reference.isEmpty) {
+    // Reference not found
+    logger.debug(s"Reference not found for label: $normalizedLabel")
+    delimiterStack.remove(delimiterStack.indexOf(opener))
+    return closeBracket.following
+  }
+
+  // Process emphasis within the link text (with stack_bottom = opener)
+  val processedLinkText = processNestedInlines(linkText, opener, delimiterStack)
+
+  val linkNode = if (isImage)
+    Image(reference.get.destination, reference.get.title, processedLinkText)
+  else
+    Link(reference.get.destination, reference.get.title, processedLinkText)
+
+  logger.debug(s"Created ${if (isImage) "image" else "link"} node with reference: ${reference.get.destination}")
+
+  // Replace opener node with link node
+  opener.node.element = linkNode
+
+  // Remove everything between opener and the next position
+  if (opener.node.following != closeBracket.following) {
+    opener.node.following.unlinkUntil(closeBracket.following)
+  }
+
+  // Remove opener from stack
+  delimiterStack.remove(delimiterStack.indexOf(opener))
+
+  // If link (not image), set all previous [ delimiters inactive
+  if (!isImage) {
+    deactivateLinkDelimiters(delimiterStack)
+  }
+
+  opener.node.following
+}
+
+// Extract reference label [foo]
+private def extractReferenceLabel(labelStart: DLListNode[Inline]): (String, DLListNode[Inline]) = {
+  logger.debug("Extracting reference label")
+
+  // Parse label using tail recursion
+  @scala.annotation.tailrec
+  def parseLabel(node: DLListNode[Inline], label: StringBuilder): (String, DLListNode[Inline]) = {
+    if (node.isAfterEnd) {
+      (null, labelStart.following) // End of input without closing bracket
+    } else if (
+      node.element.isInstanceOf[C] &&
+      !node.element.asInstanceOf[C].isLiteral &&
+      node.element.asInstanceOf[C].char == ']'
+    ) {
+      // Found closing bracket
+      if (label.isEmpty || label.length > 999) {
+        (null, labelStart.following) // Empty or too long label
+      } else {
+        (label.toString, node.following) // Valid label
+      }
+    } else if (node.element.isInstanceOf[C]) {
+      val c = node.element.asInstanceOf[C]
+
+      // Reference labels cannot contain [ unless escaped
+      if (c.char == '[' && !c.isLiteral) {
+        (null, labelStart.following)
+      } else {
+        // Append character to label
+        label.append(c.char)
+        parseLabel(node.following, label)
+      }
+    } else {
+      // Non-cursor element - need to convert to text
+      node.element match {
+        case Text(content)     => label.append(content)
+        case CodeSpan(content) => label.append(content)
+        case _                 => label.append(node.element.toString) // Simple fallback
+      }
+      parseLabel(node.following, label)
+    }
+  }
+
+  // Skip the opening [
+  parseLabel(labelStart.following, new StringBuilder)
+}
+
+// Normalize label for lookup
+private def normalizeLabel(label: String): String = {
+  // Unicode case fold, collapse whitespace
+  label.trim.toLowerCase.replaceAll("\\s+", " ")
+}
+
+// Convert inlines to plain text for label
+private def inlinesToPlainText(inlines: List[Inline]): String = {
+  val sb = new StringBuilder
+
+  inlines.foreach {
+    case Text(content)      => sb.append(content)
+    case CodeSpan(content)  => sb.append(content)
+    case Emphasis(children) => sb.append(inlinesToPlainText(children))
+    case Strong(children)   => sb.append(inlinesToPlainText(children))
+    case c: C               => sb.append(c.char)
+    case _                  => // Ignore other types
+  }
+
+  sb.toString
+}
+
+// Process nested emphasis within link text
+private def processNestedInlines(
+    inlines: List[Inline],
+    opener: DelimiterInfo,
+    delimiterStack: mutable.Stack[DelimiterInfo],
+): List[Inline] = {
+  // Create a new sub-list from the original inlines
+  val subList = DLList[Inline](inlines*)
+
+  // Find active delimiters for processing
+  val activeDelimiters = delimiterStack.filter(d =>
+    d.isActive && (d.delimiterChar == '*' || d.delimiterChar == '_') && d != opener,
+  )
+
+  // Process emphasis with stack_bottom = opener
+  if (activeDelimiters.nonEmpty) {
+    val subDelimStack = mutable.Stack[DelimiterInfo]()
+    subDelimStack.pushAll(activeDelimiters)
+
+    // Process emphasis within this sublist
+    processEmphasis(subDelimStack)
+  }
+
+  // Consolidate characters into Text nodes
+  consolidateCharacters(subList)
+
+  // Convert back to List and return
+  subList.toList
+}
+
+// Set all [ delimiters inactive
+private def deactivateLinkDelimiters(delimiterStack: mutable.Stack[DelimiterInfo]): Unit = {
+  for (i <- delimiterStack.indices) {
+    if (delimiterStack(i).isActive && delimiterStack(i).delimiterChar == '[') {
+      delimiterStack(i).isActive = false
+      logger.debug(s"Deactivated link delimiter at stack index $i")
+    }
+  }
 }

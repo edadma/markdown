@@ -4,10 +4,10 @@ import pprint.pprintln
 import io.github.edadma.logger.LogLevel
 
 @main def run(): Unit =
-//  logger.setLogLevel(LogLevel.DEBUG)
-//  logger.setFileLogging()
+  logger.setLogLevel(LogLevel.DEBUG)
+  logger.setFileLogging()
 
-  pprintln(parseInlineContent("**a *b* c**"))
+  pprintln(parseInlineContent("This is a [*emphasized link*](https://example.com) in text."))
 
 //  val input =
 //    """
