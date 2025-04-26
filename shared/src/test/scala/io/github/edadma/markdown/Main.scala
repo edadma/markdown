@@ -12,7 +12,7 @@ import io.github.edadma.logger.LogLevel
 //
 //  pprintln(parseInlineContent(input, linkRefs))
 
-  pprintln(parseInlineContent("""Here's an image: ![alt text](image.jpg "title")"""))
+  pprintln(parseInlineContent("""[![alt text](image.jpg)](https://example.com)"""))
 
 //  val input =
 //    """
