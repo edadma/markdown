@@ -10,14 +10,17 @@ object ParagraphBlockParser extends BlockParser {
   }
 
   def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
-    var atxHeadingTerminated = false
+    var atxHeadingTerminated    = false
+    var thematicBreakTerminated = false
 
     // Find the first blank line
     val paragraphLines = lines.takeWhile(line => {
-      val atxHeading = ATXHeadingBlockParser.canStart(List(line))
+      val atxHeading    = ATXHeadingBlockParser.canStart(List(line))
+      val thematicBreak = ThematicBreakBlockParser.canStart(List(line))
 
       atxHeadingTerminated |= atxHeading
-      !isBlankLine(line) && !atxHeading
+      thematicBreakTerminated |= thematicBreak
+      !isBlankLine(line) && !atxHeading && !thematicBreak
     })
 
     // The actual number of lines consumed is the paragraph plus the blank line
