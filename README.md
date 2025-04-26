@@ -7,7 +7,7 @@
 ![Scala Native Version](https://img.shields.io/badge/Scala_Native-5.7-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
 
-A fast, minimal **Scala 3** library for parsing and rendering [CommonMark 0.31.2] Markdown.  
+A fast, minimal **Scala 3** library for parsing [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown.  
 Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
 
 ## Features
