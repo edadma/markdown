@@ -41,17 +41,13 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |# Heading with &clubs; symbol and <
-      |
-      |> Blockquote with &cups; symbol
-      |
-      |```
-      |Code with &cups; symbol
-      |```""".stripMargin
+      | *Emphasized* | **Strong** |
+      || ------------ | ---------- |
+      || `Code`       | [Link](url) |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)
-  println(renderToXML(doc))
+//  println(renderToXML(doc))
 
 //  pprintln(extractHeaders(doc))
 

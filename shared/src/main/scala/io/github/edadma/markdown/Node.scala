@@ -33,6 +33,31 @@ case class Code(content: String, infoString: Option[String] = None) extends Bloc
 case class ThematicBreak()                                          extends Block
 case class HTMLBlock(content: String)                               extends Block
 
+enum TableAlignment:
+  case Left, Center, Right, None
+
+case class TableCell(content: List[Inline]) extends Block:
+  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
+    println(parseInline(content, linkRefs))
+    TableCell(parseInline(content, linkRefs))
+  }
+
+case class TableRow(cells: List[TableCell]) extends Block:
+  override def processInlines(linkRefs: Map[String, LinkReference]): Block =
+    TableRow(cells.map(_.processInlines(linkRefs).asInstanceOf[TableCell]))
+
+case class Table(
+    headerRow: TableRow,
+    rows: List[TableRow],
+    alignments: List[TableAlignment],
+) extends Block:
+  override def processInlines(linkRefs: Map[String, LinkReference]): Block =
+    Table(
+      headerRow.processInlines(linkRefs).asInstanceOf[TableRow],
+      rows.map(_.processInlines(linkRefs).asInstanceOf[TableRow]),
+      alignments,
+    )
+
 sealed trait Inline                                                                 extends Node
 case class Text(content: String)                                                    extends Inline
 case class SoftLineBreak()                                                          extends Inline
