@@ -41,13 +41,12 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      || Header 1 | Header 2 |
-      || Not a proper delimiter |
-      || Cell 1   | Cell 2   |""".stripMargin
+      |- a
+      |- c""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)
-//  println(renderToXML(doc))
+  println(renderToHTML(doc))
 
 //  pprintln(extractHeaders(doc))
 

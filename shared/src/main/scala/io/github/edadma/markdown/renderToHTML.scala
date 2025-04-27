@@ -22,7 +22,19 @@ def renderToHTML(node: Node): String = node match {
   case BlockQuote(children) => s"<blockquote>\n${children.map(renderToHTML).mkString("\n")}\n</blockquote>"
   case ThematicBreak()      => "<hr />"
   case HTMLBlock(content)   => content
-  case n: Inline            => sys.error(s"inline node in block position: '$n'")
+  // In the renderToHTML function, add cases for ListBlock and ListItem
+  case ListBlock(data, items) =>
+    val tagName = if (data.isOrdered) "ol" else "ul"
+    val startAttr = if (data.isOrdered && data.startNumber.exists(_ != 1))
+      s""" start="${data.startNumber.get}""""
+    else
+      ""
+
+    s"<$tagName$startAttr>\n${items.flatMap {
+        case ListItem(List(Paragraph(List(Text(text))))) => s"<li>$text</li>\n"
+        case ListItem(content)                           => s"<li>${content.map(renderToHTML).mkString("\n")}\n</li>"
+      }.mkString}</$tagName>"
+  case n: Inline => sys.error(s"inline node in block position: '$n'")
 }
 
 private def renderInlines(inlines: List[Inline]): String =
