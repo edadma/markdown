@@ -23,8 +23,8 @@ Third paragraph."""
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("First paragraph."), SoftLineBreak())),
-      Paragraph(List(Text("Second paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("First paragraph."))),
+      Paragraph(List(Text("Second paragraph."))),
       Paragraph(List(Text("Third paragraph."))),
     ))
   }
@@ -73,8 +73,8 @@ Last paragraph.
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("First paragraph."), SoftLineBreak())),
-      Paragraph(List(Text("Last paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("First paragraph."))),
+      Paragraph(List(Text("Last paragraph."))),
     ))
   }
 
@@ -87,7 +87,6 @@ Last paragraph.
         Text("First line."),
         SoftLineBreak(),
         Text("Second line."),
-        SoftLineBreak(),
       )),
       Paragraph(List(Text("New paragraph."))),
     ))
@@ -101,7 +100,7 @@ Second paragraph."""
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("First paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("First paragraph."))),
       Paragraph(List(Text("Second paragraph."))),
     ))
   }
@@ -113,7 +112,7 @@ Not indented paragraph."""
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("  Indented paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("  Indented paragraph."))),
       Paragraph(List(Text("Not indented paragraph."))),
     ))
   }

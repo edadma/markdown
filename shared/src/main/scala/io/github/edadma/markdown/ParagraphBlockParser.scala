@@ -36,8 +36,21 @@ object ParagraphBlockParser extends BlockParser {
       case _                         => paraLines.length
     }
 
-    // flatten the LazyLists into one big stream of C’s
-    (Paragraph(paraLines.flatten), linesConsumed)
+    val content: List[Inline] =
+      if (paraLines.nonEmpty) {
+        // Start with all lines flattened
+        val allChars = paraLines.flatten
+
+        // Remove the last character if it's a newline
+        if (allChars.lastOption.exists(_.char == '\n'))
+          allChars.dropRight(1)
+        else
+          allChars
+      } else {
+        List.empty[Inline]
+      }
+
+    (Paragraph(content), linesConsumed)
   }
 }
 

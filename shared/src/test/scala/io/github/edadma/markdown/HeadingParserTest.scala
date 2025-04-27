@@ -89,7 +89,6 @@ This is \## not a heading either"""
         Text("#Not a heading"),
         SoftLineBreak(),
         Text("##Also not a heading"),
-        SoftLineBreak(),
       )),
       Heading(3, List(Text("This is a heading"))),
     ))
@@ -183,9 +182,9 @@ Final paragraph."""
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("Regular paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("Regular paragraph."))),
       Heading(1, List(Text("Heading 1"))),
-      Paragraph(List(Text("Another paragraph."), SoftLineBreak())),
+      Paragraph(List(Text("Another paragraph."))),
       Heading(1, List(Text("ATX heading"))),
       Paragraph(List(Text("Final paragraph."))),
     ))

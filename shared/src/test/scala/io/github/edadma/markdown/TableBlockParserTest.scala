@@ -215,7 +215,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("Paragraph before."), SoftLineBreak())),
+      Paragraph(List(Text("Paragraph before."))),
       Table(
         TableRow(List(
           TableCell(List(Text("Header 1"))),

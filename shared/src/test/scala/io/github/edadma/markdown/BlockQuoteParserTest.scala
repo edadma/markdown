@@ -25,7 +25,7 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       BlockQuote(List(
-        Paragraph(List(Text("First paragraph."), SoftLineBreak())),
+        Paragraph(List(Text("First paragraph."))),
         Paragraph(List(Text("Second paragraph."))),
       )),
     ))
@@ -40,7 +40,7 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       BlockQuote(List(
-        Paragraph(List(Text("Outer quote."), SoftLineBreak())),
+        Paragraph(List(Text("Outer quote."))),
         BlockQuote(List(
           Paragraph(List(Text("Nested quote."))),
         )),
@@ -105,7 +105,7 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       BlockQuote(List(
-        Paragraph(List(Text("First paragraph."), SoftLineBreak())),
+        Paragraph(List(Text("First paragraph."))),
       )),
       BlockQuote(List(
         Paragraph(List(Text("Second paragraph."))),
@@ -138,7 +138,6 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
       BlockQuote(List(
         Paragraph(List(
           Text("First line"),
-          SoftLineBreak(),
         )),
         BlockQuote(List(
           Paragraph(List(
@@ -164,7 +163,7 @@ class BlockQuoteParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       BlockQuote(List(
-        Paragraph(List(Text("Above a horizontal rule"), SoftLineBreak())),
+        Paragraph(List(Text("Above a horizontal rule"))),
         ThematicBreak(),
         Paragraph(List(Text("Below a horizontal rule"))),
       )),

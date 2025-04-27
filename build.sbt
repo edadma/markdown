@@ -5,7 +5,7 @@ ThisBuild / scalaVersion           := "3.6.4"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.0.2"
+ThisBuild / version                := "0.0.3"
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
 
@@ -88,6 +88,7 @@ lazy val root = project
   .in(file("."))
   .aggregate(markdown.js, markdown.jvm, markdown.native)
   .settings(
+    name                := "markdown",
     publish / skip      := true,
     publishLocal / skip := true,
   )

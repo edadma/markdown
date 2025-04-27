@@ -54,7 +54,7 @@ class HTMLEntityProcessingTest extends AnyFlatSpec with Matchers {
     document shouldBe Document(List(
       Heading(1, List(Text("Heading with © symbol"))),
       BlockQuote(List(
-        Paragraph(List(Text("Blockquote with ® symbol"), SoftLineBreak())),
+        Paragraph(List(Text("Blockquote with ® symbol"))),
       )),
       Code("Code with &amp; symbol", None),
     ))
