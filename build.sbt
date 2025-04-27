@@ -45,9 +45,7 @@ ThisBuild / publishMavenStyle := true
 lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("."))
   .settings(
-    name         := "markdown",
-    version      := "0.0.1",
-    scalaVersion := "3.6.4",
+    name := "markdown",
     scalacOptions ++=
       Seq(
         "-deprecation",
@@ -78,10 +76,10 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .jsSettings(
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
-    Test / scalaJSUseMainModuleInitializer := true,
-    Test / scalaJSUseTestModuleInitializer := false,
-//    Test / scalaJSUseMainModuleInitializer      := false,
-//    Test / scalaJSUseTestModuleInitializer      := true,
+//    Test / scalaJSUseMainModuleInitializer := true,
+//    Test / scalaJSUseTestModuleInitializer := false,
+    Test / scalaJSUseMainModuleInitializer      := false,
+    Test / scalaJSUseTestModuleInitializer      := true,
     scalaJSUseMainModuleInitializer             := true,
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
   )
