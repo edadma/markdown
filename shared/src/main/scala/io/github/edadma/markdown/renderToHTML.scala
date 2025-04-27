@@ -34,6 +34,34 @@ def renderToHTML(node: Node): String = node match {
         case ListItem(List(Paragraph(List(Text(text))))) => s"<li>$text</li>\n"
         case ListItem(content)                           => s"<li>${content.map(renderToHTML).mkString("\n")}\n</li>"
       }.mkString}</$tagName>"
+  // In the renderToHTML function, add cases for Table, TableRow, and TableCell
+  case Table(headerRow, rows, alignments) =>
+    val alignAttrs = alignments.map {
+      case TableAlignment.Left   => " align=\"left\""
+      case TableAlignment.Center => " align=\"center\""
+      case TableAlignment.Right  => " align=\"right\""
+      case TableAlignment.None   => ""
+    }
+
+    val headerHTML = s"<thead>\n<tr>${
+        headerRow.cells.zip(alignAttrs).map { case (cell, align) =>
+          s"<th$align>${renderInlines(cell.content)}</th>"
+        }.mkString
+      }</tr>\n</thead>"
+
+    val bodyHTML = if (rows.nonEmpty) {
+      s"<tbody>\n${
+          rows.map { row =>
+            s"<tr>${
+                row.cells.zip(alignAttrs).map { case (cell, align) =>
+                  s"<td$align>${renderInlines(cell.content)}</td>"
+                }.mkString
+              }</tr>"
+          }.mkString("\n")
+        }\n</tbody>"
+    } else ""
+
+    s"<table>\n$headerHTML\n$bodyHTML\n</table>"
   case n: Inline => sys.error(s"inline node in block position: '$n'")
 }
 

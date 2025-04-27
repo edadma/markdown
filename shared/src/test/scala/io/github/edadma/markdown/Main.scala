@@ -41,8 +41,11 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- a
-      |- c""".stripMargin
+      || Column 1 | Column 2 | Column 3 |
+      ||:---------|:--------:|---------:|
+      || Left     | Center   | Right    |
+      || Cell 1   | Cell 2   | Cell 3   |
+      || *Italic* | **Bold** | `Code`   |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)
