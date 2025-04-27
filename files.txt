@@ -16,6 +16,7 @@ ParagraphBlockParser.scala
 parseDocument.scala
 parseInline.scala
 renderToHTML.scala
+renderToXML.scala
 SetextHeadingBlockParser.scala
 ThematicBreakBlockParser.scala
 
@@ -28,6 +29,7 @@ EmphasisInlineParserTest.scala
 FencedCodeBlockParserTest.scala
 HeadingParserTest.scala
 HTMLBlockParserTest.scala
+HTMLEntityProcessingTest.scala
 ImageInlineParserTest.scala
 IndentedCodeBlockParserTest.scala
 InputReaderTest.scala
