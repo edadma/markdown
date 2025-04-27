@@ -40,10 +40,9 @@ import io.github.edadma.logger.LogLevel
 //  val (doc, refs) = parseDocumentContentWithRefs(input)
 
   val input =
-    """
-      | *Emphasized* | **Strong** |
-      || ------------ | ---------- |
-      || `Code`       | [Link](url) |""".stripMargin
+    """| Header 1 | Header 2 |
+      || Not a proper delimiter |
+      || Cell 1   | Cell 2   |""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)

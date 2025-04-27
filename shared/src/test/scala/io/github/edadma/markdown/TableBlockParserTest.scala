@@ -156,8 +156,6 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
         List(
           TableRow(List(
             TableCell(List(Text("Row 1 Only One Cell"))),
-            TableCell(List()),
-            TableCell(List()),
           )),
           TableRow(List(
             TableCell(List(Text("Cell 1"))),

@@ -38,7 +38,6 @@ enum TableAlignment:
 
 case class TableCell(content: List[Inline]) extends Block:
   override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
-    println(parseInline(content, linkRefs))
     TableCell(parseInline(content, linkRefs))
   }
 
