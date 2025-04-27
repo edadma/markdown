@@ -187,9 +187,10 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
   }
 
   it should "not parse a table with invalid delimiter row" in {
-    val input = """| Header 1 | Header 2 |
-                   || Not a proper delimiter |
-                   || Cell 1   | Cell 2   |""".stripMargin
+    val input = """
+                  || Header 1 | Header 2 |
+                  || Not a proper delimiter |
+                  || Cell 1   | Cell 2   |""".stripMargin
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
