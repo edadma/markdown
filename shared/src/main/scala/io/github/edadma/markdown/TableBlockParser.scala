@@ -28,7 +28,7 @@ object TableBlockParser extends BlockParser {
 
     // Parse data rows (if any)
     var currentLine = 2
-    val dataRows    = new ListBuffer[TableRow]
+    val dataRows    = new mutable.ListBuffer[TableRow]
 
     while (currentLine < lines.size && isTableRow(lines(currentLine))) {
       dataRows += TableRow(parseCellsFromLine(lines(currentLine)))
@@ -65,7 +65,6 @@ object TableBlockParser extends BlockParser {
   // Parse cells from a line of cursors
   private def parseCellsFromLine(line: LazyList[C]): List[TableCell] = {
     val lineContent = line.takeWhile(_.char != '\n').toList
-    val cellTexts   = splitCellsText(lineToString(line))
 
     if (lineContent.isEmpty) return List()
 
@@ -88,7 +87,7 @@ object TableBlockParser extends BlockParser {
 
   // Find positions of all unescaped pipe characters
   private def findUnescapedPipePositions(lineContent: List[C]): List[Int] = {
-    val positions = new ListBuffer[Int]
+    val positions = new mutable.ListBuffer[Int]
 
     // Add implicit beginning position if line doesn't start with pipe
     if (lineContent.isEmpty || lineContent.head.char != '|') {
@@ -114,7 +113,7 @@ object TableBlockParser extends BlockParser {
 
   // Get cell ranges based on pipe positions
   private def getCellRanges(pipePositions: List[Int], lineLength: Int): List[(Int, Int)] = {
-    val ranges = new ListBuffer[(Int, Int)]
+    val ranges = new mutable.ListBuffer[(Int, Int)]
 
     for (i <- 0 until pipePositions.length - 1) {
       val start = pipePositions(i) + 1
@@ -164,7 +163,7 @@ object TableBlockParser extends BlockParser {
     val trimmed       = if (content.endsWith("|")) content.substring(0, content.length - 1) else content
 
     // Split by pipes, handling escaped pipes
-    val result  = new ListBuffer[String]
+    val result  = new mutable.ListBuffer[String]
     var current = new StringBuilder
     var escaped = false
 
