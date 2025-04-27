@@ -18,6 +18,7 @@ parseInline.scala
 renderToHTML.scala
 renderToXML.scala
 SetextHeadingBlockParser.scala
+TableBlockParser.scala
 ThematicBreakBlockParser.scala
 
 # test code
@@ -38,6 +39,7 @@ LinkReferenceDefinitionParserTest.scala
 ListBlockParserTest.scala
 Main.scala
 ParagraphBlockParserTest.scala
+TableBlockParserTest.scala
 Testing.scala
 ThematicBreakBlockParserTest.scala
 
