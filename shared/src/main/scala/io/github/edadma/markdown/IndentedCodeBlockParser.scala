@@ -3,6 +3,7 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object IndentedCodeBlockParser extends BlockParser {
+  val name: String = "indented code blocks"
 
   /** Check if the first line in `lines` can start an indented code block. An indented code block starts with a line
     * indented with at least 4 spaces (or 1 tab) and cannot interrupt a paragraph.

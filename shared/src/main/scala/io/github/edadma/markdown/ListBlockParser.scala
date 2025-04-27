@@ -26,6 +26,8 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block {
 }
 
 object ListBlockParser extends BlockParser {
+  val name: String = "list blocks"
+
   // Patterns for detecting list markers
   private val UnorderedListMarker = """^( {0,3})([-+*])(\s+)(.*)$""".r
   private val OrderedListMarker   = """^( {0,3})(\d{1,9})([.)])(\s+)(.*)$""".r

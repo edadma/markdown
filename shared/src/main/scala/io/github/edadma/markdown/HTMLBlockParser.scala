@@ -1,6 +1,7 @@
 package io.github.edadma.markdown
 
 object HTMLBlockParser extends BlockParser {
+  val name: String = "HTML blocks"
 
   // 1–3 openers and closers
   private val multilineOpeners = List(

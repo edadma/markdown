@@ -4,6 +4,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object TableBlockParser extends BlockParser {
+  val name: String = "table blocks"
+
   def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.size < 2) return false
 

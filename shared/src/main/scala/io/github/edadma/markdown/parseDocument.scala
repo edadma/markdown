@@ -3,7 +3,6 @@ package io.github.edadma.markdown
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-// Block parser implementation
 def parseDocument(stream: LazyList[C]): (Document, immutable.Map[String, LinkReference]) = {
   val linkRefs      = new mutable.HashMap[String, LinkReference]
   val blocks        = parseBlocks(stream, linkRefs)
@@ -51,6 +50,8 @@ private def parseBlocks(
 // Interface for block parsers
 trait BlockParser {
 
+  val name: String
+
   /** Can this parser start on the given lines?
     * @param lines
     *   a list of lines, each as a LazyList[C]
@@ -71,6 +72,20 @@ trait BlockParser {
   def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int)
 }
 
+val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
+  LinkReferenceDefinitionParser,
+  SetextHeadingBlockParser,
+  ATXHeadingBlockParser,
+  ThematicBreakBlockParser,
+  HTMLBlockParser,
+  TableBlockParser,
+  IndentedCodeBlockParser,
+  FencedCodeBlockParser,
+  BlockQuoteParser,
+  ListBlockParser,
+  ParagraphBlockParser,
+)
+
 // Process lines to build blocks
 private def processLines(
     lines: List[LazyList[C]],
@@ -78,21 +93,6 @@ private def processLines(
 ): List[Block] = {
   val blocks         = new ListBuffer[Block]
   var remainingLines = lines
-
-  // The list of block parsers in priority order
-  val blockParsers: List[BlockParser] = List(
-    LinkReferenceDefinitionParser,
-    SetextHeadingBlockParser,
-    ATXHeadingBlockParser,
-    ThematicBreakBlockParser,
-    HTMLBlockParser,
-    TableBlockParser,
-    IndentedCodeBlockParser,
-    FencedCodeBlockParser,
-    BlockQuoteParser,
-    ListBlockParser,
-    ParagraphBlockParser,
-  )
 
   // Process lines until none remain
   while (remainingLines.nonEmpty) {

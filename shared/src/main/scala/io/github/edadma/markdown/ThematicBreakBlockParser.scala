@@ -3,6 +3,7 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object ThematicBreakBlockParser extends BlockParser {
+  val name: String = "thematic breaks"
 
   /** Can this parser start on the very first line in `lines`? */
   def canStart(lines: List[LazyList[C]]): Boolean = {

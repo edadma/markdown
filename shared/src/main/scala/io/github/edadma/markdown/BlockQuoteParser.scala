@@ -3,6 +3,8 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object BlockQuoteParser extends BlockParser {
+  val name: String = "block quotes"
+
   def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.isEmpty) return false
 

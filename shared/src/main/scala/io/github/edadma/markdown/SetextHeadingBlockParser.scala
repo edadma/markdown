@@ -3,6 +3,8 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object SetextHeadingBlockParser extends BlockParser {
+  val name: String = "setext headings"
+
   // Regex patterns for setext underlines
   private val SetextLevel1Pattern = """^ {0,3}=+[ \t]*$""".r // Level 1 with =
   private val SetextLevel2Pattern = """^ {0,3}-+[ \t]*$""".r // Level 2 with -

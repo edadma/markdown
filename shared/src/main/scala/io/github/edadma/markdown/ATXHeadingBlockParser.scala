@@ -3,6 +3,8 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object ATXHeadingBlockParser extends BlockParser {
+  val name: String = "ATX headings"
+  
   def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.isEmpty) return false
 

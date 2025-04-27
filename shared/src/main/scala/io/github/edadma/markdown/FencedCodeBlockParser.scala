@@ -3,6 +3,7 @@ package io.github.edadma.markdown
 import scala.collection.mutable
 
 object FencedCodeBlockParser extends BlockParser {
+  val name: String = "fenced code blocks"
 
   /** Check if the first line in `lines` can start a fenced code block. A fenced code block starts with a line
     * containing either:
