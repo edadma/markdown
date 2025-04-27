@@ -87,7 +87,7 @@ private def appendIndent(sb: StringBuilder, n: Int): StringBuilder = {
   sb.append(" " * n)
 }
 
-private def escapeXml(s: String): String =
+def escapeXml(s: String): String =
   s.flatMap {
     case '&'  => "&amp;"
     case '<'  => "&lt;"

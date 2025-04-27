@@ -121,37 +121,66 @@ def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkRefer
   consolidateCharacters(inlineNodes)
 
   // Return as List
-  inlineNodes.toList
+  decodeHtmlEntities(inlineNodes.toList)
 }
 
-private def decodeEntities(inlines: List[Inline]): List[Inline] =
+private def decodeHtmlEntities(inlines: List[Inline]): List[Inline] = {
   inlines map {
-    case Text(content) =>
+    case Text(content)     => Text(decodeHtmlEntities(content))
+    case Emphasis(inlines) => Emphasis(decodeHtmlEntities(inlines))
+    case Strong(inlines)   => Strong(decodeHtmlEntities(inlines))
+    case Link(destination, title, inlines) =>
+      Link(decodeHtmlEntities(destination), title.map(t => decodeHtmlEntities(t)), decodeHtmlEntities(inlines))
+    case Image(destination, title, inlines) =>
+      Image(decodeHtmlEntities(destination), title.map(t => decodeHtmlEntities(t)), decodeHtmlEntities(inlines))
+    case inline => inline
   }
+}
 
-// Parse entity references (named, decimal, hexadecimal)
-private def parseEntityReference(input: String, startIndex: Int): Option[(String, Int)] = {
-  // Check for named entity: &name;
-  val namedEntityRegex = "&([a-zA-Z0-9]+);".r
-  val inputSubstring   = input.substring(startIndex)
-  namedEntityRegex.findPrefixMatchOf(inputSubstring).flatMap { m =>
-    val name = m.group(1)
-    HTMLEntities.get(name).map(s => (s, m.end))
-  }.orElse {
-    // Check for decimal entity: &#dddd;
-    val decimalEntityRegex = "&#([0-9]{1,7});".r
-    decimalEntityRegex.findPrefixMatchOf(inputSubstring).map { m =>
-      val codePoint = m.group(1).toInt
-      (codePoint.toChar.toString, m.end)
-    }.orElse {
-      // Check for hex entity: &#xhhhh;
-      val hexEntityRegex = "&#[xX]([0-9a-fA-F]{1,6});".r
-      hexEntityRegex.findPrefixMatchOf(inputSubstring).map { m =>
-        val codePoint = Integer.parseInt(m.group(1), 16)
-        (codePoint.toChar.toString, m.end)
+private def decodeHtmlEntities(input: String): String = {
+  // Regex pattern to match HTML entities:
+  // - Named entities: &name;
+  // - Decimal entities: &#number;
+  // - Hex entities: &#xhex;
+  val entityPattern = """&(#[xX]([0-9a-fA-F]+)|#([0-9]+)|([a-zA-Z][a-zA-Z0-9]*));""".r
+
+  // Replace all entities in the input string
+  entityPattern.replaceAllIn(
+    input,
+    matchResult => {
+      val entity     = matchResult.group(0)         // The entire entity (e.g., "&amp;")
+      val hexValue   = Option(matchResult.group(2)) // Hex value (e.g., "26" from "&#x26;")
+      val decValue   = Option(matchResult.group(3)) // Decimal value (e.g., "38" from "&#38;")
+      val namedValue = Option(matchResult.group(4)) // Named entity (e.g., "amp" from "&amp;")
+
+      // Replace based on entity type
+      if (hexValue.isDefined) {
+        // Handle hex entities (e.g., &#x26;)
+        try {
+          val codePoint = Integer.parseInt(hexValue.get, 16)
+          new String(Character.toChars(codePoint))
+        } catch {
+          case _: Exception => entity // Return original if parsing fails
+        }
+      } else if (decValue.isDefined) {
+        // Handle decimal entities (e.g., &#38;)
+        try {
+          val codePoint = Integer.parseInt(decValue.get)
+          new String(Character.toChars(codePoint))
+        } catch {
+          case _: Exception => entity // Return original if parsing fails
+        }
+      } else if (namedValue.isDefined) {
+        // Handle named entities (e.g., &amp;)
+        HTMLEntities get namedValue.get match
+          case Some(replacement) => replacement
+          case None              => entity
+      } else {
+        // If no replacement is found, return the original entity
+        entity
       }
-    }
-  }
+    },
+  )
 }
 
 def analyzeDelimiter(node: DLListNode[Inline]): DelimiterInfo = {

@@ -41,10 +41,13 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- Item 1
-      |  - Nested 1.1
-      |  - Nested 1.2
-      |- Item 2""".stripMargin
+      |# Heading with &clubs; symbol and <
+      |
+      |> Blockquote with &cups; symbol
+      |
+      |```
+      |Code with &cups; symbol
+      |```""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
   pprintln(doc)

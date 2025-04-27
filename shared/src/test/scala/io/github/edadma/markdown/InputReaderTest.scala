@@ -68,24 +68,6 @@ class InputReaderTest extends AnyFlatSpec with Matchers {
     stream(1).isLiteral should be(false)
   }
 
-  it should "handle entity references correctly" in {
-    val input  = "&amp; &lt; &gt; &quot; &apos;"
-    val reader = new InputReader(input)
-    val stream = reader.stream.filterNot(_.char == ' ').toList.dropRight(1)
-
-    stream.map(_.char).mkString should be("&<>\"'")
-  }
-
-  it should "handle numeric character references correctly" in {
-    val input  = "&#65; &#x41;"
-    val reader = new InputReader(input)
-    val stream = reader.stream.filterNot(_.char == ' ').toList.dropRight(1)
-
-    stream should have length 2
-    stream(0).char should be('A') // Decimal 65
-    stream(1).char should be('A') // Hex 41
-  }
-
   it should "preserve tabs in the base stream" in {
     val input  = "a\tb"
     val reader = new InputReader(input)
@@ -162,3 +144,24 @@ class InputReaderTest extends AnyFlatSpec with Matchers {
     expandedStream.tail.foreach(c => c.isLiteral should be(false))
   }
 }
+
+/*
+
+  it should "handle entity references correctly" in {
+    val input  = "&amp; &lt; &gt; &quot; &apos;"
+    val reader = new InputReader(input)
+    val stream = reader.stream.filterNot(_.char == ' ').toList.dropRight(1)
+
+    stream.map(_.char).mkString should be("&<>\"'")
+  }
+
+  it should "handle numeric character references correctly" in {
+    val input  = "&#65; &#x41;"
+    val reader = new InputReader(input)
+    val stream = reader.stream.filterNot(_.char == ' ').toList.dropRight(1)
+
+    stream should have length 2
+    stream(0).char should be('A') // Decimal 65
+    stream(1).char should be('A') // Hex 41
+  }
+ */
