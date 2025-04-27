@@ -35,8 +35,8 @@ val md = """
 This is **bold**, *italic*, and `code`.
 """
 
-val (doc, _) = parseDocumentContentWithRefs(md)
-val html      = renderToHTML(doc)
+val html = renderToHTML(md)
+
 println(html)
 ```
 
