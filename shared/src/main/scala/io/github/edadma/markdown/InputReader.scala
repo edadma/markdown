@@ -38,18 +38,18 @@ class InputReader(input: String) {
           }
         }
         // Handle entity references
-        else if (current == '&') {
-          val entityResult = parseEntityReference(input, index)
-          if (entityResult.isDefined) {
-            val (entityChar, entityLength) = entityResult.get
-            val cursor                     = C(entityChar, pos, line, col, false)
-            cursor #:: process(index + entityLength, pos + entityLength, line, col + 1)
-          } else {
-            // Not a valid entity, treat as regular character
-            val cursor = C(current, pos, line, col, false)
-            cursor #:: process(index + 1, pos + 1, line, col + 1)
-          }
-        }
+//        else if (current == '&') {
+//          val entityResult = parseEntityReference(input, index)
+//          if (entityResult.isDefined) {
+//            val (entityChar, entityLength) = entityResult.get
+//            val cursor                     = C(entityChar, pos, line, col, false)
+//            cursor #:: process(index + entityLength, pos + entityLength, line, col + 1)
+//          } else {
+//            // Not a valid entity, treat as regular character
+//            val cursor = C(current, pos, line, col, false)
+//            cursor #:: process(index + 1, pos + 1, line, col + 1)
+//          }
+//        }
         // Handle line endings
         else if (current == '\n') {
           val cursor = C(current, pos, line, col, false)
@@ -71,41 +71,6 @@ class InputReader(input: String) {
     }
 
     process(0, 0, 0, 0)
-  }
-
-  // Parse entity references (named, decimal, hexadecimal)
-  private def parseEntityReference(input: String, startIndex: Int): Option[(Char, Int)] = {
-    // This is a simplified implementation - focusing on common entities first
-    val commonEntities = Map(
-      "amp"  -> '&',
-      "lt"   -> '<',
-      "gt"   -> '>',
-      "quot" -> '"',
-      "apos" -> '\'',
-      // Add more common entities as needed
-    )
-
-    // Check for named entity: &name;
-    val namedEntityRegex = "&([a-zA-Z0-9]+);".r
-    val inputSubstring   = input.substring(startIndex)
-    namedEntityRegex.findPrefixMatchOf(inputSubstring).flatMap { m =>
-      val name = m.group(1)
-      commonEntities.get(name).map(char => (char, m.end))
-    }.orElse {
-      // Check for decimal entity: &#dddd;
-      val decimalEntityRegex = "&#([0-9]{1,7});".r
-      decimalEntityRegex.findPrefixMatchOf(inputSubstring).map { m =>
-        val codePoint = m.group(1).toInt
-        (codePoint.toChar, m.end)
-      }.orElse {
-        // Check for hex entity: &#xhhhh;
-        val hexEntityRegex = "&#[xX]([0-9a-fA-F]{1,6});".r
-        hexEntityRegex.findPrefixMatchOf(inputSubstring).map { m =>
-          val codePoint = Integer.parseInt(m.group(1), 16)
-          (codePoint.toChar, m.end)
-        }
-      }
-    }
   }
 
   // Check if a character is ASCII punctuation

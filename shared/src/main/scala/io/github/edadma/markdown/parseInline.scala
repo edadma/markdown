@@ -124,6 +124,36 @@ def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkRefer
   inlineNodes.toList
 }
 
+private def decodeEntities(inlines: List[Inline]): List[Inline] =
+  inlines map {
+    case Text(content) =>
+  }
+
+// Parse entity references (named, decimal, hexadecimal)
+private def parseEntityReference(input: String, startIndex: Int): Option[(String, Int)] = {
+  // Check for named entity: &name;
+  val namedEntityRegex = "&([a-zA-Z0-9]+);".r
+  val inputSubstring   = input.substring(startIndex)
+  namedEntityRegex.findPrefixMatchOf(inputSubstring).flatMap { m =>
+    val name = m.group(1)
+    HTMLEntities.get(name).map(s => (s, m.end))
+  }.orElse {
+    // Check for decimal entity: &#dddd;
+    val decimalEntityRegex = "&#([0-9]{1,7});".r
+    decimalEntityRegex.findPrefixMatchOf(inputSubstring).map { m =>
+      val codePoint = m.group(1).toInt
+      (codePoint.toChar.toString, m.end)
+    }.orElse {
+      // Check for hex entity: &#xhhhh;
+      val hexEntityRegex = "&#[xX]([0-9a-fA-F]{1,6});".r
+      hexEntityRegex.findPrefixMatchOf(inputSubstring).map { m =>
+        val codePoint = Integer.parseInt(m.group(1), 16)
+        (codePoint.toChar.toString, m.end)
+      }
+    }
+  }
+}
+
 def analyzeDelimiter(node: DLListNode[Inline]): DelimiterInfo = {
   val delimiterChar = node.element.asInstanceOf[C].char
   var count         = 0
