@@ -18,12 +18,16 @@ Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
 - **HTML rendering**: safe escaping for `<`, `>`, `&`, and `"`; outputs standard tags (`<p>`, `<h1–6>`, `<ul>`, `<ol>`, `<pre><code>`, `<blockquote>`, `<a>`, `<img>`, etc.)
 - **Zero runtime dependencies** and lightweight API
 
-## Quickstart
+## Online Demo
+
+Try out the Markdown parser in your browser using the [Dingus](https://edadma.github.io/dingus/).
+
+## Installation
 
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.1"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.3"
 ```
 
 ```scala
