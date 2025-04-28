@@ -906,45 +906,63 @@ private def createEmphasisNode(
     return
   }
 
-  logger.debug(s"Opener node: ${opener.node}, valid: ${isNodeValid(opener.node)}")
-  logger.debug(s"Closer node: ${closer.node}, valid: ${isNodeValid(closer.node)}")
+  // Log the full node structure to help with debugging
+  logger.debug("--- Node structure visualization ---")
+  var vizNode = opener.node
+  var nodeIdx = 0
+  while (vizNode != null && vizNode.notAfterEnd && nodeIdx < 20) {
+    logger.debug(s"Node[$nodeIdx]: ${vizNode.element}")
+    vizNode = vizNode.following
+    nodeIdx += 1
+  }
+  logger.debug("--- End node structure visualization ---")
 
   val openerNode = opener.node
   logger.debug(s"Opener node element: ${openerNode.element}")
 
-  // For the emphasis, we need to skip the opening delimiter characters
+  // For the emphasis, we need to skip the opening delimiter characters used for this emphasis
   var contentStart = openerNode
   logger.debug(s"Initial contentStart: $contentStart, element: ${contentStart.element}")
 
   for (i <- 0 until delimiterCount) {
     contentStart = contentStart.following
-    logger.debug(s"Advancing contentStart[$i]: $contentStart, " +
-      (if (contentStart == null) "null"
-       else if (contentStart.isAfterEnd) "isAfterEnd"
-       else s"element: ${contentStart.element}"))
+    logger.debug(s"Advancing contentStart[$i]: $contentStart, element: ${contentStart.element}")
   }
 
-  // Find the closing delimiter start position
-  var closerStart = closer.node
-  logger.debug(s"Initial closerStart: $closerStart, element: ${closerStart.element}")
-
-  // If the closer has more delimiters than we're using, adjust the starting position
-  // This is crucial for handling cases like ***foo*** correctly
-  for (i <- 0 until closer.length - delimiterCount) {
-    closerStart = closerStart.following
-    logger.debug(s"Advancing closerStart[$i]: $closerStart, " +
-      (if (closerStart == null) "null"
-       else if (closerStart.isAfterEnd) "isAfterEnd"
-       else s"element: ${closerStart.element}"))
+  // Skip any remaining opener delimiter characters too
+  if (opener.length > delimiterCount) {
+    logger.debug(s"Skipping ${opener.length - delimiterCount} additional opener delimiters")
+    for (i <- 0 until opener.length - delimiterCount) {
+      contentStart = contentStart.following
+      logger.debug(s"After skipping additional delimiter: contentStart = ${contentStart.element}")
+    }
   }
 
-  // Extract contents between the end of the opening delimiter and the start of the closing delimiter
-  logger.debug(s"Extracting contents between $contentStart and $closerStart")
-  val contents = extractInlinesBetween(contentStart, closerStart)
+  // Locate the actual content end (the node right BEFORE the first closer delimiter)
+  var closerFirstNode = closer.node
+  logger.debug(s"Initial closerFirstNode: ${closerFirstNode.element}")
+
+  // The content ends right before the first closer delimiter
+  var contentEnd = closerFirstNode
+  logger.debug(s"Content should end at: ${contentEnd.element}")
+
+  // Log all nodes that will be included in content
+  logger.debug("--- Content nodes visualization ---")
+  var contentNode = contentStart
+  var contentIdx  = 0
+  while (contentNode != contentEnd && contentNode.notAfterEnd && contentIdx < 20) {
+    logger.debug(s"ContentNode[$contentIdx]: ${contentNode.element}")
+    contentNode = contentNode.following
+    contentIdx += 1
+  }
+  logger.debug("--- End content nodes visualization ---")
+
+  // Extract content - now with correct boundaries
+  logger.debug(s"Extracting contents between $contentStart and $contentEnd")
+  val contents = extractInlinesBetween(contentStart, contentEnd)
   logger.debug(s"Creating $emphasisType with raw contents: $contents")
 
   // Process contents to convert cursors to text
-  // We do this here because any nested emphasis will be handled in a separate iteration
   val processedContents = consolidateTextInContents(contents)
   logger.debug(s"Processed contents: $processedContents")
 
@@ -954,132 +972,106 @@ private def createEmphasisNode(
     case "strong" => Strong(processedContents)
   }
 
+  // SPECIAL HANDLING FOR ***asdf*** CASE:
+  var finalNode = emphNode
+
+  // If we have 1 delimiter remaining on both sides after creating strong emphasis,
+  // we should create an emphasis node that wraps the strong node
+  if (
+    opener.length > delimiterCount && closer.length > delimiterCount &&
+    opener.length - delimiterCount == 1 && closer.length - delimiterCount == 1 &&
+    emphasisType == "strong"
+  ) {
+    // For triple asterisk case - wrap the strong node in an emphasis node
+    logger.debug("Triple asterisk case detected - wrapping Strong node in Emphasis")
+    finalNode = Emphasis(List(emphNode))
+  }
+
   // Replace the first character of the opener with the emphasis node
-  logger.debug(s"Replacing opener node element with $emphNode")
-  openerNode.element = emphNode
+  logger.debug(s"Replacing opener node element with $finalNode")
+  openerNode.element = finalNode
   logger.debug(s"Opener node after replacement: ${openerNode.element}")
 
-  // Remove used delimiter characters from the opener (if any)
-  logger.debug(s"Removing ${delimiterCount - 1} additional delimiter chars from opener")
+  // Keep track of nodes to remove
+  val nodesToRemove = new mutable.ArrayBuffer[DLListNode[Inline]]()
+
+  // Add opener delimiter nodes to remove (excluding the first one which holds the emphasis node)
   var current = openerNode.following
-  for (i <- 1 until delimiterCount) {
-    val next = current.following
-    logger.debug(s"Unlinking opener delimiter[$i]: $current, element: ${current.element}")
-    current.unlink
-    current = next
+
+  // In triple asterisk case, remove ALL delimiters
+  val delimitersToRemove = if (finalNode.isInstanceOf[Emphasis] && emphasisType == "strong") {
+    opener.length // Remove all delimiters
+  } else {
+    opener.length // Remove used delimiters
   }
 
-  // Remove content nodes between delimiters
-  logger.debug(s"Removing content nodes between delimiters")
+  for (i <- 1 until delimitersToRemove) {
+    if (current != null && current.notAfterEnd) {
+      nodesToRemove += current
+      logger.debug(s"Will remove opener delimiter[$i]: ${current.element}")
+      current = current.following
+    }
+  }
+
+  // Add content nodes to be removed
   current = contentStart
-  var nodeCount = 0
+  while (current != contentEnd && current != null && current.notAfterEnd) {
+    nodesToRemove += current
+    logger.debug(s"Will remove content node: ${current.element}")
+    current = current.following
+  }
 
-  while (current != closerStart && current.notAfterEnd) {
-    val next = current.following
+  // Add closer delimiter nodes to remove
+  current = contentEnd
 
-    // Check if this node corresponds to any delimiters in the stack
-    for (i <- delimiterStack.indices) {
-      if (delimiterStack(i).isActive && (delimiterStack(i).node eq current)) {
-        logger.debug(s"Found delimiter at stack index $i in content being removed - marking inactive")
-        delimiterStack(i).isActive = false
+  // In triple asterisk case, remove ALL delimiters
+  val closerDelimitersToRemove = if (finalNode.isInstanceOf[Emphasis] && emphasisType == "strong") {
+    closer.length // Remove all delimiters
+  } else {
+    closer.length // Remove used delimiters
+  }
+
+  for (i <- 0 until closerDelimitersToRemove) {
+    if (current != null && current.notAfterEnd) {
+      nodesToRemove += current
+      logger.debug(s"Will remove closer delimiter[$i]: ${current.element}")
+      current = current.following
+    }
+  }
+
+  // Remove all tracked nodes
+  logger.debug(s"Removing ${nodesToRemove.size} nodes total")
+  for ((node, i) <- nodesToRemove.zipWithIndex) {
+    // Mark any delimiters in the stack inactive if they're being removed
+    for (j <- delimiterStack.indices) {
+      if (delimiterStack(j).isActive && (delimiterStack(j).node eq node)) {
+        logger.debug(s"Found delimiter at stack index $j being removed - marking inactive")
+        delimiterStack(j).isActive = false
       }
     }
 
-    logger.debug(s"Unlinking content node[$nodeCount]: $current, element: ${current.element}")
-    current.unlink
-    current = next
-    nodeCount += 1
-  }
-  logger.debug(s"Removed $nodeCount content nodes")
-
-  // Remove used delimiter characters from the closer
-  logger.debug(s"Removing $delimiterCount delimiter chars from closer")
-  for (i <- 0 until delimiterCount) {
-    val next = closerStart.following
-
-    // Also check if this node is a delimiter before unlinking
-    for (i <- delimiterStack.indices) {
-      if (delimiterStack(i).isActive && (delimiterStack(i).node eq closerStart)) {
-        logger.debug(s"Found delimiter at stack index $i in closer being removed - marking inactive")
-        delimiterStack(i).isActive = false
-      }
+    logger.debug(s"Unlinking node[$i]: $node, element: ${node.element}")
+    try {
+      node.unlink
+    } catch {
+      case e: Exception => logger.debug(s"Failed to unlink node: ${e.getMessage}")
     }
-
-    logger.debug(s"Unlinking closer delimiter[$i]: $closerStart, element: ${closerStart.element}")
-    closerStart.unlink
-    closerStart = next
   }
 
-  // Update the opener in the stack
+  // Mark the original opener and closer as inactive in the stack
   val openerStackIdx = delimiterStack.indexWhere(d => d eq opener)
   if (openerStackIdx >= 0) {
-    if (opener.length > delimiterCount) {
-      // If we only used part of a delimiter run, update it and keep it active
-      // This is crucial for cases like ***foo*** where we want to process nested emphasis
-      logger.debug(s"Opener has ${opener.length - delimiterCount} delimiters remaining - keeping active")
-
-      // We need to find the new node for the remaining delimiters
-      // It should be the node immediately following the emphasis node
-      val newNode = openerNode.following
-      if (newNode != null && newNode.notAfterEnd) {
-        val newOpener = DelimiterInfo(
-          newNode,
-          opener.delimiterChar,
-          opener.length - delimiterCount,
-          true, // Keep it active
-          opener.canOpen,
-          opener.canClose,
-        )
-        delimiterStack(openerStackIdx) = newOpener
-        logger.debug(s"Updated opener at stack index $openerStackIdx to point to new node")
-      } else {
-        // If we can't find a valid node, mark it inactive
-        delimiterStack(openerStackIdx).isActive = false
-        logger.debug(s"Could not find valid node for remaining delimiters - marking opener inactive")
-      }
-    } else {
-      // If we used all delimiters, mark it inactive
-      delimiterStack(openerStackIdx).isActive = false
-      logger.debug(s"Marked opener at stack index $openerStackIdx as inactive (all delimiters used)")
-    }
-  } else {
-    logger.debug("Could not find opener in stack!")
+    delimiterStack(openerStackIdx).isActive = false
+    logger.debug(s"Marked original opener at stack index $openerStackIdx as inactive")
   }
 
-  // Update the closer in the stack
   val closerStackIdx = delimiterStack.indexWhere(d => d eq closer)
   if (closerStackIdx >= 0) {
-    if (closer.length > delimiterCount) {
-      // If we only used part of a delimiter run, update it and keep it active
-      logger.debug(s"Closer has ${closer.length - delimiterCount} delimiters remaining - keeping active")
-
-      // The new node should be closerStart, which was advanced above
-      if (closerStart != null && closerStart.notAfterEnd) {
-        val newCloser = DelimiterInfo(
-          closerStart,
-          closer.delimiterChar,
-          closer.length - delimiterCount,
-          true, // Keep it active
-          closer.canOpen,
-          closer.canClose,
-        )
-        delimiterStack(closerStackIdx) = newCloser
-        logger.debug(s"Updated closer at stack index $closerStackIdx to point to new node")
-      } else {
-        // If we can't find a valid node, mark it inactive
-        delimiterStack(closerStackIdx).isActive = false
-        logger.debug(s"Could not find valid node for remaining delimiters - marking closer inactive")
-      }
-    } else {
-      // If we used all delimiters, mark it inactive
-      delimiterStack(closerStackIdx).isActive = false
-      logger.debug(s"Marked closer at stack index $closerStackIdx as inactive (all delimiters used)")
-    }
-  } else {
-    logger.debug("Could not find closer in stack!")
+    delimiterStack(closerStackIdx).isActive = false
+    logger.debug(s"Marked original closer at stack index $closerStackIdx as inactive")
   }
 
-  logger.debug(s"Created $emphasisType node")
+  logger.debug(s"Created ${if (finalNode.isInstanceOf[Emphasis]) "nested emphasis with strong" else emphasisType} node")
   logger.debug(s"==== createEmphasisNode END ====")
 }
 

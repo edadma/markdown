@@ -5,7 +5,7 @@ ThisBuild / scalaVersion           := "3.6.4"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.0.3"
+ThisBuild / version                := "0.0.4"
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
 
@@ -58,7 +58,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
 //      "com.github.scopt" %%% "scopt" % "4.1.0",
       "com.lihaoyi"      %%% "pprint"         % "0.9.0" /*% "test"*/,
-      "io.github.edadma" %%% "logger"         % "0.0.10",
+      "io.github.edadma" %%% "logger"         % "0.0.11",
       "io.github.edadma" %%% "dllist"         % "0.0.6",
       "io.github.edadma" %%% "cross-platform" % "0.0.3",
     ),

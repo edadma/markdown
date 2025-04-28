@@ -4,15 +4,15 @@ import pprint.pprintln
 import io.github.edadma.logger.LogLevel
 
 @main def run(): Unit =
-//  logger.setLogLevel(LogLevel.DEBUG)
-//  logger.setFileLogging()
+  logger.setLogLevel(LogLevel.DEBUG)
+  logger.setFileLogging()
 
 //  val linkRefs = Map("ref" -> LinkReference("image.jpg", None))
 //  val input    = "Shortcut image: ![ref]"
 //
 //  pprintln(parseInlineContent(input, linkRefs))
 
-//  pprintln(parseInlineContent("""[![alt text](image.jpg)](https://example.com)"""))
+  pprintln(parseInlineContent("""*asdf**"""))
 
 //  val input =
 //    """
@@ -39,16 +39,16 @@ import io.github.edadma.logger.LogLevel
 //      |""".stripMargin
 //  val (doc, refs) = parseDocumentContentWithRefs(input)
 
-  val input =
-    """
-      |- a
-      |- b
-      |
-      |asdf""".stripMargin
-  val (doc, refs) = parseDocumentContentWithRefs(input)
-
-  pprintln(doc)
-  println(renderToHTML(doc))
+//  val input =
+//    """
+//      |- a
+//      |- b
+//      |
+//      |asdf""".stripMargin
+//  val (doc, refs) = parseDocumentContentWithRefs(input)
+//
+//  pprintln(doc)
+//  println(renderToHTML(doc))
 
 //  pprintln(extractHeaders(doc))
 
