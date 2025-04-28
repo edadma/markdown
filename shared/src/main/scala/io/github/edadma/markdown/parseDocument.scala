@@ -74,15 +74,15 @@ trait BlockParser {
 
 val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
   LinkReferenceDefinitionParser,
+  ThematicBreakBlockParser,
+  ListBlockParser,
   SetextHeadingBlockParser,
   ATXHeadingBlockParser,
-  ThematicBreakBlockParser,
   HTMLBlockParser,
   TableBlockParser,
   IndentedCodeBlockParser,
   FencedCodeBlockParser,
   BlockQuoteParser,
-  ListBlockParser,
   ParagraphBlockParser,
 )
 

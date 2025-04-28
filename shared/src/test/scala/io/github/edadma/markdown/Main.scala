@@ -12,22 +12,14 @@ import io.github.edadma.logger.LogLevel
 //
 //  pprintln(parseInlineContent(input, linkRefs))
 
-  pprintln(parseInlineContent("""__zxcv *asdf*__"""))
+//  pprintln(parseInlineContent("""__zxcv *asdf*__"""))
 
-//  val input =
-//    """
-//      |Overview
-//      |========
-//      |
-//      |This is a little *test* document with some **boring** text.
-//      |
-//      |Advice
-//      |------
-//      |
-//      |It should _not_ be taken __seriously__.
-//      |""".stripMargin
-//
-//  println(renderToHTML(input))
+  val input =
+    """
+      |- a
+      |- """.stripMargin
+
+  println(renderToHTML(input))
 
 //  val input =
 //    """
@@ -42,11 +34,9 @@ import io.github.edadma.logger.LogLevel
 //  val input =
 //    """
 //      |- a
-//      |- b
-//      |
-//      |asdf""".stripMargin
+//      |- """.stripMargin
 //  val (doc, refs) = parseDocumentContentWithRefs(input)
-//
+
 //  pprintln(doc)
 //  println(renderToHTML(doc))
 
