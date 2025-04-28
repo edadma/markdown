@@ -12,7 +12,7 @@ import io.github.edadma.logger.LogLevel
 //
 //  pprintln(parseInlineContent(input, linkRefs))
 
-  pprintln(parseInlineContent("""*asdf**"""))
+  pprintln(parseInlineContent("""__zxcv *asdf*__"""))
 
 //  val input =
 //    """
