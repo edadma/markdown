@@ -1,10 +1,11 @@
 package io.github.edadma.markdown
 
 import scala.collection.mutable
+import scala.language.postfixOps
 
 object ATXHeadingBlockParser extends BlockParser {
   val name: String = "ATX headings"
-  
+
   def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.isEmpty) return false
 
@@ -43,25 +44,11 @@ object ATXHeadingBlockParser extends BlockParser {
     }
 
     // Extract raw content (excluding newline)
-    val contentCursors = line.drop(pos).takeWhile(c => c.char != '\n').toList
+    val contentCursorsReversed = line.drop(pos).takeWhile(c => c.char != '\n').toList.reverse
 
-    // Convert to string for processing
-    val contentString = contentCursors.map(_.char).mkString
+    val contentCursorsTrimmed =
+      contentCursorsReversed dropWhile (_.char.isWhitespace) dropWhile (_.char == '#') dropWhile (_.char.isWhitespace) reverse
 
-    // Process according to spec:
-    // 1. Remove trailing # sequence if it's preceded by optional spaces
-    // 2. Remove all trailing spaces
-    val trimmedContent = contentString
-      .replaceAll("[ \t]+#+[ \t]*$", "") // Remove trailing sequence of hashes with spaces
-      .stripTrailing()                   // Remove trailing spaces
-
-    // Convert the content to a list of Text nodes
-    val content = if (trimmedContent.nonEmpty) {
-      List(Text(trimmedContent))
-    } else {
-      List.empty[Inline]
-    }
-
-    (Heading(level, content), 1)
+    (Heading(level, contentCursorsTrimmed), 1)
   }
 }

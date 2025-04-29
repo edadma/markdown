@@ -16,8 +16,7 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- a
-      |- """.stripMargin
+      |# _asdf_""".stripMargin
 
   println(renderToHTML(input))
 
