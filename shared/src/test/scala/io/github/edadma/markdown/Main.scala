@@ -14,21 +14,22 @@ import io.github.edadma.logger.LogLevel
 
 //  pprintln(parseInlineContent("""__zxcv *asdf*__"""))
 
-  val input =
-    """
-      |# _asdf_""".stripMargin
-
-  println(renderToHTML(input))
-
 //  val input =
 //    """
-//      |<div>
-//      |Hello
-//      |</div>
-//      |
-//      |This is a paragraph.
-//      |""".stripMargin
-//  val (doc, refs) = parseDocumentContentWithRefs(input)
+//      |# _asdf_""".stripMargin
+//
+//  println(renderToHTML(input))
+
+  val input =
+    """
+      |# Test
+      |
+      |- This uses [AngularJS] reference style.
+      |
+      |[//]: # (Comment line)
+      |
+      |   [AngularJS]: <http://angularjs.org>""".stripMargin
+  val (doc, refs) = parseDocumentContentWithRefs(input)
 
 //  val input =
 //    """
@@ -36,7 +37,8 @@ import io.github.edadma.logger.LogLevel
 //      |- """.stripMargin
 //  val (doc, refs) = parseDocumentContentWithRefs(input)
 
-//  pprintln(doc)
+  pprintln(refs)
+  pprintln(doc)
 //  println(renderToHTML(doc))
 
 //  pprintln(extractHeaders(doc))
