@@ -24,7 +24,7 @@ import io.github.edadma.logger.LogLevel
     """
       |# Test
       |
-      |- This uses [AngularJS] reference style.
+      |This uses [AngularJS] reference style.
       |
       |[//]: # (Comment line)
       |

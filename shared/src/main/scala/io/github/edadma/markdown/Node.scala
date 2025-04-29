@@ -1,5 +1,7 @@
 package io.github.edadma.markdown
 
+import pprint.pprintln
+
 trait Node {
   def processInlines(linkRefs: Map[String, LinkReference]): Node = this
 }
@@ -56,6 +58,24 @@ case class Table(
       rows.map(_.processInlines(linkRefs).asInstanceOf[TableRow]),
       alignments,
     )
+
+case class ListItem(content: List[Block]) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
+    ListItem(content.map(_.processInlines(linkRefs)))
+  }
+}
+
+case class ListBlock(data: ListData, items: List[ListItem]) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
+
+    pprintln(linkRefs)
+    pprintln(items.head.content.head.processInlines(linkRefs))
+    ListBlock(
+      data,
+      items.map(item => ListItem(item.content.map(_.processInlines(linkRefs)))),
+    )
+  }
+}
 
 sealed trait Inline                                                                 extends Node
 case class Text(content: String)                                                    extends Inline

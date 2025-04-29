@@ -12,23 +12,6 @@ case class ListData(
     indent: Int,
 )
 
-// A list item contains one or more blocks
-case class ListItem(content: List[Block]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
-    ListItem(content.map(_.processInlines(linkRefs)))
-  }
-}
-
-// The list block itself, containing list data and items
-case class ListBlock(data: ListData, items: List[ListItem]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
-    ListBlock(
-      data,
-      items.map(item => ListItem(item.content.map(_.processInlines(linkRefs)))),
-    )
-  }
-}
-
 object ListBlockParser extends BlockParser {
   val name: String = "list blocks"
 
