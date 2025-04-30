@@ -206,6 +206,17 @@ object ListBlockParser extends BlockParser {
       contentIndent: Int,
       listData: ListData,
   ): (List[LazyList[C]], Int, Boolean) = {
+    def isSameListItem(line: String, markerIndent: Int): Boolean = {
+      val lineIndent = countLeadingSpaces(line)
+      // If indentation is within 3 spaces of the original list marker indent,
+      // and it matches the list marker type, consider it the same list level
+      math.abs(lineIndent - markerIndent) <= 3 && isListMarker(line) &&
+      (if (!listData.isOrdered)
+         UnorderedListMarker.findFirstMatchIn(line).exists(_.group(2).charAt(0) == listData.bulletChar.get)
+       else
+         OrderedListMarker.findFirstMatchIn(line).exists(_.group(3).charAt(0) == listData.delimiter.get))
+    }
+
     val itemLines = new mutable.ListBuffer[LazyList[C]]
     itemLines += lines.head
 
@@ -287,7 +298,10 @@ object ListBlockParser extends BlockParser {
         // Regular content line - check if it belongs to this item
         val lineIndent = countLeadingSpaces(lineText)
 
-        if (isPotentialNestedListItem(lineText, lineIndent)) {
+        if (isSameListItem(lineText, markerIndent)) {
+          // This is a new item at the SAME list level - end current item
+          inItem = false
+        } else if (isPotentialNestedListItem(lineText, lineIndent)) {
           // This is likely a nested list item - include it in this item
           hasSeenContent = true
 
