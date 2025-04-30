@@ -354,27 +354,27 @@ class ListBlockParserTest extends AnyFlatSpec with Matchers {
     ))
   }
 
-//  it should "handle list items with thematic breaks" in {
-//    val input = """- Item 1
-//                     |
-//                     |  ---
-//                     |
-//                     |  After the break
-//                     |- Item 2""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = false),
-//        List(
-//          ListItem(List(
-//            Paragraph(List(Text("Item 1"), SoftLineBreak())),
-//            ThematicBreak(),
-//            Paragraph(List(Text("After the break"))),
-//          )),
-//          ListItem(List(Paragraph(List(Text("Item 2"))))),
-//        ),
-//      ),
-//    ))
-//  }
+  it should "handle list items with thematic breaks" in {
+    val input = """- Item 1
+                  |
+                  |  ---
+                  |
+                  |  After the break
+                  |- Item 2""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = false, bulletChar = Some('-'), isTight = false, indent = 0),
+        List(
+          ListItem(List(
+            Paragraph(List(Text("Item 1"))),
+            ThematicBreak(),
+            Paragraph(List(Text("After the break"))),
+          )),
+          ListItem(List(Paragraph(List(Text("Item 2"))))),
+        ),
+      ),
+    ))
+  }
 }
