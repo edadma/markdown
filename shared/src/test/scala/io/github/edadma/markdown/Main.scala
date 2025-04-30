@@ -22,10 +22,9 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- Unordered item
-      |  1. Nested ordered 1
-      |  2. Nested ordered 2
-      |     - Deeply nested unordered""".stripMargin
+      |- Item 1
+      |continuation without proper indentation
+      |- Item 2""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
 //  val input =

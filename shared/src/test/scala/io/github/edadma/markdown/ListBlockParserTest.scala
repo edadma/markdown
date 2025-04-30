@@ -245,131 +245,115 @@ class ListBlockParserTest extends AnyFlatSpec with Matchers {
     ))
   }
 
-//  it should "handle code blocks in list items" in {
-//    val input = """- Item with code
-//                     |
-//                     |  ```
-//                     |  function() {
-//                     |    return true;
-//                     |  }
-//                     |  ```
-//                     |
-//                     |- Another item""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = false),
-//        List(
-//          ListItem(List(
-//            Paragraph(List(Text("Item with code"), SoftLineBreak())),
-//            Code("function() {\n  return true;\n}", None),
-//          )),
-//          ListItem(List(Paragraph(List(Text("Another item"))))),
-//        ),
-//      ),
-//    ))
-//  }
-//
-//  it should "handle ordered lists with arbitrary start numbers" in {
-//    val input = """42. Item starting at 42
-//                     |43. Next item""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = true, startNumber = Some(42), delimiter = Some('.'), isTight = true),
-//        List(
-//          ListItem(List(Paragraph(List(Text("Item starting at 42"))))),
-//          ListItem(List(Paragraph(List(Text("Next item"))))),
-//        ),
-//      ),
-//    ))
-//  }
-//
-//  it should "handle list items with hard line breaks" in {
-//    val input = """- Item with hard
-//                     |  break
-//                     |- Second item""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true),
-//        List(
-//          ListItem(List(Paragraph(List(Text("Item with hard"), HardLineBreak(), Text("break"))))),
-//          ListItem(List(Paragraph(List(Text("Second item"))))),
-//        ),
-//      ),
-//    ))
-//  }
-//
-//  it should "handle lists with blockquotes inside" in {
-//    val input = """- Item 1
-//                     |
-//                     |  > This is a blockquote
-//                     |  > inside a list item
-//                     |
-//                     |- Item 2""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = false),
-//        List(
-//          ListItem(List(
-//            Paragraph(List(Text("Item 1"), SoftLineBreak())),
-//            BlockQuote(List(
-//              Paragraph(List(
-//                Text("This is a blockquote"),
-//                SoftLineBreak(),
-//                Text("inside a list item"),
-//              )),
-//            )),
-//          )),
-//          ListItem(List(Paragraph(List(Text("Item 2"))))),
-//        ),
-//      ),
-//    ))
-//  }
-//
-//  it should "handle task lists (though not as a special format)" in {
-//    val input = """- [ ] Unchecked task
-//                     |- [x] Checked task""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true),
-//        List(
-//          ListItem(List(Paragraph(List(Text("[ ] Unchecked task"))))),
-//          ListItem(List(Paragraph(List(Text("[x] Checked task"))))),
-//        ),
-//      ),
-//    ))
-//  }
-//
-//  it should "treat lazy continuation lines as part of the list item" in {
-//    val input = """- Item 1
-//                     |continuation without proper indentation
-//                     |- Item 2""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true),
-//        List(
-//          ListItem(List(Paragraph(List(
-//            Text("Item 1"),
-//            SoftLineBreak(),
-//            Text("continuation without proper indentation"),
-//          )))),
-//          ListItem(List(Paragraph(List(Text("Item 2"))))),
-//        ),
-//      ),
-//    ))
-//  }
-//
+  it should "handle code blocks in list items" in {
+    val input = """- Item with code
+                  |
+                  |  ```
+                  |  function() {
+                  |    return true;
+                  |  }
+                  |  ```
+                  |
+                  |- Another item""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = false, bulletChar = Some('-'), isTight = false, indent = 0),
+        List(
+          ListItem(List(
+            Paragraph(List(Text("Item with code"))),
+            Code("function() {\n  return true;\n}", None),
+          )),
+          ListItem(List(Paragraph(List(Text("Another item"))))),
+        ),
+      ),
+    ))
+  }
+
+  it should "handle ordered lists with arbitrary start numbers" in {
+    val input = """42. Item starting at 42
+                  |43. Next item""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = true, startNumber = Some(42), delimiter = Some('.'), isTight = true, indent = 0),
+        List(
+          ListItem(List(Paragraph(List(Text("Item starting at 42"))))),
+          ListItem(List(Paragraph(List(Text("Next item"))))),
+        ),
+      ),
+    ))
+  }
+
+  it should "handle list items with hard line breaks" in {
+    val input = """- Item with hard\
+                  |  break
+                  |- Second item""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true, indent = 0),
+        List(
+          ListItem(List(Paragraph(List(Text("Item with hard"), HardLineBreak(), Text("break"))))),
+          ListItem(List(Paragraph(List(Text("Second item"))))),
+        ),
+      ),
+    ))
+  }
+
+  it should "handle lists with blockquotes inside" in {
+    val input = """- Item 1
+                  |
+                  |  > This is a blockquote
+                  |  > inside a list item
+                  |
+                  |- Item 2""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = false, bulletChar = Some('-'), isTight = false, indent = 0),
+        List(
+          ListItem(List(
+            Paragraph(List(Text("Item 1"))),
+            BlockQuote(List(
+              Paragraph(List(
+                Text("This is a blockquote"),
+                SoftLineBreak(),
+                Text("inside a list item"),
+              )),
+            )),
+          )),
+          ListItem(List(Paragraph(List(Text("Item 2"))))),
+        ),
+      ),
+    ))
+  }
+
+  it should "treat lazy continuation lines as part of the list item" in {
+    val input = """- Item 1
+                  |continuation without proper indentation
+                  |- Item 2""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true, indent = 0),
+        List(
+          ListItem(List(Paragraph(List(
+            Text("Item 1"),
+            SoftLineBreak(),
+            Text("continuation without proper indentation"),
+          )))),
+          ListItem(List(Paragraph(List(Text("Item 2"))))),
+        ),
+      ),
+    ))
+  }
+
 //  it should "handle list items with thematic breaks" in {
 //    val input = """- Item 1
 //                     |
