@@ -53,9 +53,7 @@ object ListBlockParser extends BlockParser {
     val (items, linesConsumed, hasBlanks) = collectListItems(lines, listData, linkRefs)
 
     // A list is loose if there are blank lines between items or items have multiple blocks
-    val isTight = !hasBlanks && items.forall(item =>
-      item.content.size == 1 && item.content.head.isInstanceOf[Paragraph],
-    )
+    val isTight = items.size == 1 || !hasBlanks
 
     val finalListData = listData.copy(isTight = isTight)
 
@@ -100,6 +98,17 @@ object ListBlockParser extends BlockParser {
       items += item
       totalLinesConsumed += linesConsumed
       currentLines = currentLines.drop(linesConsumed)
+
+      // Check for blank lines BETWEEN items (the key fix)
+      if (items.size > 0 && currentLines.nonEmpty && isMatchingListItemStart(currentLines.head, listData)) {
+        // Look for blank lines between the end of current item and start of next item
+        val blankLinesBetween =
+          currentLines.takeWhile(line => isBlankLine(line) && !isMatchingListItemStart(line, listData)).size
+
+        if (blankLinesBetween > 0) {
+          hasBlanks = true
+        }
+      }
     }
 
     (items.toList, totalLinesConsumed, hasBlanks)
@@ -110,16 +119,24 @@ object ListBlockParser extends BlockParser {
     val text = line.takeWhile(_.char != '\n').map(_.char).mkString
 
     if (!listData.isOrdered) {
-      // Unordered: must match the same bullet char and the same indent
+      // For unordered lists, we need to match bullet char but allow for
+      // indentation variations within a reasonable range (0-3 spaces)
       UnorderedListMarker.findFirstMatchIn(text).exists { m =>
-        val leading = m.group(1).length
-        m.group(2).charAt(0) == listData.bulletChar.get && leading == listData.indent
+        val leading    = m.group(1).length
+        val bulletChar = m.group(2).charAt(0)
+
+        // Same bullet character and indentation within reasonable range
+        bulletChar == listData.bulletChar.get &&
+        math.abs(leading - listData.indent) <= 3
       }
     } else {
-      // Ordered: must match the same delimiter and the same indent
+      // For ordered lists, allow similar indentation flexibility
       OrderedListMarker.findFirstMatchIn(text).exists { m =>
-        val leading = m.group(1).length
-        m.group(3).charAt(0) == listData.delimiter.get && leading == listData.indent
+        val leading   = m.group(1).length
+        val delimiter = m.group(3).charAt(0)
+
+        delimiter == listData.delimiter.get &&
+        math.abs(leading - listData.indent) <= 3
       }
     }
   }
@@ -129,31 +146,28 @@ object ListBlockParser extends BlockParser {
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
   ): (ListItem, Int, Boolean) = {
-    val firstLineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
-
-    // Get indentation information
-    val (markerIndent, contentIndent) = getIndentation(firstLineText, listData)
+    // Get indentation information from first line
+    val (markerIndent, contentIndent) = getIndentation(lines.head, listData)
 
     // Collect all lines for this list item, including continuation lines
     val (itemLines, linesConsumed, hasBlanks) = collectItemLines(lines, markerIndent, contentIndent, listData)
 
-    // Convert item lines to plain strings for easier processing
-    val rawLines = itemLines.map(line => line.takeWhile(_.char != '\n').map(_.char).mkString)
+    // Process the item content to remove marker and adjust indentation
+    // but KEEP the original C objects to preserve escaping information
+    val processedLines = processItemLines(itemLines, contentIndent, listData)
 
-    // Process the item content (remove marker and indentation)
-    val processedText = processItemText(rawLines, firstLineText, contentIndent)
-
-    // Parse the processed text
-    val reader         = new InputReader(processedText)
-    val (nestedDoc, _) = parseDocument(reader.stream)
+    // Use the existing block parsing machinery directly, without creating a new document
+    val itemBlocks = processLines(processedLines, linkRefs)
 
     // Create the list item with the parsed blocks
-    (ListItem(nestedDoc.children), linesConsumed, hasBlanks)
+    (ListItem(itemBlocks), linesConsumed, hasBlanks)
   }
 
-  private def getIndentation(line: String, listData: ListData): (Int, Int) = {
+  private def getIndentation(line: LazyList[C], listData: ListData): (Int, Int) = {
+    val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
+
     if (listData.isOrdered) {
-      val m             = OrderedListMarker.findFirstMatchIn(line).get
+      val m             = OrderedListMarker.findFirstMatchIn(lineText).get
       val leadingIndent = m.group(1).length
       val marker        = m.group(2) + m.group(3) // number + delimiter
       val spaces        = m.group(4)
@@ -163,7 +177,7 @@ object ListBlockParser extends BlockParser {
 
       (leadingIndent, contentIndent)
     } else {
-      val m             = UnorderedListMarker.findFirstMatchIn(line).get
+      val m             = UnorderedListMarker.findFirstMatchIn(lineText).get
       val leadingIndent = m.group(1).length
       val marker        = m.group(2) // bullet character
       val spaces        = m.group(3)
@@ -200,6 +214,22 @@ object ListBlockParser extends BlockParser {
       m.group(4).trim.nonEmpty // Check if there's content after the marker
     }
 
+    // Function to check if a line is a potential nested list item
+    def isPotentialNestedListItem(line: String, lineIndent: Int): Boolean = {
+      // A nested list item must:
+      // 1. Have proper indentation (greater than the content indent)
+      // 2. Start with a list marker after the indentation
+      if (lineIndent < contentIndent) return false
+
+      val potentialMarker = line.substring(lineIndent)
+      UnorderedListMarker.findFirstMatchIn(potentialMarker).exists { m =>
+        m.group(3).nonEmpty // Must have whitespace after marker
+      } ||
+      OrderedListMarker.findFirstMatchIn(potentialMarker).exists { m =>
+        m.group(4).nonEmpty // Must have whitespace after marker
+      }
+    }
+
     while (inItem && currentLines.nonEmpty) {
       val line     = currentLines.head
       val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
@@ -220,15 +250,15 @@ object ListBlockParser extends BlockParser {
           val nextLine = currentLines.head
           val nextText = nextLine.takeWhile(_.char != '\n').map(_.char).mkString
 
-          if (isMatchingListItemStart(nextLine, listData)) {
-            // Next line is a new list item - end this item
+          if (isListItemStart(nextText, markerIndent)) {
+            // Next line is a new list item at same nesting level - end this item
             inItem = false
             if (previousWasBlank) {
               blankLinesBetweenBlocks = true
             }
           } else if (!isBlankLine(nextLine)) {
             // Next line is not blank - check if it's indented enough
-            val nextIndent = nextText.takeWhile(_ == ' ').length
+            val nextIndent = countLeadingSpaces(nextText)
 
             if (nextIndent < markerIndent && !isListMarker(nextText)) {
               // Not indented enough and not a new list - end of item
@@ -236,15 +266,28 @@ object ListBlockParser extends BlockParser {
             }
           }
         }
-      } else if (isMatchingListItemStart(line, listData)) {
-        // New list item - end this item
+      } else if (isListItemStart(lineText, markerIndent)) {
+        // New list item at same level - end this item
         inItem = false
       } else {
         // Regular content line - check if it belongs to this item
-        val lineIndent = lineText.takeWhile(_ == ' ').length
+        val lineIndent = countLeadingSpaces(lineText)
 
-        if (lineIndent >= contentIndent || (previousWasBlank && lineIndent > 0)) {
-          // Line belongs to this item
+        if (isPotentialNestedListItem(lineText, lineIndent)) {
+          // This is likely a nested list item - include it in this item
+          hasSeenContent = true
+
+          // If previous line was blank, we have a blank line between blocks
+          if (previousWasBlank) {
+            blankLinesBetweenBlocks = true
+          }
+
+          previousWasBlank = false
+          itemLines += line
+          count += 1
+          currentLines = currentLines.tail
+        } else if (lineIndent >= contentIndent || (previousWasBlank && lineIndent > 0)) {
+          // Line belongs to this item as content
           hasSeenContent = true
 
           // If previous line was blank, we have a blank line between blocks
@@ -266,34 +309,81 @@ object ListBlockParser extends BlockParser {
     (itemLines.toList, count, blankLinesBetweenBlocks)
   }
 
-  private def processItemText(
-      rawLines: List[String],
-      firstLine: String,
-      contentIndent: Int,
-  ): String = {
-    // First line: remove marker and appropriate spaces
-    val firstLineProcessed = if (firstLine.matches("^ {0,3}[-+*]\\s+.*$")) {
-      val m = UnorderedListMarker.findFirstMatchIn(firstLine).get
-      firstLine.substring(m.end(3)) // After marker and spaces
-    } else {
-      val m = OrderedListMarker.findFirstMatchIn(firstLine).get
-      firstLine.substring(m.end(4)) // After marker and spaces
-    }
+  // Helper function to determine if a line starts a list item at the specified indent level
+  private def isListItemStart(lineText: String, markerIndent: Int): Boolean = {
+    // For determining if a line starts a new list item at the same level as current list
+    val leadingIndent = countLeadingSpaces(lineText)
 
-    // Rest of lines: remove appropriate indentation
-    val restLinesProcessed = rawLines.tail.map { line =>
-      if (line.trim.isEmpty) {
-        "" // Blank line
+    if (leadingIndent != markerIndent) return false
+
+    UnorderedListMarker.findFirstMatchIn(lineText).exists { m =>
+      val indent = m.group(1).length
+      indent == markerIndent && m.group(3).nonEmpty // Marker followed by whitespace
+    } ||
+    OrderedListMarker.findFirstMatchIn(lineText).exists { m =>
+      val indent = m.group(1).length
+      indent == markerIndent && m.group(4).nonEmpty // Marker followed by whitespace
+    }
+  }
+
+  // Helper function to count leading spaces
+  private def countLeadingSpaces(text: String): Int = {
+    text.takeWhile(_ == ' ').length
+  }
+
+  private def processItemLines(
+      itemLines: List[LazyList[C]],
+      contentIndent: Int,
+      listData: ListData,
+  ): List[LazyList[C]] = {
+    // Process first line - remove marker and appropriate spaces
+    val lineText = itemLines.head.takeWhile(_.char != '\n').map(_.char).mkString
+    val firstLineProcessed =
+      if (listData.isOrdered) {
+        val m            = OrderedListMarker.findFirstMatchIn(lineText).get
+        val markerEndPos = m.end(4) // End position after marker and initial spaces
+        itemLines.head.drop(markerEndPos)
       } else {
-        // Remove up to contentIndent spaces
-        val actualIndent = line.takeWhile(_ == ' ').length
-        val removeCount  = Math.min(actualIndent, contentIndent)
-        line.substring(removeCount)
+        val m            = UnorderedListMarker.findFirstMatchIn(lineText).get
+        val markerEndPos = m.end(3) // End position after marker and initial spaces
+        itemLines.head.drop(markerEndPos)
+      }
+
+    // Process remaining lines - adjust indentation while preserving C objects
+    val restProcessed = itemLines.tail.map { line =>
+      if (isBlankLine(line)) {
+        line // Keep blank lines as-is
+      } else {
+        // Remove indentation up to contentIndent, preserving original C objects
+        removeIndentation(line, contentIndent)
       }
     }
 
-    // Combine all lines
-    (firstLineProcessed :: restLinesProcessed).mkString("\n")
+    firstLineProcessed :: restProcessed
+  }
+
+  // Helper method to remove indentation while preserving C objects
+  private def removeIndentation(line: LazyList[C], maxIndent: Int): LazyList[C] = {
+    var virtualCol    = 0
+    var pos           = 0
+    var continueWhile = true
+
+    // Count virtual columns until we reach maxIndent
+    while (continueWhile && pos < line.size && virtualCol < maxIndent) {
+      if (line(pos).char == ' ') {
+        virtualCol += 1
+      } else if (line(pos).char == '\t') {
+        // Tab advances to the next tab stop (multiples of 4)
+        virtualCol = (virtualCol + 4) & ~3
+      } else {
+        // Non-whitespace character - stop counting
+        continueWhile = false
+      }
+      pos += 1
+    }
+
+    // Return line with indentation removed
+    line.drop(pos)
   }
 
   private def isBlankLine(line: LazyList[C]): Boolean = {

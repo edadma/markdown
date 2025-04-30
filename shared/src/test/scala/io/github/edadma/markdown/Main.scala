@@ -22,13 +22,12 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |# Test
+      |* Asterisk item
+      |+ Plus item
+      |- Hyphen item
       |
-      |This uses [AngularJS] reference style.
-      |
-      |[//]: # (Comment line)
-      |
-      |   [AngularJS]: <http://angularjs.org>""".stripMargin
+      |1) Parenthesis item
+      |2) Another item""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
 //  val input =
