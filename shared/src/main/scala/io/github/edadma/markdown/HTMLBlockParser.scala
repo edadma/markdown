@@ -109,6 +109,7 @@ object HTMLBlockParser extends BlockParser {
   override def parse(
       lines: List[LazyList[C]],
       linkRefs: scala.collection.mutable.Map[String, LinkReference],
+      parentIndent: Int,
   ): (Block, Int) = {
 
     // 1. Turn one LazyList[C] into its String (dropping the trailing '\n')

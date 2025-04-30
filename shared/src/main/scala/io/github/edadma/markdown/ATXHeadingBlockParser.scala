@@ -25,7 +25,7 @@ object ATXHeadingBlockParser extends BlockParser {
     }
   }
 
-  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference], parentIndent: Int): (Block, Int) = {
     val line = lines.head
 
     // Count heading level (1-6 #s)

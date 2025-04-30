@@ -15,6 +15,7 @@ object LinkReferenceDefinitionParser extends BlockParser {
   def parse(
       lines: List[LazyList[C]],
       linkRefs: scala.collection.mutable.Map[String, LinkReference],
+      parentIndent: Int,
   ): (Block, Int) = {
     val line = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
 

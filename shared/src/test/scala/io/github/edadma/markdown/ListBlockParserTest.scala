@@ -211,40 +211,40 @@ class ListBlockParserTest extends AnyFlatSpec with Matchers {
     ))
   }
 
-//  it should "handle nested mixed list types" in {
-//    val input = """- Unordered item
-//                     |  1. Nested ordered 1
-//                     |  2. Nested ordered 2
-//                     |     - Deeply nested unordered""".stripMargin
-//    val document = parseDocumentContent(input)
-//
-//    document shouldBe Document(List(
-//      ListBlock(
-//        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true),
-//        List(
-//          ListItem(List(
-//            Paragraph(List(Text("Unordered item"))),
-//            ListBlock(
-//              ListData(isOrdered = true, startNumber = Some(1), delimiter = Some('.'), isTight = true),
-//              List(
-//                ListItem(List(Paragraph(List(Text("Nested ordered 1"))))),
-//                ListItem(List(
-//                  Paragraph(List(Text("Nested ordered 2"))),
-//                  ListBlock(
-//                    ListData(isOrdered = false, bulletChar = Some('-'), isTight = true),
-//                    List(
-//                      ListItem(List(Paragraph(List(Text("Deeply nested unordered"))))),
-//                    ),
-//                  ),
-//                )),
-//              ),
-//            ),
-//          )),
-//        ),
-//      ),
-//    ))
-//  }
-//
+  it should "handle nested mixed list types" in {
+    val input = """- Unordered item
+                  |  1. Nested ordered 1
+                  |  2. Nested ordered 2
+                  |     - Deeply nested unordered""".stripMargin
+    val document = parseDocumentContent(input)
+
+    document shouldBe Document(List(
+      ListBlock(
+        ListData(isOrdered = false, bulletChar = Some('-'), isTight = true, indent = 0),
+        List(
+          ListItem(List(
+            Paragraph(List(Text("Unordered item"))),
+            ListBlock(
+              ListData(isOrdered = true, startNumber = Some(1), delimiter = Some('.'), isTight = true, indent = 2),
+              List(
+                ListItem(List(Paragraph(List(Text("Nested ordered 1"))))),
+                ListItem(List(
+                  Paragraph(List(Text("Nested ordered 2"))),
+                  ListBlock(
+                    ListData(isOrdered = false, bulletChar = Some('-'), isTight = true, indent = 5),
+                    List(
+                      ListItem(List(Paragraph(List(Text("Deeply nested unordered"))))),
+                    ),
+                  ),
+                )),
+              ),
+            ),
+          )),
+        ),
+      ),
+    ))
+  }
+
 //  it should "handle code blocks in list items" in {
 //    val input = """- Item with code
 //                     |

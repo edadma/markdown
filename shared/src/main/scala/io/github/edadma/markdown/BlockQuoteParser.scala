@@ -18,6 +18,7 @@ object BlockQuoteParser extends BlockParser {
   def parse(
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
   ): (Block, Int) = {
 
     // Collect all lines that belong to this block quote

@@ -38,6 +38,7 @@ object ThematicBreakBlockParser extends BlockParser {
   def parse(
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
   ): (Block, Int) = {
     (ThematicBreak(), 1)
   }

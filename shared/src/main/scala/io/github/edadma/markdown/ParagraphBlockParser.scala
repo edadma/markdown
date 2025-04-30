@@ -14,6 +14,7 @@ object ParagraphBlockParser extends BlockParser {
   def parse(
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
   ): (Block, Int) = {
 
     // predicate: “this line still belongs to a paragraph”

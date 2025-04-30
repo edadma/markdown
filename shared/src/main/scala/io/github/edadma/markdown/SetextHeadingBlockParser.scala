@@ -24,7 +24,7 @@ object SetextHeadingBlockParser extends BlockParser {
     SetextLevel1Pattern.matches(secondLineText) || SetextLevel2Pattern.matches(secondLineText)
   }
 
-  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int) = {
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference], parentIndent: Int): (Block, Int) = {
     // Get the content from the first line
     val contentLine = lines.head
 

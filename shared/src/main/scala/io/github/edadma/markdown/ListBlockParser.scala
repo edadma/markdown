@@ -44,6 +44,7 @@ object ListBlockParser extends BlockParser {
   def parse(
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int = 0,
   ): (Block, Int) = {
     // Extract list type and properties from the first line
     val firstLineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
@@ -145,6 +146,7 @@ object ListBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int = 0,
   ): (ListItem, Int, Boolean) = {
     // Get indentation information from first line
     val (markerIndent, contentIndent) = getIndentation(lines.head, listData)
@@ -157,7 +159,15 @@ object ListBlockParser extends BlockParser {
     val processedLines = processItemLines(itemLines, contentIndent, listData)
 
     // Use the existing block parsing machinery directly, without creating a new document
-    val itemBlocks = processLines(processedLines, linkRefs)
+    val totalIndent = parentIndent + contentIndent
+
+    // Pass the total indent to any recursive list parsing
+    val itemBlocks = processLines(processedLines, linkRefs, totalIndent).map {
+      case nestedList: ListBlock =>
+        // Use the total combined indentation
+        nestedList.copy(data = nestedList.data.copy(indent = nestedList.data.indent + totalIndent))
+      case other => other
+    }
 
     // Create the list item with the parsed blocks
     (ListItem(itemBlocks), linesConsumed, hasBlanks)

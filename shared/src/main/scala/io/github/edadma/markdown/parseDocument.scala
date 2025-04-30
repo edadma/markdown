@@ -69,7 +69,7 @@ trait BlockParser {
     * @return
     *   a tuple of the parsed Block and the number of lines consumed
     */
-  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference]): (Block, Int)
+  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference], parentIndent: Int): (Block, Int)
 }
 
 val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
@@ -89,7 +89,8 @@ val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
 // Process lines to build blocks
 private def processLines(
     lines: List[LazyList[C]],
-    linkRefs: scala.collection.mutable.Map[String, LinkReference],
+    linkRefs: mutable.Map[String, LinkReference],
+    parentIndent: Int = 0,
 ): List[Block] = {
   val blocks         = new ListBuffer[Block]
   var remainingLines = lines
@@ -100,7 +101,7 @@ private def processLines(
     blockParsers.find(_.canStart(remainingLines)) match {
       case Some(parser) =>
         // Parse the block and update remaining lines
-        val (block, linesConsumed) = parser.parse(remainingLines, linkRefs)
+        val (block, linesConsumed) = parser.parse(remainingLines, linkRefs, parentIndent)
         if (block != null) {
           blocks.addOne(block)
         }
