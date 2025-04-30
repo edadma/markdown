@@ -51,7 +51,7 @@ object ListBlockParser extends BlockParser {
     val listData      = extractListData(firstLineText)
 
     // Collect list items and determine if the list is tight or loose
-    val (items, linesConsumed, hasBlanks) = collectListItems(lines, listData, linkRefs)
+    val (items, linesConsumed, hasBlanks) = collectListItems(lines, listData, linkRefs, parentIndent)
 
     // A list is loose if there are blank lines between items or items have multiple blocks
     val isTight = items.size == 1 || !hasBlanks
@@ -81,6 +81,7 @@ object ListBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int = 0,
   ): (List[ListItem], Int, Boolean) = {
     val items              = new mutable.ListBuffer[ListItem]
     var currentLines       = lines
@@ -90,7 +91,7 @@ object ListBlockParser extends BlockParser {
     // Process each list item
     while (currentLines.nonEmpty && isMatchingListItemStart(currentLines.head, listData)) {
       // Parse a single list item
-      val (item, linesConsumed, itemHasBlanks) = parseListItem(currentLines, listData, linkRefs)
+      val (item, linesConsumed, itemHasBlanks) = parseListItem(currentLines, listData, linkRefs, parentIndent)
 
       if (itemHasBlanks) {
         hasBlanks = true
