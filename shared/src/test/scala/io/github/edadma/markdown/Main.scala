@@ -22,9 +22,8 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- Item 1
-      |continuation without proper indentation
-      |- Item 2""".stripMargin
+      |  - Item with two spaces indentation
+      |   - Item with three spaces indentation""".stripMargin
   val (doc, refs) = parseDocumentContentWithRefs(input)
 
 //  val input =

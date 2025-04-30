@@ -214,6 +214,7 @@ object ListBlockParser extends BlockParser {
     var inItem                  = true
     var blankLinesBetweenBlocks = false
     var previousWasBlank        = false
+    var inParagraph             = true // Track if we're in a paragraph (for lazy continuation)
 
     // Track if we've seen a non-blank line after the marker
     val firstLineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
@@ -246,6 +247,8 @@ object ListBlockParser extends BlockParser {
       val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 
       if (isBlankLine(line)) {
+        inParagraph = false // Blank line ends paragraph
+
         // Handle a blank line
         itemLines += line
         count += 1
@@ -298,6 +301,8 @@ object ListBlockParser extends BlockParser {
           count += 1
           currentLines = currentLines.tail
         } else if (lineIndent >= contentIndent || (previousWasBlank && lineIndent > 0)) {
+          // Properly indented line - clearly part of this item
+          inParagraph = true // Start/continue paragraph
           // Line belongs to this item as content
           hasSeenContent = true
 
@@ -306,6 +311,13 @@ object ListBlockParser extends BlockParser {
             blankLinesBetweenBlocks = true
           }
 
+          previousWasBlank = false
+          itemLines += line
+          count += 1
+          currentLines = currentLines.tail
+        } else if (inParagraph) {
+          // Lazy continuation: include non-marker line if it continues a paragraph
+          inParagraph = true
           previousWasBlank = false
           itemLines += line
           count += 1
@@ -366,7 +378,15 @@ object ListBlockParser extends BlockParser {
         line // Keep blank lines as-is
       } else {
         // Remove indentation up to contentIndent, preserving original C objects
-        removeIndentation(line, contentIndent)
+        val lineIndent = countLeadingSpaces(line.takeWhile(_.char != '\n').map(_.char).mkString)
+
+        if (lineIndent < contentIndent) {
+          // This is a lazy continuation line - keep it as is
+          line
+        } else {
+          // Normal continuation line - remove indentation
+          removeIndentation(line, contentIndent)
+        }
       }
     }
 
