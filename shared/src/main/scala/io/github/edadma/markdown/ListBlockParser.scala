@@ -18,6 +18,7 @@ object ListBlockParser extends BlockParser {
   // Patterns for detecting list markers
   private val UnorderedListMarker = """^( {0,3})([-+*])(\s+)(.*)$""".r
   private val OrderedListMarker   = """^( {0,3})(\d{1,9})([.)])(\s+)(.*)$""".r
+  private val MaxIndentTolerance  = 1
 
   def canStart(lines: List[LazyList[C]]): Boolean = {
     if (lines.isEmpty) return false
@@ -129,7 +130,7 @@ object ListBlockParser extends BlockParser {
 
         // Same bullet character and indentation within reasonable range
         bulletChar == listData.bulletChar.get &&
-        math.abs(leading - listData.indent) <= 3
+        leading >= listData.indent && leading <= listData.indent + MaxIndentTolerance
       }
     } else {
       // For ordered lists, allow similar indentation flexibility
@@ -138,7 +139,7 @@ object ListBlockParser extends BlockParser {
         val delimiter = m.group(3).charAt(0)
 
         delimiter == listData.delimiter.get &&
-        math.abs(leading - listData.indent) <= 3
+        leading >= listData.indent && leading <= listData.indent + MaxIndentTolerance
       }
     }
   }
@@ -206,15 +207,21 @@ object ListBlockParser extends BlockParser {
       contentIndent: Int,
       listData: ListData,
   ): (List[LazyList[C]], Int, Boolean) = {
-    def isSameListItem(line: String, markerIndent: Int): Boolean = {
+    def isSameListItem(line: String, markerIndent: Int, listData: ListData): Boolean = {
       val lineIndent = countLeadingSpaces(line)
-      // If indentation is within 3 spaces of the original list marker indent,
-      // and it matches the list marker type, consider it the same list level
-      math.abs(lineIndent - markerIndent) <= 3 && isListMarker(line) &&
+
+      // Only treat as same-level if indent is between markerIndent .. markerIndent+3
+      lineIndent >= markerIndent &&
+      lineIndent <= markerIndent + MaxIndentTolerance &&
+      isListMarker(line) &&
       (if (!listData.isOrdered)
-         UnorderedListMarker.findFirstMatchIn(line).exists(_.group(2).charAt(0) == listData.bulletChar.get)
+         UnorderedListMarker
+           .findFirstMatchIn(line)
+           .exists(_.group(2).charAt(0) == listData.bulletChar.get)
        else
-         OrderedListMarker.findFirstMatchIn(line).exists(_.group(3).charAt(0) == listData.delimiter.get))
+         OrderedListMarker
+           .findFirstMatchIn(line)
+           .exists(_.group(3).charAt(0) == listData.delimiter.get))
     }
 
     val itemLines = new mutable.ListBuffer[LazyList[C]]
@@ -298,7 +305,7 @@ object ListBlockParser extends BlockParser {
         // Regular content line - check if it belongs to this item
         val lineIndent = countLeadingSpaces(lineText)
 
-        if (isSameListItem(lineText, markerIndent)) {
+        if (isSameListItem(lineText, markerIndent, listData)) {
           // This is a new item at the SAME list level - end current item
           inItem = false
         } else if (isPotentialNestedListItem(lineText, lineIndent)) {
