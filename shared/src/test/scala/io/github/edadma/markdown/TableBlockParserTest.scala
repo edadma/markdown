@@ -4,13 +4,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class TableBlockParserTest extends AnyFlatSpec with Matchers {
+  private val config = MarkdownConfig.withExtensions(tables = true)
 
   "The table block parser" should "parse a basic table" in {
     val input = """| Header 1 | Header 2 |
                    || -------- | -------- |
                    || Cell 1   | Cell 2   |
                    || Cell 3   | Cell 4   |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -38,7 +39,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
                   |--------- | ---------
                   |Cell 1 | Cell 2
                   |Cell 3 | Cell 4""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -65,7 +66,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
     val input = """| Left | Center | Right | Default |
                    || :--- | :----: | ----: | ------- |
                    || L1   | C1     | R1    | D1      |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -92,7 +93,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
     val input = """| *Emphasized* | **Strong** |
                    || ------------ | ---------- |
                    || `Code`       | [Link](url) |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -116,7 +117,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
                    || -------- | -------- |
                    ||          | Cell 2   |
                    || Cell 3   |          |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -144,7 +145,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
                    || -------- | -------- | -------- |
                    || Row 1 Only One Cell |
                    || Cell 1 | Cell 2 | Cell 3 | Extra |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -172,7 +173,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
   it should "handle tables with just a header row" in {
     val input = """| Header 1 | Header 2 |
                    || -------- | -------- |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Table(
@@ -191,7 +192,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
                   || Header 1 | Header 2 |
                   || Not a proper delimiter |
                   || Cell 1   | Cell 2   |""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Paragraph(List(
@@ -212,7 +213,7 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
                   || Cell 1   | Cell 2   |
 
                   |Paragraph after.""".stripMargin
-    val document = parseDocumentContent(input)
+    val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
       Paragraph(List(Text("Paragraph before."))),
@@ -231,5 +232,19 @@ class TableBlockParserTest extends AnyFlatSpec with Matchers {
       ),
       Paragraph(List(Text("Paragraph after."))),
     ))
+  }
+
+  it should "ignore tables when the feature is disabled" in {
+    val input =
+      """| Header 1 | Header 2 |
+         |---|---|
+         | Cell 1 | Cell 2 |""".stripMargin
+
+    // Use default config (tables disabled)
+    val config   = MarkdownConfig.default
+    val document = parseDocumentContent(input, config)
+
+    // Should be parsed as a paragraph instead of a table
+    document.children.head shouldBe a[Paragraph]
   }
 }

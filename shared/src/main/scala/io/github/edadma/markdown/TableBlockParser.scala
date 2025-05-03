@@ -7,7 +7,8 @@ object TableBlockParser extends BlockParser {
   val name: String = "table blocks"
 
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
-    if (lines.size < 2) return false
+    if (!config.enableTables) return false
+    if (lines.isEmpty || lines.tail.isEmpty) return false
 
     val firstLine  = lineToString(lines.head)
     val secondLine = lineToString(lines(1))
