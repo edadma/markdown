@@ -3,32 +3,32 @@ package io.github.edadma.markdown
 import pprint.pprintln
 
 trait Node {
-  def processInlines(linkRefs: Map[String, LinkReference]): Node = this
+  def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Node = this
 }
 
 // Document delegates to its children
 case class Document(children: List[Block]) extends Node {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Document =
-    Document(children.map(_.processInlines(linkRefs)))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Document =
+    Document(children.map(_.processInlines(linkRefs, config)))
 }
 
 trait Block extends Node {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block = this
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = this
 }
 
 case class Paragraph(inlines: List[Inline]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Paragraph =
-    Paragraph(parseInline(inlines, linkRefs))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Paragraph =
+    Paragraph(parseInline(inlines, linkRefs, config))
 }
 
 case class Heading(level: Int, inlines: List[Inline]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Heading =
-    Heading(level, parseInline(inlines, linkRefs))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Heading =
+    Heading(level, parseInline(inlines, linkRefs, config))
 }
 
 case class BlockQuote(children: List[Block]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): BlockQuote =
-    BlockQuote(children.map(_.processInlines(linkRefs)))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): BlockQuote =
+    BlockQuote(children.map(_.processInlines(linkRefs, config)))
 }
 
 case class Code(content: String, infoString: Option[String] = None) extends Block
@@ -39,40 +39,40 @@ enum TableAlignment:
   case Left, Center, Right, None
 
 case class TableCell(content: List[Inline]) extends Block:
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
-    TableCell(parseInline(content, linkRefs))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
+    TableCell(parseInline(content, linkRefs, config))
   }
 
 case class TableRow(cells: List[TableCell]) extends Block:
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block =
-    TableRow(cells.map(_.processInlines(linkRefs).asInstanceOf[TableCell]))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block =
+    TableRow(cells.map(_.processInlines(linkRefs, config).asInstanceOf[TableCell]))
 
 case class Table(
     headerRow: TableRow,
     rows: List[TableRow],
     alignments: List[TableAlignment],
 ) extends Block:
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block =
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block =
     Table(
-      headerRow.processInlines(linkRefs).asInstanceOf[TableRow],
-      rows.map(_.processInlines(linkRefs).asInstanceOf[TableRow]),
+      headerRow.processInlines(linkRefs, config).asInstanceOf[TableRow],
+      rows.map(_.processInlines(linkRefs, config).asInstanceOf[TableRow]),
       alignments,
     )
 
 case class ListItem(content: List[Block]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
-    ListItem(content.map(_.processInlines(linkRefs)))
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
+    ListItem(content.map(_.processInlines(linkRefs, config)))
   }
 }
 
 case class ListBlock(data: ListData, items: List[ListItem]) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference]): Block = {
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
 
     pprintln(linkRefs)
-    pprintln(items.head.content.head.processInlines(linkRefs))
+    pprintln(items.head.content.head.processInlines(linkRefs, config))
     ListBlock(
       data,
-      items.map(item => ListItem(item.content.map(_.processInlines(linkRefs)))),
+      items.map(item => ListItem(item.content.map(_.processInlines(linkRefs, config)))),
     )
   }
 }

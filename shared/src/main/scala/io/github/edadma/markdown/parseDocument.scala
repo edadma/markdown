@@ -11,7 +11,7 @@ def parseDocument(
   val blocks        = parseBlocks(stream, linkRefs, config)
   val immutableRefs = linkRefs.toMap // Convert to immutable map
 
-  (Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs))), immutableRefs)
+  (Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs, config))), immutableRefs)
 }
 
 def extractHeaders(document: Document): List[(Int, String)] = {

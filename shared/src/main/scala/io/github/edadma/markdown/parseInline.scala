@@ -14,7 +14,11 @@ case class DelimiterInfo(
     canClose: Boolean,            // Whether this can close emphasis/links
 )
 
-def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkReference]): List[Inline] = {
+def parseInline(
+    inlines: List[Inline],
+    linkRefs: immutable.Map[String, LinkReference],
+    config: MarkdownConfig,
+): List[Inline] = {
   val inlineNodes    = DLList[Inline](inlines*)
   val delimiterStack = new mutable.Stack[DelimiterInfo]
 
@@ -91,7 +95,7 @@ def parseInline(inlines: List[Inline], linkRefs: immutable.Map[String, LinkRefer
             case ']' =>
               // Look for link or image
               logger.debug(s"Found closing bracket, looking for link or image")
-              current = lookForLinkOrImage(current, inlineNodes, delimiterStack, linkRefs)
+              current = lookForLinkOrImage(current, inlineNodes, delimiterStack, linkRefs, config)
 
             case '\n' =>
               // Process line break
@@ -1125,6 +1129,7 @@ def lookForLinkOrImage(
     inlineNodes: DLList[Inline],
     delimiterStack: mutable.Stack[DelimiterInfo],
     linkRefs: immutable.Map[String, LinkReference],
+    config: MarkdownConfig,
 ): DLListNode[Inline] = {
   logger.debug(s"lookForLinkOrImage at node: ${current.element}")
 
@@ -1168,25 +1173,25 @@ def lookForLinkOrImage(
   // Case 1: Inline link/image [foo](url "title")
   if (isInlineLinkStart(next)) {
     logger.debug("Detected inline link/image")
-    processInlineLink(openerInfo, current, next, isImage, delimiterStack)
+    processInlineLink(openerInfo, current, next, isImage, delimiterStack, config)
   }
 
   // Case 2: Full reference link/image [foo][bar]
   else if (isFullReferenceLinkStart(next)) {
     logger.debug("Detected full reference link/image")
-    processReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs)
+    processReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
   }
 
   // Case 3: Collapsed reference link/image [foo][]
   else if (isCollapsedReferenceLinkStart(next)) {
     logger.debug("Detected collapsed reference link/image")
-    processCollapsedReferenceLink(openerInfo, current, next, isImage, inlineNodes, delimiterStack, linkRefs)
+    processCollapsedReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
   }
 
   // Case 4: Shortcut reference link/image [foo]
   else {
     logger.debug("Checking for shortcut reference link/image")
-    processShortcutReferenceLink(openerInfo, current, isImage, delimiterStack, linkRefs)
+    processShortcutReferenceLink(openerInfo, current, isImage, delimiterStack, linkRefs, config)
   }
 }
 
@@ -1242,6 +1247,7 @@ private def processInlineLink(
     openParen: DLListNode[Inline],
     isImage: Boolean,
     delimiterStack: mutable.Stack[DelimiterInfo],
+    config: MarkdownConfig,
 ): DLListNode[Inline] = {
   logger.debug("Processing inline link")
 
@@ -1259,7 +1265,7 @@ private def processInlineLink(
   val linkText = extractInlinesBetween(opener.node.following, closeBracket)
 
   // Process emphasis and other formatting within the link text
-  val processedLinkText = parseInline(linkText, Map())
+  val processedLinkText = parseInline(linkText, Map(), config)
 
   val linkNode = if (isImage)
     Image(destination, title, processedLinkText)
@@ -1474,6 +1480,7 @@ private def processReferenceLink(
     isImage: Boolean,
     delimiterStack: mutable.Stack[DelimiterInfo],
     linkRefs: immutable.Map[String, LinkReference],
+    config: MarkdownConfig,
 ): DLListNode[Inline] = {
   logger.debug("Processing reference link")
 
@@ -1502,7 +1509,7 @@ private def processReferenceLink(
   val linkText = extractInlinesBetween(opener.node.following, closeBracket)
 
   // Process emphasis within the link text (with stack_bottom = opener)
-  val processedLinkText = parseInline(linkText, Map())
+  val processedLinkText = parseInline(linkText, Map(), config)
 
   val linkNode = if (isImage)
     Image(reference.get.destination, reference.get.title, processedLinkText)
@@ -1536,9 +1543,9 @@ private def processCollapsedReferenceLink(
     closeBracket: DLListNode[Inline],
     labelStart: DLListNode[Inline],
     isImage: Boolean,
-    inlineNodes: DLList[Inline],
     delimiterStack: mutable.Stack[DelimiterInfo],
     linkRefs: immutable.Map[String, LinkReference],
+    config: MarkdownConfig,
 ): DLListNode[Inline] = {
   logger.debug("Processing collapsed reference link")
 
@@ -1561,7 +1568,7 @@ private def processCollapsedReferenceLink(
   }
 
   // Process emphasis within the link text (with stack_bottom = opener)
-  val processedLinkText = parseInline(linkText, Map())
+  val processedLinkText = parseInline(linkText, Map(), config)
 
   val linkNode = if (isImage)
     Image(reference.get.destination, reference.get.title, processedLinkText)
@@ -1596,6 +1603,7 @@ private def processShortcutReferenceLink(
     isImage: Boolean,
     delimiterStack: mutable.Stack[DelimiterInfo],
     linkRefs: immutable.Map[String, LinkReference],
+    config: MarkdownConfig,
 ): DLListNode[Inline] = {
   logger.debug("Processing shortcut reference link")
 
@@ -1615,7 +1623,7 @@ private def processShortcutReferenceLink(
   }
 
   // Process emphasis within the link text (with stack_bottom = opener)
-  val processedLinkText = parseInline(linkText, Map())
+  val processedLinkText = parseInline(linkText, Map(), config)
 
   val linkNode = if (isImage)
     Image(reference.get.destination, reference.get.title, processedLinkText)
