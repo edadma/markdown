@@ -10,6 +10,7 @@ IndentedCodeBlockParser.scala
 InputReader.scala
 LinkReferenceDefinitionParser.scala
 ListBlockParser.scala
+MarkdownConfig.scala
 Node.scala
 package.scala
 ParagraphBlockParser.scala
