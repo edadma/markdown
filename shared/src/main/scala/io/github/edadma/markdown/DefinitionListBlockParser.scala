@@ -28,7 +28,7 @@ object DefinitionListBlockParser extends BlockParser {
       config: MarkdownConfig,
   ): (Block, Int) = {
     // Parse definition list items recursively
-    parseItems(lines, Nil, 0) match {
+    parseItems(lines, Nil, 0, linkRefs, parentIndent, config) match {
       case (items, consumed) if items.nonEmpty =>
         (DefinitionListBlock(items), consumed)
       case _ =>
@@ -42,6 +42,9 @@ object DefinitionListBlockParser extends BlockParser {
       lines: LazyList[List[C]],
       items: List[(List[Inline], List[Block])],
       consumed: Int,
+      linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
+      config: MarkdownConfig,
   ): (List[(List[Inline], List[Block])], Int) = {
     if (lines.isEmpty) {
       return (items, consumed)
@@ -58,7 +61,7 @@ object DefinitionListBlockParser extends BlockParser {
     val term = lines.head.takeWhile(_.char != '\n').toList
 
     // Look for definitions
-    val (defs, defLines) = parseDefinitions(lines.tail)
+    val (defs, defLines) = parseDefinitions(lines.tail, linkRefs, parentIndent, config)
 
     if (defs.isEmpty) {
       // No definitions found - not a valid definition list item
@@ -76,10 +79,18 @@ object DefinitionListBlockParser extends BlockParser {
       lines.drop(1 + defLines), // Drop term + definitions
       items :+ (term, defs),    // Add new item
       consumed + 1 + defLines,  // Update consumed lines count
+      linkRefs,
+      parentIndent,
+      config,
     )
   }
 
-  private def parseDefinitions(lines: LazyList[List[C]]): (List[Block], Int) = {
+  private def parseDefinitions(
+      lines: LazyList[List[C]],
+      linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
+      config: MarkdownConfig,
+  ): (List[Block], Int) = {
     @scala.annotation.tailrec
     def loop(
         currentLines: LazyList[List[C]],
@@ -95,8 +106,19 @@ object DefinitionListBlockParser extends BlockParser {
 
       if (text.startsWith(":")) {
         // Definition line - extract content after the colon
-        val content = text.substring(text.indexOf(':') + 1).trim
-        val newDef  = Paragraph(List(Text(content)))
+        val colonIndex   = text.indexOf(':')
+        val contentStart = colonIndex + 1
+
+        // Extract the actual cursors for the content, not just the string
+        // This allows inline formatting to be preserved
+        val rawLine = line.takeWhile(_.char != '\n')
+
+        // Skip the colon and any whitespace after it
+        val contentCursors = rawLine.drop(rawLine.indexWhere(_.char == ':') + 1)
+          .dropWhile(c => c.char == ' ' || c.char == '\t')
+
+        // Create a paragraph with the raw cursors
+        val newDef = Paragraph(contentCursors.toList)
 
         // Continue to next line
         loop(currentLines.tail, defs :+ newDef, consumed + 1)
