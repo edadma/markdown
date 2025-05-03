@@ -66,7 +66,7 @@ def renderToHTML(node: Node): String = node match {
     } else ""
 
     s"<table>\n$headerHTML\n$bodyHTML\n</table>"
-  case DefinitionList(items) =>
+  case DefinitionListBlock(items) =>
     val sb = new StringBuilder("<dl>\n")
 
     items.foreach { case (term, definitions) =>

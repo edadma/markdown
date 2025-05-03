@@ -2,7 +2,7 @@ package io.github.edadma.markdown
 
 import scala.collection.mutable
 
-object DefinitionListParser extends BlockParser {
+object DefinitionListBlockParser extends BlockParser {
   val name: String = "definition lists"
 
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
@@ -30,7 +30,7 @@ object DefinitionListParser extends BlockParser {
     // Parse definition list items recursively
     parseItems(lines, Nil, 0) match {
       case (items, consumed) if items.nonEmpty =>
-        (DefinitionList(items), consumed)
+        (DefinitionListBlock(items), consumed)
       case _ =>
         // No valid definition list found
         (null, 0)

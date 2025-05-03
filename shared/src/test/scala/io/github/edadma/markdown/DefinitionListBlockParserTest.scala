@@ -3,7 +3,7 @@ package io.github.edadma.markdown
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class DefinitionListParserTest extends AnyFlatSpec with Matchers {
+class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
 
   "The definition list parser" should "parse a simple definition list" in {
     val input = """Term 1
@@ -17,7 +17,7 @@ class DefinitionListParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
-      DefinitionList(List(
+      DefinitionListBlock(List(
         (List(Text("Term 1")), List(Paragraph(List(Text("Definition 1"))))),
         (List(Text("Term 2")), List(Paragraph(List(Text("Definition 2"))))),
       )),
@@ -34,7 +34,7 @@ class DefinitionListParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
-      DefinitionList(List(
+      DefinitionListBlock(List(
         (
           List(Text("Term 1")),
           List(
@@ -78,7 +78,7 @@ class DefinitionListParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
-      DefinitionList(List(
+      DefinitionListBlock(List(
         (
           List(Text("Term 1")),
           List(
@@ -104,7 +104,7 @@ class DefinitionListParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
-      DefinitionList(List(
+      DefinitionListBlock(List(
         (
           List(Emphasis(List(Text("Emphasized Term")))),
           List(
@@ -132,7 +132,7 @@ class DefinitionListParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       Heading(1, List(Text("Heading"))),
-      DefinitionList(List(
+      DefinitionListBlock(List(
         (List(Text("Term 1")), List(Paragraph(List(Text("Definition 1"))))),
       )),
       BlockQuote(List(
