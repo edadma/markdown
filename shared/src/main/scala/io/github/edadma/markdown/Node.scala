@@ -74,7 +74,13 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block {
   }
 }
 
-case class DefinitionList(items: List[(List[Inline], List[Block])]) extends Block
+case class DefinitionList(items: List[(List[Inline], List[Block])]) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
+    DefinitionList(items.map { case (term, defs) =>
+      (parseInline(term, linkRefs, config), defs.map(_.processInlines(linkRefs, config)))
+    })
+  }
+}
 
 sealed trait Inline                                                                 extends Node
 case class Text(content: String)                                                    extends Inline

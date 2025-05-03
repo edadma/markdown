@@ -89,6 +89,7 @@ val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
   ATXHeadingBlockParser,
   HTMLBlockParser,
   TableBlockParser,
+  DefinitionListParser,
   IndentedCodeBlockParser,
   FencedCodeBlockParser,
   BlockQuoteParser,

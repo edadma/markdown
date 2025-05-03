@@ -22,11 +22,9 @@ import io.github.edadma.logger.LogLevel
 
   val input =
     """
-      |- Item 1
-      |  - Nested 1.1
-      |  - Nested 1.2
-      |- Item 2""".stripMargin
-  val (doc, refs) = parseDocumentContentWithRefs(input)
+      |*Emphasized Term*
+      |: Definition with **strong** text""".stripMargin
+  val (doc, refs) = parseDocumentContentWithRefs(input, MarkdownConfig.withExtensions(definitionLists = true))
 
 //  val input =
 //    """
@@ -34,9 +32,9 @@ import io.github.edadma.logger.LogLevel
 //      |- """.stripMargin
 //  val (doc, refs) = parseDocumentContentWithRefs(input)
 
-  pprintln(refs)
+//  pprintln(refs)
   pprintln(doc)
-//  println(renderToHTML(doc))
+  println(renderToHTML(doc))
 
 //  pprintln(extractHeaders(doc))
 

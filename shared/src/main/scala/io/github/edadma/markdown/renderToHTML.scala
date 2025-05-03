@@ -1,16 +1,20 @@
 package io.github.edadma.markdown
 
-def renderToHTML(md: String): String = renderToHTML(parseDocumentContent(md))
+def renderToHTML(md: String, config: MarkdownConfig = MarkdownConfig.default): String =
+  renderToHTML(parseDocumentContent(md, config))
 
-def parseDocumentContent(input: String): Document =
-  val (document, _) = parseDocumentContentWithRefs(input)
+def parseDocumentContent(input: String, config: MarkdownConfig = MarkdownConfig.default): Document =
+  val (document, _) = parseDocumentContentWithRefs(input, config)
 
   document
 
-def parseDocumentContentWithRefs(input: String): (Document, Map[String, LinkReference]) =
+def parseDocumentContentWithRefs(
+    input: String,
+    config: MarkdownConfig = MarkdownConfig.default,
+): (Document, Map[String, LinkReference]) =
   val reader = new InputReader(input)
 
-  parseDocument(reader.stream)
+  parseDocument(reader.stream, config)
 
 def renderToHTML(node: Node): String = node match {
   case Document(children)      => children.map(renderToHTML).mkString("\n")
@@ -62,6 +66,21 @@ def renderToHTML(node: Node): String = node match {
     } else ""
 
     s"<table>\n$headerHTML\n$bodyHTML\n</table>"
+  case DefinitionList(items) =>
+    val sb = new StringBuilder("<dl>\n")
+
+    items.foreach { case (term, definitions) =>
+      sb.append("  <dt>").append(renderInlines(term)).append("</dt>\n")
+
+      definitions.foreach { defBlock =>
+        sb.append("  <dd>\n")
+        sb.append(renderToHTML(defBlock))
+        sb.append("  </dd>\n")
+      }
+    }
+
+    sb.append("</dl>")
+    sb.toString
   case n: Inline => sys.error(s"inline node in block position: '$n'")
 }
 
