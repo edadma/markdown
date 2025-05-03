@@ -6,7 +6,7 @@ import scala.language.postfixOps
 object ATXHeadingBlockParser extends BlockParser {
   val name: String = "ATX headings"
 
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     val line =
@@ -26,7 +26,7 @@ object ATXHeadingBlockParser extends BlockParser {
   }
 
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,

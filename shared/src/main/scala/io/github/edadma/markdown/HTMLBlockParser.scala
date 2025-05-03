@@ -85,10 +85,10 @@ object HTMLBlockParser extends BlockParser {
   // 7: any other <tag…> or </tag>
   private val genericTagPattern = """^</?[A-Za-z][A-Za-z0-9\-]*(\s+[^>]*)?>\s*$""".r
 
-  private def text(line: LazyList[C]) =
+  private def text(line: List[C]) =
     line.takeWhile(_.char != '\n').map(_.char).mkString
 
-  override def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = lines.headOption.exists { line =>
+  override def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = lines.headOption.exists { line =>
     val t  = text(line).trim
     val lc = t.toLowerCase
 
@@ -107,14 +107,14 @@ object HTMLBlockParser extends BlockParser {
   }
 
   override def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: scala.collection.mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
   ): (Block, Int) = {
 
     // 1. Turn one LazyList[C] into its String (dropping the trailing '\n')
-    def text(line: LazyList[C]): String =
+    def text(line: List[C]): String =
       line.takeWhile(_.char != '\n').map(_.char).mkString
 
     // 2. Consume up to (and including) the first line containing `close`,

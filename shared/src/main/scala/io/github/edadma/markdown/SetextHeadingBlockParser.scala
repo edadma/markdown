@@ -9,7 +9,7 @@ object SetextHeadingBlockParser extends BlockParser {
   private val SetextLevel1Pattern = """^ {0,3}=+[ \t]*$""".r // Level 1 with =
   private val SetextLevel2Pattern = """^ {0,3}-+[ \t]*$""".r // Level 2 with -
 
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.size < 2) return false
 
     // Need at least two lines - content and underline
@@ -25,7 +25,7 @@ object SetextHeadingBlockParser extends BlockParser {
   }
 
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
@@ -46,12 +46,12 @@ object SetextHeadingBlockParser extends BlockParser {
   }
 
   // Helper function to check for blank lines
-  private def isBlankLine(line: LazyList[C]): Boolean = {
+  private def isBlankLine(line: List[C]): Boolean = {
     line.forall(c => c.char == ' ' || c.char == '\t' || c.char == '\n')
   }
 
   // Helper function to convert line to string
-  private def lineToString(line: LazyList[C]): String = {
+  private def lineToString(line: List[C]): String = {
     line.takeWhile(_.char != '\n').map(_.char).mkString
   }
 }

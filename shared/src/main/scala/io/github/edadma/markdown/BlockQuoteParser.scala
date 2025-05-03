@@ -1,11 +1,12 @@
 package io.github.edadma.markdown
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 object BlockQuoteParser extends BlockParser {
   val name: String = "block quotes"
 
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     // A block quote starts with a > character (possibly after up to 3 spaces of indentation)
@@ -16,7 +17,7 @@ object BlockQuoteParser extends BlockParser {
   }
 
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
@@ -35,8 +36,8 @@ object BlockQuoteParser extends BlockParser {
   }
 
   /** Collects all lines that belong to the block quote, handling lazy continuation */
-  private def collectBlockQuoteLines(lines: List[LazyList[C]]): (List[LazyList[C]], Int) = {
-    var result             = List.empty[LazyList[C]]
+  private def collectBlockQuoteLines(lines: LazyList[List[C]]): (LazyList[List[C]], Int) = {
+    var result             = new ListBuffer[List[C]]
     var count              = 0
     var currentLines       = lines
     var inParagraph        = false
@@ -76,11 +77,11 @@ object BlockQuoteParser extends BlockParser {
       }
     }
 
-    (result, count)
+    (LazyList.from(result.toList), count)
   }
 
   /** Process block quote content by removing the > markers */
-  private def processBlockQuoteContent(lines: List[LazyList[C]]): List[LazyList[C]] = {
+  private def processBlockQuoteContent(lines: LazyList[List[C]]): LazyList[List[C]] = {
     lines.map { line =>
       val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 

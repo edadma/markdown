@@ -6,28 +6,28 @@ import scala.collection.mutable
 object ParagraphBlockParser extends BlockParser {
   val name: String = "paragraph blocks"
 
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     // A paragraph can start with any non-blank line
     !isBlankLine(lines.head) && !ATXHeadingBlockParser.canStart(lines, config)
   }
 
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
   ): (Block, Int) = {
 
     // predicate: “this line still belongs to a paragraph”
-    def isParaLine(line: LazyList[C]): Boolean =
+    def isParaLine(line: List[C]): Boolean =
       !isBlankLine(line) &&
-        !ATXHeadingBlockParser.canStart(List(line), config) &&
-        !ThematicBreakBlockParser.canStart(List(line), config) &&
-        !HTMLBlockParser.canStart(List(line), config) &&
-        !IndentedCodeBlockParser.canStart(List(line), config) &&
-        !FencedCodeBlockParser.canStart(List(line), config) &&
-        !BlockQuoteParser.canStart(List(line), config) &&
-        !ListBlockParser.canStart(List(line), config)
+        !ATXHeadingBlockParser.canStart(LazyList(line), config) &&
+        !ThematicBreakBlockParser.canStart(LazyList(line), config) &&
+        !HTMLBlockParser.canStart(LazyList(line), config) &&
+        !IndentedCodeBlockParser.canStart(LazyList(line), config) &&
+        !FencedCodeBlockParser.canStart(LazyList(line), config) &&
+        !BlockQuoteParser.canStart(LazyList(line), config) &&
+        !ListBlockParser.canStart(LazyList(line), config)
 
     // split into the leading paragraph lines, and the remainder
     val (paraLines, rest) = lines.span(isParaLine)
@@ -41,7 +41,7 @@ object ParagraphBlockParser extends BlockParser {
     val content: List[Inline] =
       if (paraLines.nonEmpty) {
         // Start with all lines flattened
-        val allChars = paraLines.flatten
+        val allChars = paraLines.flatten.toList
 
         // Remove the last character if it's a newline
         if (allChars.lastOption.exists(_.char == '\n'))
@@ -57,7 +57,7 @@ object ParagraphBlockParser extends BlockParser {
 }
 
 // Function to check if a line is blank
-private def isBlankLine(line: LazyList[C]): Boolean = {
+private def isBlankLine(line: List[C]): Boolean = {
   // A blank line contains only whitespace or is empty (excluding newline)
   val contentChars = line.filter(_.char != '\n')
   contentChars.isEmpty || contentChars.forall(c => c.char == ' ' || c.char == '\t')

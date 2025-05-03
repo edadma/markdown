@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 object TableBlockParser extends BlockParser {
   val name: String = "table blocks"
 
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.size < 2) return false
 
     val firstLine  = lineToString(lines.head)
@@ -17,7 +17,7 @@ object TableBlockParser extends BlockParser {
   }
 
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
@@ -43,7 +43,7 @@ object TableBlockParser extends BlockParser {
   }
 
   // Convert a single line to a string for simple operations
-  private def lineToString(line: LazyList[C]): String =
+  private def lineToString(line: List[C]): String =
     line.takeWhile(_.char != '\n').map(_.char).mkString
 
   // Check if a line is a delimiter row (contains only -, |, :, and whitespace)
@@ -62,12 +62,12 @@ object TableBlockParser extends BlockParser {
   }
 
   // Check if a line is a table row (contains pipe character)
-  private def isTableRow(line: LazyList[C]): Boolean = {
+  private def isTableRow(line: List[C]): Boolean = {
     lineToString(line).contains('|')
   }
 
   // Parse cells from a line of cursors
-  private def parseCellsFromLine(line: LazyList[C]): List[TableCell] = {
+  private def parseCellsFromLine(line: List[C]): List[TableCell] = {
     val lineContent = line.takeWhile(_.char != '\n').toList
 
     if (lineContent.isEmpty) return List()

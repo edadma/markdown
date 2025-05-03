@@ -6,7 +6,7 @@ object ThematicBreakBlockParser extends BlockParser {
   val name: String = "thematic breaks"
 
   /** Can this parser start on the very first line in `lines`? */
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     // Grab the raw line (without the trailing newline)
@@ -36,7 +36,7 @@ object ThematicBreakBlockParser extends BlockParser {
 
   /** Parse a thematic break (always consumes exactly 1 line). */
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,

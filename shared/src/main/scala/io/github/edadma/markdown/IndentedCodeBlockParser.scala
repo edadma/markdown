@@ -8,7 +8,7 @@ object IndentedCodeBlockParser extends BlockParser {
   /** Check if the first line in `lines` can start an indented code block. An indented code block starts with a line
     * indented with at least 4 spaces (or 1 tab) and cannot interrupt a paragraph.
     */
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     val line = lines.head
@@ -24,7 +24,7 @@ object IndentedCodeBlockParser extends BlockParser {
     * non-blank line is found.
     */
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
@@ -90,7 +90,7 @@ object IndentedCodeBlockParser extends BlockParser {
 
   /** Count the virtual indent (in spaces) at the beginning of a line
     */
-  private def countVirtualIndent(line: LazyList[C]): Int = {
+  private def countVirtualIndent(line: List[C]): Int = {
     var virtualCol = 0
     var i          = 0
 
@@ -109,7 +109,7 @@ object IndentedCodeBlockParser extends BlockParser {
 
   /** Remove exactly n spaces worth of indentation from a line Returns the remainder of the line as a string
     */
-  private def removeIndent(line: LazyList[C], spacesToRemove: Int): String = {
+  private def removeIndent(line: List[C], spacesToRemove: Int): String = {
     var virtualCol = 0
     var i          = 0
 
@@ -130,13 +130,13 @@ object IndentedCodeBlockParser extends BlockParser {
 
   /** Check if a line is blank (contains only whitespace or is empty)
     */
-  private def isBlankLine(line: LazyList[C]): Boolean = {
+  private def isBlankLine(line: List[C]): Boolean = {
     line.takeWhile(_.char != '\n').forall(c => c.char == ' ' || c.char == '\t')
   }
 
   /** Check if a line would be blank after removing the given indent
     */
-  private def isBlankAfterIndent(line: LazyList[C], indent: Int): Boolean = {
+  private def isBlankAfterIndent(line: List[C], indent: Int): Boolean = {
     var virtualCol = 0
     var i          = 0
 

@@ -62,7 +62,7 @@ trait BlockParser {
     * @return
     *   true if this parser should handle the first line
     */
-  def canStart(line: List[LazyList[C]], config: MarkdownConfig): Boolean
+  def canStart(line: LazyList[List[C]], config: MarkdownConfig): Boolean
 
   /** Parse a block starting at the head of `lines`.
     *
@@ -74,7 +74,7 @@ trait BlockParser {
     *   a tuple of the parsed Block and the number of lines consumed
     */
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
@@ -97,7 +97,7 @@ val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
 
 // Process lines to build blocks
 private def processLines(
-    lines: List[LazyList[C]],
+    lines: LazyList[List[C]],
     linkRefs: mutable.Map[String, LinkReference],
     parentIndent: Int,
     config: MarkdownConfig,
@@ -127,28 +127,26 @@ private def processLines(
 }
 
 // Group cursor stream into lines
-private def groupIntoLines(stream: LazyList[C]): List[LazyList[C]] = {
-  var lines: List[LazyList[C]] = Nil
-  var currentLine: List[C]     = Nil
-
-  // Process each cursor
-  stream.foreach { cursor =>
-    if (cursor == EndOfInput) {
-      // End of input - add final line if not empty
-      if (currentLine.nonEmpty) {
-        lines = LazyList.from(currentLine.reverse) :: lines
-      }
-    } else if (cursor.char == '\n') {
-      // End of line - add current line (including the newline) and start a new one
-      currentLine = cursor :: currentLine
-      lines = LazyList.from(currentLine.reverse) :: lines
-      currentLine = Nil
+// Group cursor stream into lines - now using LazyList for the sequence of lines
+private def groupIntoLines(stream: LazyList[C]): LazyList[List[C]] = {
+  // Use LazyList.unfold to create a lazy sequence of lines
+  LazyList.unfold(stream) { remaining =>
+    if (remaining.isEmpty || remaining.head == EndOfInput) {
+      None // End of stream
     } else {
-      // Add to current line
-      currentLine = cursor :: currentLine
+      // Collect characters up to and including the next newline
+      val (lineChars, rest) = remaining.span(c => c != EndOfInput && c.char != '\n')
+
+      // Include the newline in the current line if present
+      val (line, nextRemaining) =
+        if (rest.nonEmpty && rest.head.char == '\n') {
+          (lineChars.toList :+ rest.head, rest.tail)
+        } else {
+          (lineChars.toList, rest)
+        }
+
+      // Return the current line and the remaining stream
+      Some((line, nextRemaining))
     }
   }
-
-  // Return lines in original order
-  lines.reverse
 }

@@ -10,7 +10,7 @@ object FencedCodeBlockParser extends BlockParser {
     *   - 3 or more backticks (```)
     *   - 3 or more tildes (~~~) Both can be indented up to 3 spaces.
     */
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     val line     = lines.head
@@ -31,7 +31,7 @@ object FencedCodeBlockParser extends BlockParser {
     * found.
     */
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,

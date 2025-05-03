@@ -20,7 +20,7 @@ object ListBlockParser extends BlockParser {
   private val OrderedListMarker   = """^( {0,3})(\d{1,9})([.)])(\s+)(.*)$""".r
   private val MaxIndentTolerance  = 1
 
-  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
+  def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     val lineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
@@ -43,7 +43,7 @@ object ListBlockParser extends BlockParser {
   }
 
   def parse(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
@@ -80,7 +80,7 @@ object ListBlockParser extends BlockParser {
   }
 
   private def collectListItems(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
@@ -119,7 +119,7 @@ object ListBlockParser extends BlockParser {
     (items.toList, totalLinesConsumed, hasBlanks)
   }
 
-  private def isMatchingListItemStart(line: LazyList[C], listData: ListData): Boolean = {
+  private def isMatchingListItemStart(line: List[C], listData: ListData): Boolean = {
     // Convert the line to String (excluding newline)
     val text = line.takeWhile(_.char != '\n').map(_.char).mkString
 
@@ -147,7 +147,7 @@ object ListBlockParser extends BlockParser {
   }
 
   private def parseListItem(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
@@ -178,7 +178,7 @@ object ListBlockParser extends BlockParser {
     (ListItem(itemBlocks), linesConsumed, hasBlanks)
   }
 
-  private def getIndentation(line: LazyList[C], listData: ListData): (Int, Int) = {
+  private def getIndentation(line: List[C], listData: ListData): (Int, Int) = {
     val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 
     if (listData.isOrdered) {
@@ -205,11 +205,11 @@ object ListBlockParser extends BlockParser {
   }
 
   private def collectItemLines(
-      lines: List[LazyList[C]],
+      lines: LazyList[List[C]],
       markerIndent: Int,
       contentIndent: Int,
       listData: ListData,
-  ): (List[LazyList[C]], Int, Boolean) = {
+  ): (LazyList[List[C]], Int, Boolean) = {
     def isSameListItem(line: String, markerIndent: Int, listData: ListData): Boolean = {
       val lineIndent = countLeadingSpaces(line)
 
@@ -227,7 +227,7 @@ object ListBlockParser extends BlockParser {
            .exists(_.group(3).charAt(0) == listData.delimiter.get))
     }
 
-    val itemLines = new mutable.ListBuffer[LazyList[C]]
+    val itemLines = new mutable.ListBuffer[List[C]]
     itemLines += lines.head
 
     var count                   = 1
@@ -353,7 +353,7 @@ object ListBlockParser extends BlockParser {
       }
     }
 
-    (itemLines.toList, count, blankLinesBetweenBlocks)
+    (LazyList.from(itemLines.toList), count, blankLinesBetweenBlocks)
   }
 
   // Helper function to determine if a line starts a list item at the specified indent level
@@ -379,10 +379,10 @@ object ListBlockParser extends BlockParser {
   }
 
   private def processItemLines(
-      itemLines: List[LazyList[C]],
+      itemLines: LazyList[List[C]],
       contentIndent: Int,
       listData: ListData,
-  ): List[LazyList[C]] = {
+  ): LazyList[List[C]] = {
     // Process first line - remove marker and appropriate spaces
     val lineText = itemLines.head.takeWhile(_.char != '\n').map(_.char).mkString
     val firstLineProcessed =
@@ -414,11 +414,11 @@ object ListBlockParser extends BlockParser {
       }
     }
 
-    firstLineProcessed :: restProcessed
+    firstLineProcessed #:: restProcessed
   }
 
   // Helper method to remove indentation while preserving C objects
-  private def removeIndentation(line: LazyList[C], maxIndent: Int): LazyList[C] = {
+  private def removeIndentation(line: List[C], maxIndent: Int): List[C] = {
     var virtualCol    = 0
     var pos           = 0
     var continueWhile = true
@@ -441,7 +441,7 @@ object ListBlockParser extends BlockParser {
     line.drop(pos)
   }
 
-  private def isBlankLine(line: LazyList[C]): Boolean = {
+  private def isBlankLine(line: List[C]): Boolean = {
     line.takeWhile(_.char != '\n').forall(c => c.char == ' ' || c.char == '\t')
   }
 }
