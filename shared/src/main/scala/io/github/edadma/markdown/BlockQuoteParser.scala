@@ -107,6 +107,6 @@ object BlockQuoteParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
   ): List[Block] = {
-    processLines(lines, linkRefs)
+    processLines(lines, linkRefs, 0)
   }
 }

@@ -44,7 +44,7 @@ private def parseBlocks(
   val lines = groupIntoLines(stream)
 
   // Process lines to detect block structures
-  processLines(lines, linkRefs)
+  processLines(lines, linkRefs, 0)
 }
 
 // Interface for block parsers
@@ -90,7 +90,7 @@ val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
 private def processLines(
     lines: List[LazyList[C]],
     linkRefs: mutable.Map[String, LinkReference],
-    parentIndent: Int = 0,
+    parentIndent: Int,
 ): List[Block] = {
   val blocks         = new ListBuffer[Block]
   var remainingLines = lines

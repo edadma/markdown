@@ -45,7 +45,7 @@ object ListBlockParser extends BlockParser {
   def parse(
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
-      parentIndent: Int = 0,
+      parentIndent: Int,
   ): (Block, Int) = {
     // Extract list type and properties from the first line
     val firstLineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
@@ -82,7 +82,7 @@ object ListBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
-      parentIndent: Int = 0,
+      parentIndent: Int,
   ): (List[ListItem], Int, Boolean) = {
     val items              = new mutable.ListBuffer[ListItem]
     var currentLines       = lines
@@ -148,7 +148,7 @@ object ListBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
-      parentIndent: Int = 0,
+      parentIndent: Int,
   ): (ListItem, Int, Boolean) = {
     // Get indentation information from first line
     val (markerIndent, contentIndent) = getIndentation(lines.head, listData)
