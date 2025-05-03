@@ -4,6 +4,7 @@
 ./shared/src/main/scala/io/github/edadma/markdown
 ATXHeadingBlockParser.scala
 BlockQuoteParser.scala
+DefinitionListBlockParser.scala
 FencedCodeBlockParser.scala
 HTMLBlockParser.scala
 IndentedCodeBlockParser.scala
@@ -27,6 +28,7 @@ ThematicBreakBlockParser.scala
 AutolinkAndHtmlTagInlineParserTest.scala
 BlockQuoteParserTest.scala
 CodeSpanInlineParserTest.scala
+DefinitionListBlockParserTest.scala
 EmphasisInlineParserTest.scala
 FencedCodeBlockParserTest.scala
 HeadingParserTest.scala
