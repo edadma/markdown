@@ -20,7 +20,7 @@ object ListBlockParser extends BlockParser {
   private val OrderedListMarker   = """^( {0,3})(\d{1,9})([.)])(\s+)(.*)$""".r
   private val MaxIndentTolerance  = 1
 
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     val lineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
@@ -46,13 +46,14 @@ object ListBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
     // Extract list type and properties from the first line
     val firstLineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
     val listData      = extractListData(firstLineText)
 
     // Collect list items and determine if the list is tight or loose
-    val (items, linesConsumed, hasBlanks) = collectListItems(lines, listData, linkRefs, parentIndent)
+    val (items, linesConsumed, hasBlanks) = collectListItems(lines, listData, linkRefs, parentIndent, config)
 
     // A list is loose if there are blank lines between items or items have multiple blocks
     val isTight = items.size == 1 || !hasBlanks
@@ -83,6 +84,7 @@ object ListBlockParser extends BlockParser {
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (List[ListItem], Int, Boolean) = {
     val items              = new mutable.ListBuffer[ListItem]
     var currentLines       = lines
@@ -92,7 +94,7 @@ object ListBlockParser extends BlockParser {
     // Process each list item
     while (currentLines.nonEmpty && isMatchingListItemStart(currentLines.head, listData)) {
       // Parse a single list item
-      val (item, linesConsumed, itemHasBlanks) = parseListItem(currentLines, listData, linkRefs, parentIndent)
+      val (item, linesConsumed, itemHasBlanks) = parseListItem(currentLines, listData, linkRefs, parentIndent, config)
 
       if (itemHasBlanks) {
         hasBlanks = true
@@ -149,6 +151,7 @@ object ListBlockParser extends BlockParser {
       listData: ListData,
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (ListItem, Int, Boolean) = {
     // Get indentation information from first line
     val (markerIndent, contentIndent) = getIndentation(lines.head, listData)
@@ -164,7 +167,7 @@ object ListBlockParser extends BlockParser {
     val totalIndent = parentIndent + contentIndent
 
     // Pass the total indent to any recursive list parsing
-    val itemBlocks = processLines(processedLines, linkRefs, totalIndent).map {
+    val itemBlocks = processLines(processedLines, linkRefs, totalIndent, config).map {
       case nestedList: ListBlock =>
         // Use the total combined indentation
         nestedList.copy(data = nestedList.data.copy(indent = nestedList.data.indent + totalIndent))

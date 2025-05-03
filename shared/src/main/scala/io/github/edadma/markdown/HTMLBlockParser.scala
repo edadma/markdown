@@ -88,7 +88,7 @@ object HTMLBlockParser extends BlockParser {
   private def text(line: LazyList[C]) =
     line.takeWhile(_.char != '\n').map(_.char).mkString
 
-  override def canStart(lines: List[LazyList[C]]): Boolean = lines.headOption.exists { line =>
+  override def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = lines.headOption.exists { line =>
     val t  = text(line).trim
     val lc = t.toLowerCase
 
@@ -110,6 +110,7 @@ object HTMLBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: scala.collection.mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
 
     // 1. Turn one LazyList[C] into its String (dropping the trailing '\n')

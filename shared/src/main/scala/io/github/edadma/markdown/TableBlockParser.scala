@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 object TableBlockParser extends BlockParser {
   val name: String = "table blocks"
 
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     if (lines.size < 2) return false
 
     val firstLine  = lineToString(lines.head)
@@ -20,6 +20,7 @@ object TableBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
     // Parse header row
     val headerCells = parseCellsFromLine(lines.head)

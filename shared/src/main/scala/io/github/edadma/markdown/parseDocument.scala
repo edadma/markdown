@@ -3,9 +3,12 @@ package io.github.edadma.markdown
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-def parseDocument(stream: LazyList[C]): (Document, immutable.Map[String, LinkReference]) = {
+def parseDocument(
+    stream: LazyList[C],
+    config: MarkdownConfig = MarkdownConfig.default,
+): (Document, immutable.Map[String, LinkReference]) = {
   val linkRefs      = new mutable.HashMap[String, LinkReference]
-  val blocks        = parseBlocks(stream, linkRefs)
+  val blocks        = parseBlocks(stream, linkRefs, config)
   val immutableRefs = linkRefs.toMap // Convert to immutable map
 
   (Document(blocks.filterNot(_ == null).map(_.processInlines(immutableRefs))), immutableRefs)
@@ -39,12 +42,13 @@ def inlinesToPlainText(inlines: List[Inline]): String = {
 private def parseBlocks(
     stream: LazyList[C],
     linkRefs: mutable.Map[String, LinkReference],
+    config: MarkdownConfig,
 ): List[Block] = {
   // Group the stream into lines
   val lines = groupIntoLines(stream)
 
   // Process lines to detect block structures
-  processLines(lines, linkRefs, 0)
+  processLines(lines, linkRefs, 0, config)
 }
 
 // Interface for block parsers
@@ -58,7 +62,7 @@ trait BlockParser {
     * @return
     *   true if this parser should handle the first line
     */
-  def canStart(line: List[LazyList[C]]): Boolean
+  def canStart(line: List[LazyList[C]], config: MarkdownConfig): Boolean
 
   /** Parse a block starting at the head of `lines`.
     *
@@ -69,7 +73,12 @@ trait BlockParser {
     * @return
     *   a tuple of the parsed Block and the number of lines consumed
     */
-  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference], parentIndent: Int): (Block, Int)
+  def parse(
+      lines: List[LazyList[C]],
+      linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
+      config: MarkdownConfig,
+  ): (Block, Int)
 }
 
 val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
@@ -91,6 +100,7 @@ private def processLines(
     lines: List[LazyList[C]],
     linkRefs: mutable.Map[String, LinkReference],
     parentIndent: Int,
+    config: MarkdownConfig,
 ): List[Block] = {
   val blocks         = new ListBuffer[Block]
   var remainingLines = lines
@@ -98,10 +108,10 @@ private def processLines(
   // Process lines until none remain
   while (remainingLines.nonEmpty) {
     // Find a parser for the current line
-    blockParsers.find(_.canStart(remainingLines)) match {
+    blockParsers.find(_.canStart(remainingLines, config)) match {
       case Some(parser) =>
         // Parse the block and update remaining lines
-        val (block, linesConsumed) = parser.parse(remainingLines, linkRefs, parentIndent)
+        val (block, linesConsumed) = parser.parse(remainingLines, linkRefs, parentIndent, config)
         if (block != null) {
           blocks.addOne(block)
         }

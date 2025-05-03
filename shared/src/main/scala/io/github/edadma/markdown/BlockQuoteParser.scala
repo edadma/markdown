@@ -5,7 +5,7 @@ import scala.collection.mutable
 object BlockQuoteParser extends BlockParser {
   val name: String = "block quotes"
 
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     // A block quote starts with a > character (possibly after up to 3 spaces of indentation)
@@ -19,6 +19,7 @@ object BlockQuoteParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
 
     // Collect all lines that belong to this block quote
@@ -28,7 +29,7 @@ object BlockQuoteParser extends BlockParser {
     val processedLines = processBlockQuoteContent(blockQuoteLines)
 
     // Recursively parse the content as its own document
-    val blocks = parseNestedBlocks(processedLines, linkRefs)
+    val blocks = processLines(processedLines, linkRefs, parentIndent, config) // maybe wrong: parentIndent
 
     (BlockQuote(blocks), linesConsumed)
   }
@@ -100,13 +101,5 @@ object BlockQuoteParser extends BlockParser {
         line
       }
     }
-  }
-
-  /** Parse the processed lines recursively */
-  private def parseNestedBlocks(
-      lines: List[LazyList[C]],
-      linkRefs: mutable.Map[String, LinkReference],
-  ): List[Block] = {
-    processLines(lines, linkRefs, 0)
   }
 }

@@ -8,7 +8,7 @@ object IndentedCodeBlockParser extends BlockParser {
   /** Check if the first line in `lines` can start an indented code block. An indented code block starts with a line
     * indented with at least 4 spaces (or 1 tab) and cannot interrupt a paragraph.
     */
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
     val line = lines.head
@@ -27,6 +27,7 @@ object IndentedCodeBlockParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
     val contentBuilder = new StringBuilder
     var lineCount      = 0

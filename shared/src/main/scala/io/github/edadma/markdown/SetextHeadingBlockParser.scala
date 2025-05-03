@@ -9,7 +9,7 @@ object SetextHeadingBlockParser extends BlockParser {
   private val SetextLevel1Pattern = """^ {0,3}=+[ \t]*$""".r // Level 1 with =
   private val SetextLevel2Pattern = """^ {0,3}-+[ \t]*$""".r // Level 2 with -
 
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     if (lines.size < 2) return false
 
     // Need at least two lines - content and underline
@@ -24,7 +24,12 @@ object SetextHeadingBlockParser extends BlockParser {
     SetextLevel1Pattern.matches(secondLineText) || SetextLevel2Pattern.matches(secondLineText)
   }
 
-  def parse(lines: List[LazyList[C]], linkRefs: mutable.Map[String, LinkReference], parentIndent: Int): (Block, Int) = {
+  def parse(
+      lines: List[LazyList[C]],
+      linkRefs: mutable.Map[String, LinkReference],
+      parentIndent: Int,
+      config: MarkdownConfig,
+  ): (Block, Int) = {
     // Get the content from the first line
     val contentLine = lines.head
 

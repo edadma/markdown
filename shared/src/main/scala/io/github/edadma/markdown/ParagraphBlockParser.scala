@@ -6,27 +6,28 @@ import scala.collection.mutable
 object ParagraphBlockParser extends BlockParser {
   val name: String = "paragraph blocks"
 
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     // A paragraph can start with any non-blank line
-    !isBlankLine(lines.head) && !ATXHeadingBlockParser.canStart(lines)
+    !isBlankLine(lines.head) && !ATXHeadingBlockParser.canStart(lines, config)
   }
 
   def parse(
       lines: List[LazyList[C]],
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
 
     // predicate: “this line still belongs to a paragraph”
     def isParaLine(line: LazyList[C]): Boolean =
       !isBlankLine(line) &&
-        !ATXHeadingBlockParser.canStart(List(line)) &&
-        !ThematicBreakBlockParser.canStart(List(line)) &&
-        !HTMLBlockParser.canStart(List(line)) &&
-        !IndentedCodeBlockParser.canStart(List(line)) &&
-        !FencedCodeBlockParser.canStart(List(line)) &&
-        !BlockQuoteParser.canStart(List(line)) &&
-        !ListBlockParser.canStart(List(line))
+        !ATXHeadingBlockParser.canStart(List(line), config) &&
+        !ThematicBreakBlockParser.canStart(List(line), config) &&
+        !HTMLBlockParser.canStart(List(line), config) &&
+        !IndentedCodeBlockParser.canStart(List(line), config) &&
+        !FencedCodeBlockParser.canStart(List(line), config) &&
+        !BlockQuoteParser.canStart(List(line), config) &&
+        !ListBlockParser.canStart(List(line), config)
 
     // split into the leading paragraph lines, and the remainder
     val (paraLines, rest) = lines.span(isParaLine)

@@ -7,7 +7,7 @@ case class LinkReference(destination: String, title: Option[String])
 object LinkReferenceDefinitionParser extends BlockParser {
   val name: String = "link refs"
 
-  def canStart(lines: List[LazyList[C]]): Boolean = {
+  def canStart(lines: List[LazyList[C]], config: MarkdownConfig): Boolean = {
     val content = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
     content.trim.startsWith("[") && content.contains("]:")
   }
@@ -16,6 +16,7 @@ object LinkReferenceDefinitionParser extends BlockParser {
       lines: List[LazyList[C]],
       linkRefs: scala.collection.mutable.Map[String, LinkReference],
       parentIndent: Int,
+      config: MarkdownConfig,
   ): (Block, Int) = {
     val line = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
 
