@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaTeX Rendering Test (Fixed)</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+
+    <!-- The loading of KaTeX is deferred to speed up page rendering -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
+
+    <!-- To automatically render math in text elements, include the auto-render extension: -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          renderMathInElement(document.body, {
+            delimiters: [
+              { left: "\\(", right: "\\)", display: false },
+              { left: "\\[", right: "\\]", display: true }
+            ],
+            throwOnError: false
+          });
+        });
+    </script>
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .example {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+<h1>KaTeX Rendering Test (Fixed)</h1>
+<p>This page tests how KaTeX renders math expressions from our Markdown parser.</p>
+
+<h2>Inline Math Examples</h2>
+
+<div class="example">
+    <h3>Basic Example:</h3>
+    <p>Einstein's famous equation: \(E = mc^2\) relates energy and mass.</p>
+</div>
+
+<div class="example">
+    <h3>With Fractions:</h3>
+    <p>The fraction \(\frac{1}{2}\) is one half.</p>
+</div>
+
+<h2>Display Math Examples</h2>
+
+<div class="example">
+    <h3>Quadratic Formula:</h3>
+    <p>The quadratic formula:</p>
+    \[x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\]
+</div>
+
+<div class="example">
+    <h3>Maxwell's Equations:</h3>
+    <p>Maxwell's equations:</p>
+    \[\begin{align}
+    \nabla \times \vec{E} &= -\frac{\partial \vec{B}}{\partial t} \\
+    \nabla \times \vec{H} &= \vec{J} + \frac{\partial \vec{D}}{\partial t} \\
+    \nabla \cdot \vec{D} &= \rho \\
+    \nabla \cdot \vec{B} &= 0
+    \end{align}\]
+</div>
+
+<h2>Edge Cases</h2>
+
+<div class="example">
+    <h3>Currency Symbols:</h3>
+    <p>The price is $20 and the other price is $30.</p>
+</div>
+
+<div class="example">
+    <h3>Mixed Content:</h3>
+    <p>Here's some regular text with \(x + y = z\) inline math.</p>
+</div>
+</body>
+</html>

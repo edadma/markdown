@@ -81,7 +81,8 @@ def renderToHTML(node: Node): String = node match {
 
     sb.append("</dl>")
     sb.toString
-  case n: Inline => sys.error(s"inline node in block position: '$n'")
+  case MathBlock(content) => s"""<div class="math display">\\[${escapeXml(content)}\\]</div>"""
+  case n: Inline          => sys.error(s"inline node in block position: '$n'")
 }
 
 private def renderInlines(inlines: List[Inline]): String =
@@ -100,6 +101,7 @@ private def renderInlines(inlines: List[Inline]): String =
       s"""<img src="${escapeXml(destination)}" alt="${renderAltText(children)}"$titleAttr />"""
     case AutoLink(destination, text) => s"""<a href="${escapeXml(destination)}">${escapeXml(text)}</a>"""
     case RawHTML(content)            => content // Raw HTML is passed through as-is
+    case MathExpr(content)           => s"""<span class="math inline">\\(${escapeXml(content)}\\)</span>"""
     case c: C                        => sys.error(s"unparsed character wrapper: '$c'")
   }.mkString
 

@@ -30,6 +30,15 @@ def parseInline(
       current.element match {
         case c: C if !c.isLiteral =>
           c.char match {
+            case '$' if !c.isLiteral =>
+              // Process math expression
+              val oldCurrent = current // Remember the current node
+
+              current = processMathSpan(current)
+
+              if (current == oldCurrent) {
+                current = current.following
+              }
             case '`' =>
               // Process code span (highest precedence)
               val oldCurrent = current // Remember the current node
@@ -1711,4 +1720,83 @@ private def deactivateLinkDelimiters(delimiterStack: mutable.Stack[DelimiterInfo
       logger.debug(s"Deactivated link delimiter at stack index $i")
     }
   }
+}
+
+// In parseInline.scala, add handling for $ delimiters
+
+private def processMathSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
+  logger.debug(s"Starting processMathSpan on node: ${node.element}")
+
+  // The opening node is already a $
+  val openingNode = node
+  var current     = node.following
+
+  // Find the closing $
+  while (current.notAfterEnd) {
+    if (
+      current.element.isInstanceOf[C] &&
+      current.element.asInstanceOf[C].char == '$' &&
+      !current.element.asInstanceOf[C].isLiteral
+    ) {
+
+      // Check if this is actually a closing $ and not part of a currency symbol
+      // We need to check surrounding characters to avoid treating $20 as math
+      val canBeMathCloser = isMathDelimiter(current)
+
+      if (canBeMathCloser) {
+        // Extract content between $ signs
+        val mathContent = extractMathContent(openingNode.following, current)
+
+        // Replace opening node with Math node
+        openingNode.element = MathExpr(mathContent)
+
+        // Remove everything between the opening and closing $
+        if (openingNode.following != current.following) {
+          openingNode.following.unlinkUntil(current.following)
+        }
+
+        return openingNode
+      }
+    }
+    current = current.following
+  }
+
+  // No matching closing $, return original node
+  node
+}
+
+// Helper to determine if a $ is a math delimiter or part of currency
+private def isMathDelimiter(node: DLListNode[Inline]): Boolean = {
+  // Get characters before and after the $
+  val prevChar = if (node.preceding.notBeforeStart) {
+    getCharFromNode(node.preceding)
+  } else ' '
+
+  val nextChar = if (node.following.notAfterEnd) {
+    getCharFromNode(node.following)
+  } else ' '
+
+  // Not a math delimiter if:
+  // 1. $ followed by a digit (likely currency)
+  // 2. $ preceded by a digit without space (likely currency)
+
+  !(nextChar.isDigit ||
+    (prevChar.isDigit && !Character.isWhitespace(prevChar)))
+}
+
+// Extract math content between $ delimiters
+private def extractMathContent(start: DLListNode[Inline], end: DLListNode[Inline]): String = {
+  val builder = new StringBuilder
+  var current = start
+
+  while (current != end) {
+    current.element match {
+      case c: C    => builder.append(c.char)
+      case t: Text => builder.append(t.content)
+      case _       => // Skip other inline elements
+    }
+    current = current.following
+  }
+
+  builder.toString.trim
 }

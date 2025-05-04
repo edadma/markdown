@@ -45,6 +45,10 @@ private def blockToXml(b: Block, sb: StringBuilder, indent: Int): Unit = b match
 
   case HTMLBlock(raw) =>
     appendIndent(sb, indent).append(raw).append("\n")
+
+  case MathBlock(content) =>
+    appendIndent(sb, indent).append("<math display=\"true\">").append(escapeXml(content)).append("</math>").append("\n")
+
 }
 
 private def itemToXml(item: ListItem, sb: StringBuilder, indent: Int): Unit = {
@@ -75,12 +79,10 @@ private def inlineToXml(inl: Inline, sb: StringBuilder, indent: Int): Unit = inl
     ch.foreach(inlineToXml(_, sb, 0))
     sb.append("</image>")
   case AutoLink(dest, text) =>
-    sb.append(s"<autolink destination=\"${escapeXml(dest)}\">")
-      .append(escapeXml(text)).append("</autolink>")
-  case RawHTML(html) =>
-    sb.append(html)
-  case c: C =>
-    sb.append(escapeXml(c.char.toString))
+    sb.append(s"<autolink destination=\"${escapeXml(dest)}\">").append(escapeXml(text)).append("</autolink>")
+  case RawHTML(html)     => sb.append(html)
+  case MathExpr(content) => sb append s"""<math  display="false">${escapeXml(content)}</math>"""
+  case c: C              => sb.append(escapeXml(c.char.toString))
 }
 
 private def appendIndent(sb: StringBuilder, n: Int): StringBuilder = {

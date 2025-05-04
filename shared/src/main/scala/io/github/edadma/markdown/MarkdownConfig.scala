@@ -6,19 +6,19 @@ package io.github.edadma.markdown
 case class MarkdownConfig(
     enableDefinitionLists: Boolean = false,
     enableTables: Boolean = false,
-    // We can add more extension options here in the future
+    enableMath: Boolean = false,
 )
 
 object MarkdownConfig {
-  // Default configuration with standard CommonMark features only
   val default: MarkdownConfig = MarkdownConfig()
 
-  // Convenience method for extensions
   def withExtensions(
       definitionLists: Boolean = false,
       tables: Boolean = false,
+      math: Boolean = false, // New parameter
   ): MarkdownConfig = MarkdownConfig(
     enableDefinitionLists = definitionLists,
     enableTables = tables,
+    enableMath = math, // New setting
   )
 }
