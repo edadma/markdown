@@ -1726,7 +1726,6 @@ private def deactivateLinkDelimiters(delimiterStack: mutable.Stack[DelimiterInfo
 
 private def processMathSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
   logger.debug(s"Starting processMathSpan on node: ${node.element}")
-  println(node.element)
 
   // The opening node is already a $
   val openingNode = node
@@ -1773,14 +1772,6 @@ private def isMathDelimiter(node: DLListNode[Inline]): Boolean = {
     getCharFromNode(node.preceding)
   } else ' '
 
-  val nextChar = if (node.following.notAfterEnd) {
-    getCharFromNode(node.following)
-  } else ' '
-
-  // Not a math delimiter if:
-  // 1. $ followed by a digit (likely currency)
-  // 2. $ preceded by a digit without space (likely currency)
-
   !Character.isWhitespace(prevChar) && prevChar != '$'
 }
 
@@ -1790,7 +1781,6 @@ private def extractMathContent(start: DLListNode[Inline], end: DLListNode[Inline
   var current = start
 
   while (current != end) {
-    println(current.element)
     current.element match {
       case c: C    => builder.append(c.char)
       case t: Text => builder.append(t.content)
