@@ -21,8 +21,13 @@ object MathBlockParser extends BlockParser {
       parentIndent: Int,
       config: MarkdownConfig,
   ): (Block, Int) = {
+    def string(chars: List[C]): String = chars.takeWhile(_.char != '\n').flatMap(c => {
+      if c.isLiteral && c.char == '\\' then List('\\', '\\')
+      else List(c.char)
+    }).mkString.trim
+
     val firstLine     = lines.head
-    val firstLineText = firstLine.takeWhile(_.char != '\n').map(_.char).mkString.trim
+    val firstLineText = string(firstLine)
 
     // Case 1: Single-line math block
     if (firstLineText.startsWith("$$") && firstLineText.endsWith("$$") && firstLineText.length > 4) {
@@ -45,7 +50,7 @@ object MathBlockParser extends BlockParser {
 
       while (currentLines.nonEmpty && !foundClosing) {
         val line = currentLines.head
-        val text = line.takeWhile(_.char != '\n').map(_.char).mkString.trim
+        val text = string(line)
 
         if (text.endsWith("$$")) {
           // Found closing delimiter

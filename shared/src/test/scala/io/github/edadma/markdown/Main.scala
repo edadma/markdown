@@ -40,9 +40,9 @@ import io.github.edadma.logger.LogLevel
       |Maxwell's equations in differential form are:
       |
       |$$\begin{align}
-      |\nabla \times \vec{E} &= -\frac{\partial \vec{B}}{\partial t} \\\\
-      |\nabla \times \vec{H} &= \vec{J} + \frac{\partial \vec{D}}{\partial t} \\\\
-      |\nabla \cdot \vec{D} &= \rho \\\\
+      |\nabla \times \vec{E} &= -\frac{\partial \vec{B}}{\partial t} \\
+      |\nabla \times \vec{H} &= \vec{J} + \frac{\partial \vec{D}}{\partial t} \\
+      |\nabla \cdot \vec{D} &= \rho \\
       |\nabla \cdot \vec{B} &= 0
       |\end{align}$$
       |
