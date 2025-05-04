@@ -60,7 +60,7 @@ import io.github.edadma.logger.LogLevel
       |
       |Summation: $\sum_{i=1}^{n} i = \frac{n(n+1)}{2}$
       |
-      |$$\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
+      |$$\int_{0}^{\infty} e^{-x^2} \,dx = \frac{\sqrt{\pi}}{2}$$
       |
       |## Mixed Content
       |

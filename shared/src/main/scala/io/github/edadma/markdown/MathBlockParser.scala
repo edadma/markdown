@@ -22,7 +22,7 @@ object MathBlockParser extends BlockParser {
       config: MarkdownConfig,
   ): (Block, Int) = {
     def string(chars: List[C]): String = chars.takeWhile(_.char != '\n').flatMap(c => {
-      if c.isLiteral && c.char == '\\' then List('\\', '\\')
+      if c.isLiteral then List('\\', c.char)
       else List(c.char)
     }).mkString.trim
 

@@ -1782,6 +1782,9 @@ private def extractMathContent(start: DLListNode[Inline], end: DLListNode[Inline
 
   while (current != end) {
     current.element match {
+      case c: C if c.isLiteral =>
+        builder.append('\\')
+        builder.append(c.char)
       case c: C    => builder.append(c.char)
       case t: Text => builder.append(t.content)
       case _       => // Skip other inline elements
