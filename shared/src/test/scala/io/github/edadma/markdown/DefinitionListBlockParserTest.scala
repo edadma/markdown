@@ -13,7 +13,7 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |: Definition 2""".stripMargin
 
     // Create a configuration that enables definition lists
-    val config   = MarkdownConfig(enableDefinitionLists = true)
+    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -30,7 +30,7 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |: Second definition
                   |: Third definition""".stripMargin
 
-    val config   = MarkdownConfig(enableDefinitionLists = true)
+    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -74,7 +74,7 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |Term 2
                   |: Another definition""".stripMargin
 
-    val config   = MarkdownConfig(enableDefinitionLists = true)
+    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -100,7 +100,7 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
     val input = """*Emphasized Term*
                   |: Definition with **strong** text""".stripMargin
 
-    val config   = MarkdownConfig(enableDefinitionLists = true)
+    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -127,7 +127,7 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |
                   |> This is a blockquote""".stripMargin
 
-    val config   = MarkdownConfig(enableDefinitionLists = true)
+    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(

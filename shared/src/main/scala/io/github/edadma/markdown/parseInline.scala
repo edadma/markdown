@@ -30,7 +30,7 @@ def parseInline(
       current.element match {
         case c: C if !c.isLiteral =>
           c.char match {
-            case '$' if !c.isLiteral =>
+            case '$' if !c.isLiteral && config.mathEnabled =>
               // Process math expression
               val oldCurrent = current // Remember the current node
 

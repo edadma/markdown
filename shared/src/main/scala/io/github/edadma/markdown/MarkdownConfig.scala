@@ -4,9 +4,9 @@ package io.github.edadma.markdown
   */
 // Add the enableTables parameter
 case class MarkdownConfig(
-    enableDefinitionLists: Boolean = false,
-    enableTables: Boolean = false,
-    enableMath: Boolean = false,
+    definitionListsEnabled: Boolean = false,
+    tablesEnabled: Boolean = false,
+    mathEnabled: Boolean = false,
 )
 
 object MarkdownConfig {
@@ -17,8 +17,8 @@ object MarkdownConfig {
       tables: Boolean = false,
       math: Boolean = false, // New parameter
   ): MarkdownConfig = MarkdownConfig(
-    enableDefinitionLists = definitionLists,
-    enableTables = tables,
-    enableMath = math, // New setting
+    definitionListsEnabled = definitionLists,
+    tablesEnabled = tables,
+    mathEnabled = math, // New setting
   )
 }

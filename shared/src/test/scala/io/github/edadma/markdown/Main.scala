@@ -69,11 +69,7 @@ import io.github.edadma.logger.LogLevel
       |
       |> Blockquote with math $P(A|B) = \frac{P(B|A)P(A)}{P(B)}$""".stripMargin
 //  val input =
-//    """
-//      |$$
-//      |E = mc^2
-//      |$$
-//      |""".stripMargin
+//    """$a$""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.withExtensions(definitionLists = true, math = true))
 

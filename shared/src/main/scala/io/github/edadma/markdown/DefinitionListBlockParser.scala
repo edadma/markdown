@@ -7,7 +7,7 @@ object DefinitionListBlockParser extends BlockParser {
 
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     // Only consider this parser if definition lists are enabled
-    if (!config.enableDefinitionLists) return false
+    if (!config.definitionListsEnabled) return false
 
     // Need at least two lines to start a definition list
     if (lines.isEmpty || lines.tail.isEmpty) return false
