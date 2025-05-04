@@ -21,8 +21,7 @@ import io.github.edadma.logger.LogLevel
 //  println(renderToHTML(input))
 
   val input =
-    """
-      |# Testing Math Support in Markdown
+    """# Testing Math Support in Markdown
       |
       |## Basic Inline Math
       |
