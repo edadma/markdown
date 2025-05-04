@@ -41,6 +41,8 @@ object MathBlockParser extends BlockParser {
       var currentLines = lines.tail
 
       // Collect lines until closing $$
+      contentBuilder ++= firstLineText.substring(2)
+
       while (currentLines.nonEmpty && !foundClosing) {
         val line = currentLines.head
         val text = line.takeWhile(_.char != '\n').map(_.char).mkString.trim
@@ -48,6 +50,8 @@ object MathBlockParser extends BlockParser {
         if (text.endsWith("$$")) {
           // Found closing delimiter
           foundClosing = true
+          contentBuilder.append('\n')
+          contentBuilder ++= text.substring(0, text.length - 2)
         } else {
           // Add line to content
           if (contentBuilder.nonEmpty) contentBuilder.append('\n')
