@@ -7,11 +7,13 @@ BlockQuoteParser.scala
 DefinitionListBlockParser.scala
 FencedCodeBlockParser.scala
 HTMLBlockParser.scala
+HTMLEntities.scala
 IndentedCodeBlockParser.scala
 InputReader.scala
 LinkReferenceDefinitionParser.scala
 ListBlockParser.scala
 MarkdownConfig.scala
+MathBlockParser.scala
 Node.scala
 package.scala
 ParagraphBlockParser.scala
@@ -41,6 +43,7 @@ LinkInlineParserTest.scala
 LinkReferenceDefinitionParserTest.scala
 ListBlockParserTest.scala
 Main.scala
+MathBlockParserTest.scala
 ParagraphBlockParserTest.scala
 TableBlockParserTest.scala
 Testing.scala
