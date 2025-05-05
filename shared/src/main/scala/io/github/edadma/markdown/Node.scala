@@ -96,6 +96,7 @@ case class Image(destination: String, title: Option[String], inlines: List[Inlin
 case class AutoLink(destination: String, text: String)                              extends Inline
 case class RawHTML(content: String)                                                 extends Inline
 case class MathExpr(content: String)                                                extends Inline
+case class Emoji(name: String)                                                      extends Inline
 
 case class C(
     char: Char,        // The character (possibly transformed)

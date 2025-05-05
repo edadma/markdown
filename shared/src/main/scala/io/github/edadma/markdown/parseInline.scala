@@ -30,6 +30,14 @@ def parseInline(
       current.element match {
         case c: C if !c.isLiteral =>
           c.char match {
+            case ':' if config.emojisEnabled =>
+              // Process emoji
+              val oldCurrent = current
+              current = processEmoji(current)
+
+              if (current == oldCurrent) {
+                current = current.following
+              }
             case '$' if !c.isLiteral && config.mathEnabled =>
               // Process math expression
               val oldCurrent = current // Remember the current node
@@ -1793,4 +1801,60 @@ private def extractMathContent(start: DLListNode[Inline], end: DLListNode[Inline
   }
 
   builder.toString.trim
+}
+
+private def processEmoji(node: DLListNode[Inline]): DLListNode[Inline] = {
+  logger.debug(s"Starting processEmoji on node: ${node.element}")
+
+  // The opening node is already a ':'
+  val openingNode  = node
+  var current      = node.following
+  val emojiName    = new StringBuilder
+  var foundClosing = false
+  var inValid      = false
+
+  // Collect characters until we find closing ':'
+  while (current.notAfterEnd && !foundClosing && !inValid) {
+    current.element match {
+      case c: C =>
+        if (c.char == ':' && !c.isLiteral) {
+          // Found closing ':'
+          foundClosing = true
+          val name = emojiName.toString
+
+          if (name.nonEmpty && !name.contains(' ')) {
+            // Valid emoji name
+            openingNode.element = Emoji(name)
+
+            // Remove everything between opening and closing ':'
+            if (openingNode.following != current.following) {
+              openingNode.following.unlinkUntil(current.following)
+            }
+          } else {
+            // Invalid emoji name (empty or contains spaces)
+            inValid = true
+          }
+        } else if (c.char == ' ') {
+          // Space found - not a valid emoji
+          inValid = true
+        } else {
+          // Add character to emoji name
+          emojiName.append(c.char)
+        }
+      case _ =>
+        // Non-character element found - not a valid emoji
+        inValid = true
+    }
+
+    if (!foundClosing && !inValid) {
+      current = current.following
+    }
+  }
+
+  // Return original node if no valid emoji found
+  if (inValid || !foundClosing) {
+    node
+  } else {
+    openingNode
+  }
 }
