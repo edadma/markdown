@@ -14,7 +14,8 @@ case class EmojiJson(
     ios_version: String,
 ) derives JsonDecoder
 
-@main def tools(args: String*): Unit =
+//@main
+def tools(args: String*): Unit =
   val json                    = readFile("emoji.json")
   val emojis: List[EmojiJson] = json.fromJson[List[EmojiJson]].getOrElse(sys.error("error parsing emojis"))
   val buf                     = new StringBuilder
@@ -45,9 +46,9 @@ case class EmojiJson(
 
   buf ++=
     s"""val emojis =
-       |  val map = new mutable.HashMap
+       |  val map = new mutable.HashMap[String, String]
        |  
-       |  map ++
+       |  map ++=
        |""".stripMargin
   buf ++= (emojiBlocks.indices map (i => s"  emojiBlock${i + 1}") mkString " ++\n")
   buf ++= "\n"

@@ -1822,7 +1822,7 @@ private def processEmoji(node: DLListNode[Inline]): DLListNode[Inline] = {
           foundClosing = true
           val name = emojiName.toString
 
-          if (name.nonEmpty && !name.startsWith(" ")) {
+          if (name.nonEmpty && !name.startsWith(" ") && emojis.contains(name)) {
             // Valid emoji name
             openingNode.element = Emoji(name)
 
