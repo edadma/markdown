@@ -1,7 +1,5 @@
 package io.github.edadma.markdown
 
-import pprint.pprintln
-
 trait Node {
   def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Node = this
 }

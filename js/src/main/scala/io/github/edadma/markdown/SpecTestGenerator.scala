@@ -1,7 +1,6 @@
 package io.github.edadma.markdown
 
 import io.github.edadma.cross_platform.processExit
-import pprint.pprintln
 
 import scala.scalajs.js
 import scala.scalajs.js.Dynamic.global
