@@ -48,7 +48,8 @@ case class EmojiJson(
 
   buf ++=
     s"""
-       |val emojis =  val map = new mutable.HashMap
+       |val emojis =
+       |  val map = new mutable.HashMap
        |  
        |  map ++
        |""".stripMargin
