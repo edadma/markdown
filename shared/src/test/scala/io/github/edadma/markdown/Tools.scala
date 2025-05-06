@@ -15,22 +15,39 @@ case class EmojiJson(
 ) derives JsonDecoder
 
 @main def tools(args: String*): Unit =
-  val emojis = readFile("emoji.json").fromJson[List[EmojiJson]].getOrElse(sys.error("error parsing emojis"))
-  val buf    = new StringBuilder
+  val json                    = readFile("emoji.json")
+  val emojis: List[EmojiJson] = json.fromJson[List[EmojiJson]].getOrElse(sys.error("error parsing emojis"))
+  val buf                     = new StringBuilder
 
   buf ++=
     """package io.github.edadma.markdown
       |
-      |val emojis = Map(
       |""".stripMargin
 
-  emojis foreach {
-    case EmojiJson(emoji, description, _, aliases, _, _, _) =>
-      buf ++= s"""  "$description" -> "$emoji",\n"""
-      buf ++= s"""  "${description.replace(' ', '_')}" -> "$emoji",\n"""
-      buf ++= s"""  "${description.replace(' ', '-')}" -> "$emoji",\n"""
-      aliases foreach (a => buf ++= s"""  "$a" -> "$emoji",\n""")
+  val emojiList =
+    emojis flatMap {
+      case EmojiJson(emoji, description, _, aliases, _, _, _) =>
+        val altList =
+          if description.contains(" ") then
+            List(
+              description.replace(' ', '_') -> emoji,
+              description.replace(' ', '-') -> emoji,
+            )
+          else Nil
+        val aliasList = aliases map (a => a -> emoji)
+
+        List(description -> emoji) ++ alitList ++ aliasList
+    }
+
+  val emojiBlocks = emojiList.grouped(maxSize).toList
+
+  emojiBlocks.zipWithIndex foreach { (block, idx) =>
+    buf ++= s"val $idx = List(\n"
+    block foreach {
+      case (desc, emoji) =>
+        buf ++= s"  \"$desc\" -> \"$emoji\",\n"
+    }
+    buf ++= ")\n"
   }
 
-  buf ++= ")\n"
   writeFile("shared/src/main/scala/io/github/edadma/markdown/emojis.scala", buf.toString)
