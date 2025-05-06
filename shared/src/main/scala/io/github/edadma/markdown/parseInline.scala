@@ -1822,7 +1822,7 @@ private def processEmoji(node: DLListNode[Inline]): DLListNode[Inline] = {
           foundClosing = true
           val name = emojiName.toString
 
-          if (name.nonEmpty && !name.contains(' ')) {
+          if (name.nonEmpty && !name.startsWith(" ")) {
             // Valid emoji name
             openingNode.element = Emoji(name)
 
@@ -1834,9 +1834,6 @@ private def processEmoji(node: DLListNode[Inline]): DLListNode[Inline] = {
             // Invalid emoji name (empty or contains spaces)
             inValid = true
           }
-        } else if (c.char == ' ') {
-          // Space found - not a valid emoji
-          inValid = true
         } else {
           // Add character to emoji name
           emojiName.append(c.char)
