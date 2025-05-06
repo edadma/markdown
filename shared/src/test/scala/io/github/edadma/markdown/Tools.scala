@@ -18,9 +18,12 @@ case class EmojiJson(
   val json                    = readFile("emoji.json")
   val emojis: List[EmojiJson] = json.fromJson[List[EmojiJson]].getOrElse(sys.error("error parsing emojis"))
   val buf                     = new StringBuilder
+  val maxSize                 = 300
 
   buf ++=
     """package io.github.edadma.markdown
+      |
+      |import scala.collection.mutable
       |
       |""".stripMargin
 
@@ -36,18 +39,35 @@ case class EmojiJson(
           else Nil
         val aliasList = aliases map (a => a -> emoji)
 
-        List(description -> emoji) ++ alitList ++ aliasList
+        List(description -> emoji) ++ altList ++ aliasList
     }
 
   val emojiBlocks = emojiList.grouped(maxSize).toList
 
-  emojiBlocks.zipWithIndex foreach { (block, idx) =>
-    buf ++= s"val $idx = List(\n"
+  emojiBlocks.zipWithIndex foreach { (block, idx) => generateBlock(block, idx + 1) }
+
+  buf ++=
+    s"""
+       |val emojis =  val map = new mutable.HashMap
+       |  
+       |  map ++
+       |""".stripMargin
+  buf ++= (emojiBlocks.indices map (i => s"  emojiBlock${i + 1}") mkString " ++\n")
+  buf ++= "\n"
+  buf ++= "  map.toMap\n"
+  writeFile("shared/src/main/scala/io/github/edadma/markdown/emojis.scala", buf.toString)
+
+  def generateBlock(block: List[(String, String)], num: Int): Unit =
+    val buf = new StringBuilder
+
+    buf ++=
+      """package io.github.edadma.markdown
+        |
+        |""".stripMargin
+    buf ++= s"val emojiBlock$num = List(\n"
     block foreach {
       case (desc, emoji) =>
         buf ++= s"  \"$desc\" -> \"$emoji\",\n"
     }
     buf ++= ")\n"
-  }
-
-  writeFile("shared/src/main/scala/io/github/edadma/markdown/emojis.scala", buf.toString)
+    writeFile(s"shared/src/main/scala/io/github/edadma/markdown/emojiBlock$num.scala", buf.toString)
