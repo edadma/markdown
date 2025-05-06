@@ -2,7 +2,6 @@ package io.github.edadma.markdown
 
 import scala.collection.mutable
 
-// A parser for paragraph blocks - our first concrete implementation
 object ParagraphBlockParser extends BlockParser {
   val name: String = "paragraph blocks"
 
@@ -18,7 +17,6 @@ object ParagraphBlockParser extends BlockParser {
       config: MarkdownConfig,
   ): (Block, Int) = {
 
-    // predicate: “this line still belongs to a paragraph”
     def isParaLine(line: List[C]): Boolean =
       !isBlankLine(line) &&
         !ATXHeadingBlockParser.canStart(LazyList(line), config) &&
@@ -27,7 +25,8 @@ object ParagraphBlockParser extends BlockParser {
         !IndentedCodeBlockParser.canStart(LazyList(line), config) &&
         !FencedCodeBlockParser.canStart(LazyList(line), config) &&
         !BlockQuoteParser.canStart(LazyList(line), config) &&
-        !ListBlockParser.canStart(LazyList(line), config)
+        !ListBlockParser.canStart(LazyList(line), config) &&
+        !MathBlockParser.canStart(LazyList(line), config)
 
     // split into the leading paragraph lines, and the remainder
     val (paraLines, rest) = lines.span(isParaLine)
