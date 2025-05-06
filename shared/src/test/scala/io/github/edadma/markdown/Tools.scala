@@ -30,17 +30,13 @@ case class EmojiJson(
   val emojiList =
     emojis flatMap {
       case EmojiJson(emoji, description, _, aliases, _, _, _) =>
-        val desc = description.replace(";", "")
-        val altList =
-          if desc.contains(" ") then {
-            List(
-              desc.replace(' ', '_') -> emoji,
-              desc.replace(' ', '-') -> emoji,
-            )
-          } else Nil
-        val aliasList = aliases map (a => a -> emoji)
+        val desc = description.replace(":", "")
+        val descList =
+          if desc.contains(" ") then List(desc.replace(' ', '_'), desc.replace(' ', '-'), desc)
+          else List(desc)
+        val aliasList = aliases filterNot (a => descList contains a)
 
-        List(desc -> emoji) ++ altList ++ aliasList
+        (descList ++ aliasList) map (a => a -> emoji)
     }
 
   val emojiBlocks = emojiList.grouped(maxSize).toList
@@ -48,8 +44,7 @@ case class EmojiJson(
   emojiBlocks.zipWithIndex foreach { (block, idx) => generateBlock(block, idx + 1) }
 
   buf ++=
-    s"""
-       |val emojis =
+    s"""val emojis =
        |  val map = new mutable.HashMap
        |  
        |  map ++
