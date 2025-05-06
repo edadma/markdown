@@ -6,7 +6,7 @@ object MathBlockParser extends BlockParser {
   val name: String = "math blocks"
 
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
-    if (!config.mathEnabled) return false
+    if (!config.math) return false
     if (lines.isEmpty) return false
 
     val line = lines.head
@@ -53,10 +53,11 @@ object MathBlockParser extends BlockParser {
         val text = string(line)
 
         if (text.endsWith("$$")) {
-          // Found closing delimiter
+          val lastLine = text.substring(0, text.length - 2)
+          
           foundClosing = true
-          contentBuilder.append('\n')
-          contentBuilder ++= text.substring(0, text.length - 2)
+          if lastLine.nonEmpty then contentBuilder.append('\n')
+          contentBuilder ++= lastLine
         } else {
           // Add line to content
           if (contentBuilder.nonEmpty) contentBuilder.append('\n')

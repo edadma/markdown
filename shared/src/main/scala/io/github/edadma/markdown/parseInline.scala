@@ -30,7 +30,7 @@ def parseInline(
       current.element match {
         case c: C if !c.isLiteral =>
           c.char match {
-            case ':' if config.emojisEnabled =>
+            case ':' if config.emoji != EmojiConfig.Disabled =>
               // Process emoji
               val oldCurrent = current
               current = processEmoji(current)
@@ -38,7 +38,7 @@ def parseInline(
               if (current == oldCurrent) {
                 current = current.following
               }
-            case '$' if !c.isLiteral && config.mathEnabled =>
+            case '$' if !c.isLiteral && config.math =>
               // Process math expression
               val oldCurrent = current // Remember the current node
 

@@ -4,21 +4,18 @@ package io.github.edadma.markdown
   */
 // Add the enableTables parameter
 case class MarkdownConfig(
-    definitionListsEnabled: Boolean = false,
-    tablesEnabled: Boolean = false,
-    mathEnabled: Boolean = false,
+    definitionLists: Boolean = false,
+    tables: Boolean = false,
+    math: Boolean = false,
+    emoji: EmojiConfig = EmojiConfig.Disabled,
 )
 
-object MarkdownConfig {
+object MarkdownConfig:
   val default: MarkdownConfig = MarkdownConfig()
+  val all: MarkdownConfig =
+    MarkdownConfig(definitionLists = true, tables = true, math = true, emoji = EmojiConfig.Unicode)
 
-  def withExtensions(
-      definitionLists: Boolean = false,
-      tables: Boolean = false,
-      math: Boolean = false, // New parameter
-  ): MarkdownConfig = MarkdownConfig(
-    definitionListsEnabled = definitionLists,
-    tablesEnabled = tables,
-    mathEnabled = math, // New setting
-  )
-}
+enum EmojiConfig:
+  case Disabled
+  case Unicode
+  case Image(baseURL: String)

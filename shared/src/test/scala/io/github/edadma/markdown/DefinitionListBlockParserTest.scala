@@ -5,6 +5,8 @@ import org.scalatest.matchers.should.Matchers
 
 class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
 
+  private val config = MarkdownConfig().copy(definitionLists = true)
+
   "The definition list parser" should "parse a simple definition list" in {
     val input = """Term 1
                   |: Definition 1
@@ -13,7 +15,6 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |: Definition 2""".stripMargin
 
     // Create a configuration that enables definition lists
-    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -30,7 +31,6 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |: Second definition
                   |: Third definition""".stripMargin
 
-    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -52,7 +52,7 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |: Definition 1""".stripMargin
 
     // Use default config (definition lists disabled)
-    val config   = MarkdownConfig.default
+    val config   = MarkdownConfig().copy(definitionLists = false)
     val document = parseDocumentContent(input, config)
 
     // Should be parsed as a regular paragraph
@@ -74,7 +74,6 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |Term 2
                   |: Another definition""".stripMargin
 
-    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -100,7 +99,6 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
     val input = """*Emphasized Term*
                   |: Definition with **strong** text""".stripMargin
 
-    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(
@@ -127,7 +125,6 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
                   |
                   |> This is a blockquote""".stripMargin
 
-    val config   = MarkdownConfig(definitionListsEnabled = true)
     val document = parseDocumentContent(input, config)
 
     document shouldBe Document(List(

@@ -4,7 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class TableBlockParserTest extends AnyFlatSpec with Matchers {
-  private val config = MarkdownConfig.withExtensions(tables = true)
+  private val config = MarkdownConfig().copy(tables = true)
 
   "The table block parser" should "parse a basic table" in {
     val input = """| Header 1 | Header 2 |

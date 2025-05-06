@@ -4,7 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class MathBlockParserTest extends AnyFlatSpec with Matchers {
-  private val config = MarkdownConfig.withExtensions(math = true)
+  private val config = MarkdownConfig().copy(math = true)
 
   "The math block parser" should "parse a simple math block" in {
     val input =
@@ -48,9 +48,9 @@ class MathBlockParserTest extends AnyFlatSpec with Matchers {
     document shouldBe Document(List(
       MathBlock(
         """\begin{align}
-          |\nabla \times \vec{E} &= -\frac{\partial \vec{B}}{\partial t} \
-          |\nabla \times \vec{H} &= \vec{J} + \frac{\partial \vec{D}}{\partial t} \
-          |\nabla \cdot \vec{D} &= \rho \
+          |\nabla \times \vec{E} &= -\frac{\partial \vec{B}}{\partial t} \\
+          |\nabla \times \vec{H} &= \vec{J} + \frac{\partial \vec{D}}{\partial t} \\
+          |\nabla \cdot \vec{D} &= \rho \\
           |\nabla \cdot \vec{B} &= 0
           |\end{align}""".stripMargin,
       ),

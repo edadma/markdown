@@ -81,7 +81,8 @@ private def inlineToXml(inl: Inline, sb: StringBuilder, indent: Int): Unit = inl
   case AutoLink(dest, text) =>
     sb.append(s"<autolink destination=\"${escapeXml(dest)}\">").append(escapeXml(text)).append("</autolink>")
   case RawHTML(html)     => sb.append(html)
-  case MathExpr(content) => sb append s"""<math  display="false">${escapeXml(content)}</math>"""
+  case MathExpr(content) => sb append s"""<math display="false">${escapeXml(content)}</math>"""
+  case Emoji(name)       => sb append s"<emoji>$name</emoji>"
   case c: C              => sb.append(escapeXml(c.char.toString))
 }
 

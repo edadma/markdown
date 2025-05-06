@@ -102,6 +102,7 @@ private def renderInlines(inlines: List[Inline]): String =
     case AutoLink(destination, text) => s"""<a href="${escapeXml(destination)}">${escapeXml(text)}</a>"""
     case RawHTML(content)            => content // Raw HTML is passed through as-is
     case MathExpr(content)           => s"""<span class="math inline">\\(${escapeXml(content)}\\)</span>"""
+    case Emoji(name)                 => name
     case c: C                        => sys.error(s"unparsed character wrapper: '$c'")
   }.mkString
 
