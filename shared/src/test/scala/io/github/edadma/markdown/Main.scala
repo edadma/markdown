@@ -21,9 +21,7 @@ import io.github.edadma.logger.LogLevel
 //  println(renderToHTML(input))
 
   val input =
-    """""".stripMargin
-//  val input =
-//    """$a$""".stripMargin
+    """testing :smile:""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
