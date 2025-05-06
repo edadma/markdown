@@ -30,16 +30,17 @@ case class EmojiJson(
   val emojiList =
     emojis flatMap {
       case EmojiJson(emoji, description, _, aliases, _, _, _) =>
+        val desc = description.replace(";", "")
         val altList =
-          if description.contains(" ") then
+          if desc.contains(" ") then {
             List(
-              description.replace(' ', '_') -> emoji,
-              description.replace(' ', '-') -> emoji,
+              desc.replace(' ', '_') -> emoji,
+              desc.replace(' ', '-') -> emoji,
             )
-          else Nil
+          } else Nil
         val aliasList = aliases map (a => a -> emoji)
 
-        List(description -> emoji) ++ altList ++ aliasList
+        List(desc -> emoji) ++ altList ++ aliasList
     }
 
   val emojiBlocks = emojiList.grouped(maxSize).toList
