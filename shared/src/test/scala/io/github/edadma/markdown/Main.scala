@@ -22,7 +22,9 @@ def run(): Unit =
 //  println(renderToHTML(input))
 
   val input =
-    """testing :rolling on the floor laughing:""".stripMargin
+    """display:
+      |$$f(x) = \int_{-\infty}^{\infty} \hat{f}(\xi) e^{2\pi i \xi x} d\xi$$
+      |""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
