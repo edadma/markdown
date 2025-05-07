@@ -5,8 +5,8 @@ import io.github.edadma.logger.LogLevel
 
 @main
 def run(): Unit =
-//  logger.setLogLevel(LogLevel.DEBUG)
-//  logger.setFileLogging()
+  logger.setLogLevel(LogLevel.DEBUG)
+  logger.setFileLogging()
 
 //  val linkRefs = Map("ref" -> LinkReference("image.jpg", None))
 //  val input    = "Shortcut image: ![ref]"
@@ -22,12 +22,8 @@ def run(): Unit =
 //  println(renderToHTML(input))
 
   val input =
-    """> [!note]
-      |> This is a simple note callout.
-      |
-      |> [!warning]: Custom Title
-      |> This is a warning callout with a custom title.
-      |""".stripMargin
+    """> [!custom-type]
+      |> Custom type callout.""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
