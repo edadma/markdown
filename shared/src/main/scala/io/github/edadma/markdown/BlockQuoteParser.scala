@@ -36,7 +36,7 @@ object BlockQuoteParser extends BlockParser {
   }
 
   /** Collects all lines that belong to the block quote, handling lazy continuation */
-  private def collectBlockQuoteLines(lines: LazyList[List[C]]): (LazyList[List[C]], Int) = {
+  private[markdown] def collectBlockQuoteLines(lines: LazyList[List[C]]): (LazyList[List[C]], Int) = {
     var result             = new ListBuffer[List[C]]
     var count              = 0
     var currentLines       = lines
@@ -81,7 +81,7 @@ object BlockQuoteParser extends BlockParser {
   }
 
   /** Process block quote content by removing the > markers */
-  private def processBlockQuoteContent(lines: LazyList[List[C]]): LazyList[List[C]] = {
+  private[markdown] def processBlockQuoteContent(lines: LazyList[List[C]]): LazyList[List[C]] = {
     lines.map { line =>
       val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 
