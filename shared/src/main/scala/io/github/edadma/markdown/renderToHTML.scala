@@ -87,7 +87,7 @@ def renderToHTML(node: Node): String = node match {
       s"""<div class="callout-title">${calloutType.capitalize}</div>""",
     )
 
-    s"""<div class="not-prose callout callout-$calloutType">
+    s"""<div class="callout callout-$calloutType">
        |  $titleHtml
        |  <div class="callout-content">
        |    ${children.map(renderToHTML).mkString("\n    ")}
