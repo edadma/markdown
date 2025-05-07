@@ -5,6 +5,7 @@
 ATXHeadingBlockParser.scala
 BlockQuoteParser.scala
 DefinitionListBlockParser.scala
+emojis.scala
 FencedCodeBlockParser.scala
 HTMLBlockParser.scala
 HTMLEntities.scala
