@@ -4,6 +4,7 @@
 ./shared/src/main/scala/io/github/edadma/markdown
 ATXHeadingBlockParser.scala
 BlockQuoteParser.scala
+CalloutBlockParser.scala
 DefinitionListBlockParser.scala
 emojis.scala
 FencedCodeBlockParser.scala
