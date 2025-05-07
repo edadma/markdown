@@ -9,7 +9,9 @@ object LinkReferenceDefinitionParser extends BlockParser {
 
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     val content = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
-    content.trim.startsWith("[") && content.contains("]:")
+    val trimmed = content.trim
+
+    trimmed.startsWith("[") && !trimmed.startsWith("[!") && content.contains("]:")
   }
 
   def parse(
