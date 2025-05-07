@@ -5,8 +5,8 @@ import io.github.edadma.logger.LogLevel
 
 @main
 def run(): Unit =
-  logger.setLogLevel(LogLevel.DEBUG)
-  logger.setFileLogging()
+//  logger.setLogLevel(LogLevel.DEBUG)
+//  logger.setFileLogging()
 
 //  val linkRefs = Map("ref" -> LinkReference("image.jpg", None))
 //  val input    = "Shortcut image: ![ref]"

@@ -8,12 +8,13 @@ case class MarkdownConfig(
     tables: Boolean = false,
     math: Boolean = false,
     emoji: EmojiConfig = EmojiConfig.Disabled,
+    callouts: Boolean = false,
 )
 
 object MarkdownConfig:
   val default: MarkdownConfig = MarkdownConfig()
   val all: MarkdownConfig =
-    MarkdownConfig(definitionLists = true, tables = true, math = true, emoji = EmojiConfig.Unicode)
+    MarkdownConfig(definitionLists = true, tables = true, math = true, emoji = EmojiConfig.Unicode, callouts = true)
 
 enum EmojiConfig:
   case Disabled

@@ -82,6 +82,32 @@ case class DefinitionListBlock(items: List[(List[Inline], List[Block])]) extends
 
 case class MathBlock(content: String) extends Block
 
+/** Represents a callout block in the document.
+  *
+  * A callout block is a specialized form of block quote with additional metadata for type and optional title to create
+  * visually distinct "callout" sections.
+  *
+  * @param calloutType
+  *   The type of callout (e.g., "note", "warning", "info", "tip", "danger")
+  * @param title
+  *   Optional title for the callout block
+  * @param children
+  *   Child blocks within the callout
+  */
+case class CalloutBlock(
+    calloutType: String,   // Type of callout (e.g., "note", "warning", "info", etc.)
+    title: Option[String], // Optional custom title for the callout
+    children: List[Block], // Child blocks (could be paragraphs, lists, code blocks, etc.)
+) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
+    CalloutBlock(
+      calloutType,
+      title,
+      children.map(_.processInlines(linkRefs, config)),
+    )
+  }
+}
+
 sealed trait Inline                                                                 extends Node
 case class Text(content: String)                                                    extends Inline
 case class SoftLineBreak()                                                          extends Inline

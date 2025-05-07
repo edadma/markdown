@@ -93,6 +93,7 @@ val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
   IndentedCodeBlockParser,
   FencedCodeBlockParser,
   MathBlockParser,
+  CalloutBlockParser,
   BlockQuoteParser,
   ParagraphBlockParser,
 )

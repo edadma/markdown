@@ -82,7 +82,18 @@ def renderToHTML(node: Node): String = node match {
     sb.append("</dl>")
     sb.toString
   case MathBlock(content) => s"""<div class="math display">\\[${escapeXml(content)}\\]</div>"""
-  case n: Inline          => sys.error(s"inline node in block position: '$n'")
+  case CalloutBlock(calloutType, title, children) =>
+    val titleHtml = title.map(t => s"""<div class="callout-title">$t</div>""").getOrElse(
+      s"""<div class="callout-title">${calloutType.capitalize}</div>""",
+    )
+
+    s"""<div class="not-prose callout callout-$calloutType">
+       |  $titleHtml
+       |  <div class="callout-content">
+       |    ${children.map(renderToHTML).mkString("\n    ")}
+       |  </div>
+       |</div>""".stripMargin
+  case n: Inline => sys.error(s"inline node in block position: '$n'")
 }
 
 private def renderInlines(inlines: List[Inline]): String =
