@@ -22,8 +22,8 @@ def run(): Unit =
 //  println(renderToHTML(input))
 
   val input =
-    """> [!custom-type]
-      |> Custom type callout.""".stripMargin
+    """> [!note]
+      |> This is a simple note.""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
