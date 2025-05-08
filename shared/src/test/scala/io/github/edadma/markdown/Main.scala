@@ -5,8 +5,8 @@ import io.github.edadma.logger.LogLevel
 
 @main
 def run(): Unit =
-  logger.setLogLevel(LogLevel.DEBUG)
-  logger.setFileLogging()
+//  logger.setLogLevel(LogLevel.DEBUG)
+//  logger.setFileLogging()
 
 //  val linkRefs = Map("ref" -> LinkReference("image.jpg", None))
 //  val input    = "Shortcut image: ![ref]"
@@ -22,8 +22,15 @@ def run(): Unit =
 //  println(renderToHTML(input))
 
   val input =
-    """> [!note]
-      |> This is a simple note.""".stripMargin
+    """::: Outer section
+      |Outer content.
+      |
+      |::: Inner section
+      |Inner content.
+      |:::
+      |
+      |More outer content.
+      |:::""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 

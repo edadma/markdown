@@ -93,6 +93,14 @@ def renderToHTML(node: Node): String = node match {
        |    ${children.map(renderToHTML).mkString("\n    ")}
        |  </div>
        |</div>""".stripMargin
+  case CollapsibleBlock(title, isOpen, children) =>
+    val openAttr  = if (isOpen) " open" else ""
+    val titleText = title.getOrElse("Click to expand")
+
+    s"""<details$openAttr>
+       |  <summary>$titleText</summary>
+       |  ${children.map(renderToHTML).mkString("\n")}
+       |</details>"""
   case n: Inline => sys.error(s"inline node in block position: '$n'")
 }
 

@@ -108,6 +108,20 @@ case class CalloutBlock(
   }
 }
 
+case class CollapsibleBlock(
+    title: Option[String],
+    isOpen: Boolean,
+    children: List[Block],
+) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
+    CollapsibleBlock(
+      title,
+      isOpen,
+      children.map(_.processInlines(linkRefs, config)),
+    )
+  }
+}
+
 sealed trait Inline                                                                 extends Node
 case class Text(content: String)                                                    extends Inline
 case class SoftLineBreak()                                                          extends Inline
