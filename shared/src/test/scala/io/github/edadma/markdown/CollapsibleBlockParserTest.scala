@@ -3,7 +3,7 @@ package io.github.edadma.markdown
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class CollapsibleSectionParserTest extends AnyFlatSpec with Matchers {
+class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
   "The collapsible section parser" should "parse a basic collapsible section" in {
     val input = """

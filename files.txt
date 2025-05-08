@@ -5,6 +5,7 @@
 ATXHeadingBlockParser.scala
 BlockQuoteParser.scala
 CalloutBlockParser.scala
+CollapsibleBlockParser.scala
 DefinitionListBlockParser.scala
 emojis.scala
 FencedCodeBlockParser.scala
@@ -31,7 +32,9 @@ ThematicBreakBlockParser.scala
 ./shared/src/test/scala/io/github/edadma/markdown
 AutolinkAndHtmlTagInlineParserTest.scala
 BlockQuoteParserTest.scala
+CalloutBlockParserTest.scala
 CodeSpanInlineParserTest.scala
+CollapsibleBlockParserTest.scala
 DefinitionListBlockParserTest.scala
 EmphasisInlineParserTest.scala
 FencedCodeBlockParserTest.scala
