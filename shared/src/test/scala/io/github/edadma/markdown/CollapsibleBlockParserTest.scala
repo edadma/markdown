@@ -7,14 +7,14 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
   "The collapsible section parser" should "parse a basic collapsible section" in {
     val input = """
-                  |:::
+                  |::: Title
                   |This is a basic collapsible section.
                   |:::""".stripMargin
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = None,
+        title = "Title",
         isOpen = false,
         children = List(
           Paragraph(List(Text("This is a basic collapsible section."))),
@@ -32,7 +32,7 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = Some("Click to expand"),
+        title = "Click to expand",
         isOpen = false,
         children = List(
           Paragraph(List(Text("Content inside the collapsible section."))),
@@ -50,7 +50,7 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = Some("Show less"),
+        title = "Show less",
         isOpen = true,
         children = List(
           Paragraph(List(Text("This section starts expanded."))),
@@ -77,7 +77,7 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = Some("Multiple blocks"),
+        title = "Multiple blocks",
         isOpen = false,
         children = List(
           Paragraph(List(Text("First paragraph."))),
@@ -97,13 +97,13 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
   it should "handle a collapsible section that spans to the end without explicit closing" in {
     val input = """
-                  |:::
+                  |::: Title
                   |Unclosed section.""".stripMargin
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = None,
+        title = "Title",
         isOpen = false,
         children = List(
           Paragraph(List(Text("Unclosed section."))),
@@ -127,12 +127,12 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = Some("Outer section"),
+        title = "Outer section",
         isOpen = false,
         children = List(
           Paragraph(List(Text("Outer content."))),
           CollapsibleBlock(
-            title = Some("Inner section"),
+            title = "Inner section",
             isOpen = false,
             children = List(
               Paragraph(List(Text("Inner content."))),
@@ -153,7 +153,7 @@ class CollapsibleBlockParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       CollapsibleBlock(
-        title = None,
+        title = "",
         isOpen = true,
         children = List(
           Paragraph(List(Text("Expanded content with no title."))),

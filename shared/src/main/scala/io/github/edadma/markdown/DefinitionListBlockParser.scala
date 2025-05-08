@@ -18,7 +18,7 @@ object DefinitionListBlockParser extends BlockParser {
 
     // Second line should start with a colon (definition)
     val secondLine = lines.tail.head.takeWhile(_.char != '\n').map(_.char).mkString.trim
-    secondLine.startsWith(":")
+    secondLine.startsWith(":") && !secondLine.startsWith(":::")
   }
 
   def parse(

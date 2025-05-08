@@ -109,7 +109,7 @@ case class CalloutBlock(
 }
 
 case class CollapsibleBlock(
-    title: Option[String],
+    title: String,
     isOpen: Boolean,
     children: List[Block],
 ) extends Block {

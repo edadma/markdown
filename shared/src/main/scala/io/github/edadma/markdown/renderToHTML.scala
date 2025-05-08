@@ -95,7 +95,7 @@ def renderToHTML(node: Node): String = node match {
        |</div>""".stripMargin
   case CollapsibleBlock(title, isOpen, children) =>
     val openAttr  = if (isOpen) " open" else ""
-    val titleText = title.getOrElse("Click to expand")
+    val titleText = if title == "" then "Click to expand" else title
 
     s"""<details$openAttr>
        |  <summary>$titleText</summary>
