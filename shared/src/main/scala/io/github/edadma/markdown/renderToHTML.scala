@@ -100,7 +100,7 @@ def renderToHTML(node: Node): String = node match {
     s"""<details$openAttr>
        |  <summary>$titleText</summary>
        |  ${children.map(renderToHTML).mkString("\n")}
-       |</details>"""
+       |</details>""".stripMargin
   case n: Inline => sys.error(s"inline node in block position: '$n'")
 }
 
