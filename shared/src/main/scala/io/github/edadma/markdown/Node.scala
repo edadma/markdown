@@ -109,13 +109,13 @@ case class CalloutBlock(
 }
 
 case class CollapsibleBlock(
-    title: String,
+    title: List[Inline],
     isOpen: Boolean,
     children: List[Block],
 ) extends Block {
   override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block = {
     CollapsibleBlock(
-      title,
+      parseInline(title, linkRefs, config),
       isOpen,
       children.map(_.processInlines(linkRefs, config)),
     )

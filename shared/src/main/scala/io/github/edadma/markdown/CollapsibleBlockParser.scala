@@ -38,6 +38,13 @@ object CollapsibleBlockParser extends BlockParser {
             val actualTitle = if (open) titleText.substring(4).trim else titleText
             (actualTitle, open)
           }
+        val titleCursors = if (rawTitle.isEmpty) {
+          List.empty[Inline]
+        } else {
+          // Get the title portion from the line's cursors
+          val startMarkerLen = if (isOpen) 8 else 3
+          firstLine.dropWhile(_.char != ':').drop(startMarkerLen).toList
+        }
 
         // Scan for the matching outermost end marker
         var contentLines = LazyList.empty[List[C]]
@@ -74,7 +81,7 @@ object CollapsibleBlockParser extends BlockParser {
         // Parse content as a nested document
         val blocks = processLines(contentLines, linkRefs, parentIndent + 2, config)
 
-        (CollapsibleBlock(title, isOpen, blocks), lineCount)
+        (CollapsibleBlock(titleCursors, isOpen, blocks), lineCount)
 
       case _ =>
         // Should never happen due to canStart check
