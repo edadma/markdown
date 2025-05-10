@@ -193,7 +193,7 @@ private def decodeHtmlEntities(input: String): String = {
         }
       } else if (namedValue.isDefined) {
         // Handle named entities (e.g., &amp;)
-        HTMLEntities get namedValue.get match
+        entities get namedValue.get match
           case Some(replacement) => replacement
           case None              => entity
       } else {
