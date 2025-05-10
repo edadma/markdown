@@ -15,7 +15,7 @@ case class EmojiJson(
 ) derives JsonDecoder
 
 //@main
-def tools(args: String*): Unit =
+def emojiTool(args: String*): Unit =
   val json                    = readFile("emoji.json")
   val emojis: List[EmojiJson] = json.fromJson[List[EmojiJson]].getOrElse(sys.error("error parsing emojis"))
   val buf                     = new StringBuilder
