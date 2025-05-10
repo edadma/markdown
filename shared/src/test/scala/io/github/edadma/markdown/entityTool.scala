@@ -3,7 +3,7 @@ package io.github.edadma.markdown
 import pprint.pprintln
 import io.github.edadma.cross_platform.{readFile, writeFile}
 
-@main
+//@main
 def entityTool(): Unit =
   val json = readFile("entities.json")
   val entityPattern =

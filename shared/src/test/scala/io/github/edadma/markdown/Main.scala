@@ -3,7 +3,7 @@ package io.github.edadma.markdown
 import pprint.pprintln
 import io.github.edadma.logger.LogLevel
 
-//@main
+@main
 def run(): Unit =
 //  logger.setLogLevel(LogLevel.DEBUG)
 //  logger.setFileLogging()
@@ -22,15 +22,7 @@ def run(): Unit =
 //  println(renderToHTML(input))
 
   val input =
-    """::: Outer section
-      |Outer content.
-      |
-      |::: Inner section
-      |Inner content.
-      |:::
-      |
-      |More outer content.
-      |:::""".stripMargin
+    """&trade;""".stripMargin
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
