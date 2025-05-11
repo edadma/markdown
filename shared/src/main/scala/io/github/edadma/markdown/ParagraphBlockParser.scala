@@ -22,7 +22,6 @@ object ParagraphBlockParser extends BlockParser {
         !ATXHeadingBlockParser.canStart(LazyList(line), config) &&
         !ThematicBreakBlockParser.canStart(LazyList(line), config) &&
         !HTMLBlockParser.canStart(LazyList(line), config) &&
-        !IndentedCodeBlockParser.canStart(LazyList(line), config) &&
         !FencedCodeBlockParser.canStart(LazyList(line), config) &&
         !BlockQuoteParser.canStart(LazyList(line), config) &&
         !ListBlockParser.canStart(LazyList(line), config) &&
@@ -40,13 +39,16 @@ object ParagraphBlockParser extends BlockParser {
     val content: List[Inline] =
       if (paraLines.nonEmpty) {
         // Start with all lines flattened
-        val allChars = paraLines.flatten.toList
+        val allChars = paraLines.flatMap(_.dropWhile(_.char.isSpaceChar)).toList
 
         // Remove the last character if it's a newline
-        if (allChars.lastOption.exists(_.char == '\n'))
-          allChars.dropRight(1)
-        else
-          allChars
+        val noLastNewline =
+          if (allChars.lastOption.exists(_.char == '\n'))
+            allChars.dropRight(1)
+          else
+            allChars
+
+        noLastNewline.reverse.dropWhile(_.char.isSpaceChar).reverse
       } else {
         List.empty[Inline]
       }

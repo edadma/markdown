@@ -22,7 +22,7 @@ class ThematicBreakBlockParserTest extends AnyFunSuite with Matchers {
     ("*** * ***\n", List(ThematicBreak())),            // mixed but all asterisks
     ("-*-\n", List(Paragraph(List(Text("-*-"))))),     // contains non-delimiter
     ("--- a\n", List(Paragraph(List(Text("--- a"))))), // extra text
-    (" --\n", List(Paragraph(List(Text(" --"))))),     // too few hyphens
+    (" --\n", List(Paragraph(List(Text("--"))))),      // too few hyphens
     (
       "*_*_*_\n",
       List(Paragraph(List(Emphasis(List(Text("_"))), Emphasis(List(Text("*")))))),

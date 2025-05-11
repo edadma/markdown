@@ -112,7 +112,7 @@ Not indented paragraph."""
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Paragraph(List(Text("  Indented paragraph."))),
+      Paragraph(List(Text("Indented paragraph."))),
       Paragraph(List(Text("Not indented paragraph."))),
     ))
   }

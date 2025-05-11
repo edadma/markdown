@@ -89,16 +89,15 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
   }
 
   it should "handle fewer than 4 spaces as regular paragraph" in {
-    val input = """
-                  |   Only 3 spaces
+    val input = """   Only 3 spaces
                   |  Only 2 spaces""".stripMargin
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
       Paragraph(List(
-        Text("   Only 3 spaces"),
+        Text("Only 3 spaces"),
         SoftLineBreak(),
-        Text("  Only 2 spaces"),
+        Text("Only 2 spaces"),
       )),
     ))
   }
