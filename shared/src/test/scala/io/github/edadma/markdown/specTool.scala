@@ -13,13 +13,38 @@ case class TestJson(
     section: String,
 ) derives JsonDecoder
 
-//@main
+@main
 def specTool(): Unit =
   val json                                  = readFile("spec.json")
   val tests: List[TestJson]                 = json.fromJson[List[TestJson]].getOrElse(sys.error("error parsing emojis"))
   val sections: Map[String, List[TestJson]] = tests.groupBy(_.section)
 
-  genSection(sections, "Autolinks")
+//  genSection(sections, "Inlines")
+//  genSection(sections, "Autolinks")
+//  genSection(sections, "Soft line breaks")
+//  genSection(sections, "Hard line breaks")
+//  genSection(sections, "ATX headings")
+//  genSection(sections, "Paragraphs")
+//  genSection(sections, "Setext headings")
+  genSection(sections, "Indented code blocks")
+//  genSection(sections, "Images")
+//  genSection(sections, "List items")
+//  genSection(sections, "Code spans")
+//  genSection(sections, "Thematic breaks")
+//  genSection(sections, "Lists")
+//  genSection(sections, "Raw HTML")
+//  genSection(sections, "Block quotes")
+//  genSection(sections, "Emphasis and strong emphasis")
+//  genSection(sections, "Links")
+//  genSection(sections, "Link reference definitions")
+//  genSection(sections, "Blank lines")
+//  genSection(sections, "Tabs")
+//  genSection(sections, "Fenced code blocks")
+//  genSection(sections, "Precedence")
+//  genSection(sections, "Textual content")
+//  genSection(sections, "Entity and numeric character references")
+//  genSection(sections, "HTML blocks")
+//  genSection(sections, "Backslash escapes")
 
 def escape(s: String): String = s.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t`").replace("\"", "\\\"")
 
