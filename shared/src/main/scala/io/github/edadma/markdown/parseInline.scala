@@ -513,7 +513,7 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
   // Check for URI autolink
   if (isAbsoluteUri(contentStr)) {
     logger.debug(s"Found URI autolink: $contentStr")
-    openingNode.element = AutoLink(contentStr, contentStr)
+    openingNode.element = AutoLink(percentEncode(contentStr), contentStr)
 
     // Remove everything between opening < and closing >
     if (openingNode.following != current.following) {
