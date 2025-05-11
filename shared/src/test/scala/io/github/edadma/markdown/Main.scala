@@ -23,7 +23,7 @@ def run(): Unit =
 
 //  val input =
 //    """&trade;""".stripMargin
-  val input = "# Heading\n    foo\nHeading\n------\n    foo\n----\n"
+  val input = "    chunk1\n      \n      chunk2\n"
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
@@ -35,7 +35,7 @@ def run(): Unit =
 
 //  pprintln(refs)
   pprintln(doc)
-  println(renderToHTML(doc))
+  pprintln(renderToHTML(doc))
 
 //  pprintln(extractHeaders(doc))
 
