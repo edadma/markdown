@@ -478,8 +478,7 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
   while (
     current.notAfterEnd &&
     !(current.element.isInstanceOf[C] &&
-      current.element.asInstanceOf[C].char == '>' &&
-      !current.element.asInstanceOf[C].isLiteral)
+      current.element.asInstanceOf[C].char == '>')
   ) {
 
     current.element match {
@@ -506,6 +505,8 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
     logger.debug("No closing '>' found")
     return node
   }
+
+  if current.element.asInstanceOf[C].isLiteral then content append "\\"
 
   val contentStr = content.toString()
 
@@ -548,6 +549,7 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
     return openingNode
   }
 
+  println("invalid")
   // Not a valid autolink or HTML tag, treat as literal
   logger.debug("Not a valid autolink or HTML tag")
   node

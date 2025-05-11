@@ -3,10 +3,10 @@ package io.github.edadma.markdown
 import pprint.pprintln
 import io.github.edadma.logger.LogLevel
 
-//@main
+@main
 def run(): Unit =
-//  logger.setLogLevel(LogLevel.DEBUG)
-//  logger.setFileLogging()
+  logger.setLogLevel(LogLevel.DEBUG)
+  logger.setFileLogging()
 
 //  val linkRefs = Map("ref" -> LinkReference("image.jpg", None))
 //  val input    = "Shortcut image: ![ref]"
@@ -21,8 +21,9 @@ def run(): Unit =
 //
 //  println(renderToHTML(input))
 
-  val input =
-    """&trade;""".stripMargin
+//  val input =
+//    """&trade;""".stripMargin
+  val input = "<https://example.com/\\[\\>\n"
   val (doc, refs) =
     parseDocumentContentWithRefs(input, MarkdownConfig.all)
 
