@@ -16,92 +16,93 @@ def parseDocumentContentWithRefs(
 
   parseDocument(reader.stream, config)
 
-def renderToHTML(node: Node): String = node match {
-  case Document(children)      => children.map(renderToHTML).mkString("\n")
-  case Paragraph(inlines)      => s"<p>${renderInlines(inlines)}</p>"
-  case Heading(level, inlines) => s"<h$level>${renderInlines(inlines)}</h$level>"
-  case Code(content, infoString) =>
-    val languageClass = infoString.map(info => s" class=\"language-$info\"").getOrElse("")
-    s"<pre><code$languageClass>${escapeXml(content)}</code></pre>"
-  case BlockQuote(children) => s"<blockquote>\n${children.map(renderToHTML).mkString("\n")}\n</blockquote>"
-  case ThematicBreak()      => "<hr />"
-  case HTMLBlock(content)   => content
-  // In the renderToHTML function, add cases for ListBlock and ListItem
-  case ListBlock(data, items) =>
-    val tagName = if (data.isOrdered) "ol" else "ul"
-    val startAttr = if (data.isOrdered && data.startNumber.exists(_ != 1))
-      s""" start="${data.startNumber.get}""""
-    else
-      ""
+def renderBlockToHTML(node: Block): String =
+  node match
+    case Paragraph(inlines)      => s"<p>${renderInlines(inlines)}</p>"
+    case Heading(level, inlines) => s"<h$level>${renderInlines(inlines)}</h$level>"
+    case Code(content, infoString) =>
+      val languageClass = infoString.map(info => s" class=\"language-$info\"").getOrElse("")
+      s"<pre><code$languageClass>${escapeXml(content)}</code></pre>"
+    case BlockQuote(children) => s"<blockquote>\n${children.map(renderBlockToHTML).mkString("\n")}\n</blockquote>"
+    case ThematicBreak()      => "<hr />"
+    case HTMLBlock(content)   => content
+    case ListBlock(data, items) =>
+      val tagName = if (data.isOrdered) "ol" else "ul"
+      val startAttr = if (data.isOrdered && data.startNumber.exists(_ != 1))
+        s""" start="${data.startNumber.get}""""
+      else
+        ""
 
-    s"<$tagName$startAttr>\n${items.flatMap {
-        case ListItem(List(Paragraph(List(Text(text))))) => s"<li>$text</li>\n"
-        case ListItem(content)                           => s"<li>${content.map(renderToHTML).mkString("\n")}\n</li>"
-      }.mkString}</$tagName>"
-  // In the renderToHTML function, add cases for Table, TableRow, and TableCell
-  case Table(headerRow, rows, alignments) =>
-    val alignAttrs = alignments.map {
-      case TableAlignment.Left   => " align=\"left\""
-      case TableAlignment.Center => " align=\"center\""
-      case TableAlignment.Right  => " align=\"right\""
-      case TableAlignment.None   => ""
-    }
-
-    val headerHTML = s"<thead>\n<tr>${
-        headerRow.cells.zip(alignAttrs).map { case (cell, align) =>
-          s"<th$align>${renderInlines(cell.content)}</th>"
-        }.mkString
-      }</tr>\n</thead>"
-
-    val bodyHTML = if (rows.nonEmpty) {
-      s"<tbody>\n${
-          rows.map { row =>
-            s"<tr>${
-                row.cells.zip(alignAttrs).map { case (cell, align) =>
-                  s"<td$align>${renderInlines(cell.content)}</td>"
-                }.mkString
-              }</tr>"
-          }.mkString("\n")
-        }\n</tbody>"
-    } else ""
-
-    s"<table>\n$headerHTML\n$bodyHTML\n</table>"
-  case DefinitionListBlock(items) =>
-    val sb = new StringBuilder("<dl>\n")
-
-    items.foreach { case (term, definitions) =>
-      sb.append("  <dt>").append(renderInlines(term)).append("</dt>\n")
-
-      definitions.foreach { defBlock =>
-        sb.append("  <dd>\n")
-        sb.append(renderToHTML(defBlock))
-        sb.append("  </dd>\n")
+      s"<$tagName$startAttr>\n${items.flatMap {
+          case ListItem(List(Paragraph(List(Text(text))))) => s"<li>$text</li>\n"
+          case ListItem(content) => s"<li>${content.map(renderBlockToHTML).mkString("\n")}\n</li>"
+        }.mkString}</$tagName>"
+    case Table(headerRow, rows, alignments) =>
+      val alignAttrs = alignments.map {
+        case TableAlignment.Left   => " align=\"left\""
+        case TableAlignment.Center => " align=\"center\""
+        case TableAlignment.Right  => " align=\"right\""
+        case TableAlignment.None   => ""
       }
-    }
 
-    sb.append("</dl>")
-    sb.toString
-  case MathBlock(content) => s"""<div class="math display">\\[${escapeXml(content)}\\]</div>"""
-  case CalloutBlock(calloutType, title, children) =>
-    val titleHtml = title.map(t => s"""<div class="callout-title">$t</div>""").getOrElse(
-      s"""<div class="callout-title">${calloutType.capitalize}</div>""",
-    )
+      val headerHTML = s"<thead>\n<tr>${
+          headerRow.cells.zip(alignAttrs).map { case (cell, align) =>
+            s"<th$align>${renderInlines(cell.content)}</th>"
+          }.mkString
+        }</tr>\n</thead>"
 
-    s"""<div class="callout callout-$calloutType">
-       |  $titleHtml
-       |  <div class="callout-content">
-       |    ${children.map(renderToHTML).mkString("\n    ")}
-       |  </div>
-       |</div>""".stripMargin
-  case CollapsibleBlock(title, isOpen, children) =>
-    val openAttr  = if (isOpen) " open" else ""
-    val titleText = if title == "" then "Click to expand" else title
+      val bodyHTML = if (rows.nonEmpty) {
+        s"<tbody>\n${
+            rows.map { row =>
+              s"<tr>${
+                  row.cells.zip(alignAttrs).map { case (cell, align) =>
+                    s"<td$align>${renderInlines(cell.content)}</td>"
+                  }.mkString
+                }</tr>"
+            }.mkString("\n")
+          }\n</tbody>"
+      } else ""
 
-    s"""<details$openAttr>
-       |  <summary>$titleText</summary>
-       |  ${children.map(renderToHTML).mkString("\n")}
-       |</details>""".stripMargin
-  case n: Inline => sys.error(s"inline node in block position: '$n'")
+      s"<table>\n$headerHTML\n$bodyHTML\n</table>"
+    case DefinitionListBlock(items) =>
+      val sb = new StringBuilder("<dl>\n")
+
+      items.foreach { case (term, definitions) =>
+        sb.append("  <dt>").append(renderInlines(term)).append("</dt>\n")
+
+        definitions.foreach { defBlock =>
+          sb.append("  <dd>\n")
+          sb.append(renderToHTML(defBlock))
+          sb.append("  </dd>\n")
+        }
+      }
+
+      sb.append("</dl>")
+      sb.toString
+    case MathBlock(content) => s"""<div class="math display">\\[${escapeXml(content)}\\]</div>"""
+    case CalloutBlock(calloutType, title, children) =>
+      val titleHtml = title.map(t => s"""<div class="callout-title">$t</div>""").getOrElse(
+        s"""<div class="callout-title">${calloutType.capitalize}</div>""",
+      )
+
+      s"""<div class="callout callout-$calloutType">
+         |  $titleHtml
+         |  <div class="callout-content">
+         |    ${children.map(renderBlockToHTML).mkString("\n    ")}
+         |  </div>
+         |</div>""".stripMargin
+    case CollapsibleBlock(title, isOpen, children) =>
+      val openAttr  = if (isOpen) " open" else ""
+      val titleText = if title == "" then "Click to expand" else title
+
+      s"""<details$openAttr>
+         |  <summary>$titleText</summary>
+         |  ${children.map(renderBlockToHTML).mkString("\n")}
+         |</details>""".stripMargin
+
+def renderToHTML(node: Node): String = node match {
+  case Document(children) => children.map(renderBlockToHTML).map(_ + '\n').mkString
+  case n: Inline          => sys.error(s"inline node in block position: '$n'")
 }
 
 private def renderInlines(inlines: List[Inline]): String =
