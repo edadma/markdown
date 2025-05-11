@@ -13,7 +13,7 @@ case class TestJson(
     section: String,
 ) derives JsonDecoder
 
-@main
+//@main
 def specTool(): Unit =
   val json                                  = readFile("spec.json")
   val tests: List[TestJson]                 = json.fromJson[List[TestJson]].getOrElse(sys.error("error parsing emojis"))
