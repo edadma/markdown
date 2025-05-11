@@ -488,7 +488,9 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
         if (c.char == '\n') {
           logger.debug("Line ending found in potential autolink/HTML - treating as literal")
           return node // Return original node unchanged
-        }
+        } else if c.isLiteral then
+          content append "\\"
+
         content.append(c.char)
       case _ => return node // Non-cursor element found, not a valid autolink/HTML
     }
