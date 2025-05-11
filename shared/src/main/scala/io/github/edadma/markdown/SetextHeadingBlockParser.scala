@@ -40,7 +40,7 @@ object SetextHeadingBlockParser extends BlockParser {
     val level = if (underlineText.charAt(0) == '=') 1 else 2
 
     // Extract content (excluding newline)
-    val content = contentLine.takeWhile(c => c.char != '\n').toList
+    val content = contentLine.takeWhile(c => c.char != '\n').reverse.dropWhile(c => c.char == ' ').reverse
 
     (Heading(level, content), 2) // Consume two lines (content + underline)
   }
