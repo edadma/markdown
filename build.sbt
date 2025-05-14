@@ -53,7 +53,6 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
         "-unchecked",
         "-Xfatal-warnings",
       ),
-    organization := "io.github.edadma",
     libraryDependencies ++= Seq(
       "org.scalatest"    %%% "scalatest"      % "3.2.19" % "test",
       "com.github.scopt" %%% "scopt"          % "4.1.0",
