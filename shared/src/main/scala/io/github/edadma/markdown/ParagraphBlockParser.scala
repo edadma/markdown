@@ -36,7 +36,7 @@ object ParagraphBlockParser extends BlockParser {
       case _                         => paraLines.length
     }
 
-    val content: List[Inline] =
+    val content: List[C] =
       if (paraLines.nonEmpty) {
         // Start with all lines flattened
         val allChars = paraLines.flatMap(_.dropWhile(_.char.isSpaceChar)).toList
@@ -50,7 +50,7 @@ object ParagraphBlockParser extends BlockParser {
 
         noLastNewline.reverse.dropWhile(_.char.isSpaceChar).reverse
       } else {
-        List.empty[Inline]
+        List.empty[C]
       }
 
     (Paragraph(content), linesConsumed)
