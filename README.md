@@ -2,7 +2,7 @@
 
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown_sjs1_3)
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
-![Scala Version](https://img.shields.io/badge/Scala-3.6.4-blue.svg)
+![Scala Version](https://img.shields.io/badge/Scala-3.7.0-blue.svg)
 ![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.19.0-blue.svg)
 ![Scala Native Version](https://img.shields.io/badge/Scala_Native-5.7-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
