@@ -1280,6 +1280,10 @@ def lookForLinkOrImage(
       if (result != null) return result
       // Full reference failed — per spec, [foo][bar] with valid [bar] means no shortcut fallback
       delimiterStack.remove(delimiterStack.indexOf(openerInfo))
+      if (isImage) {
+        val bangC = C('!', openerInfo.node.element.asInstanceOf[C].pos, openerInfo.node.element.asInstanceOf[C].line, openerInfo.node.element.asInstanceOf[C].column - 1, false)
+        openerInfo.node.precede(bangC)
+      }
       return current.following
     }
   }
@@ -1291,6 +1295,11 @@ def lookForLinkOrImage(
 
   // Nothing matched — remove opener, output literal ]
   delimiterStack.remove(delimiterStack.indexOf(openerInfo))
+  // If image opener failed, restore the '!' that was unlinked when the opener was created
+  if (isImage) {
+    val bangC = C('!', openerInfo.node.element.asInstanceOf[C].pos, openerInfo.node.element.asInstanceOf[C].line, openerInfo.node.element.asInstanceOf[C].column - 1, false)
+    openerInfo.node.precede(bangC)
+  }
   current.following
 }
 
