@@ -46,7 +46,7 @@ class HTMLBlockParserTest extends AnyFlatSpec with Matchers {
     doc.children shouldBe List(
       HTMLBlock(
         "<script>\n" +
-          "console.log(\"hello\");\n" +
+          "console.log(\\\"hello\\\");\n" +
           "</script>\n",
       ),
     )

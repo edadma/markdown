@@ -23,6 +23,14 @@ object ListBlockParser extends BlockParser {
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
+    // Check if any marker character is escaped (isLiteral) — escaped markers don't start lists
+    val trimmed = lines.head.dropWhile(c => c.char == ' ' && !c.isLiteral)
+    if (trimmed.nonEmpty && trimmed.head.isLiteral) return false
+    // For ordered lists (digit followed by . or )), check if the . or ) is literal
+    val afterDigits = trimmed.dropWhile(c => c.char.isDigit && !c.isLiteral)
+    if (afterDigits.nonEmpty && (afterDigits.head.char == '.' || afterDigits.head.char == ')') && afterDigits.head.isLiteral)
+      return false
+
     val lineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
 
     // Check if this line can start a list

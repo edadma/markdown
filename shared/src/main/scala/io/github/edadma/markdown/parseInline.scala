@@ -166,7 +166,7 @@ private def decodeHtmlEntities(input: String): String = {
   val entityPattern = """&(#[xX]([0-9a-fA-F]+)|#([0-9]+)|([a-zA-Z][a-zA-Z0-9]*));""".r
 
   // Replace all entities in the input string
-  entityPattern.replaceAllIn(
+  val decoded = entityPattern.replaceAllIn(
     input,
     matchResult => {
       val entity     = matchResult.group(0)         // The entire entity (e.g., "&amp;")
@@ -179,7 +179,7 @@ private def decodeHtmlEntities(input: String): String = {
         // Handle hex entities (e.g., &#x26;)
         try {
           val codePoint = Integer.parseInt(hexValue.get, 16)
-          new String(Character.toChars(codePoint))
+          java.util.regex.Matcher.quoteReplacement(new String(Character.toChars(codePoint)))
         } catch {
           case _: Exception => entity // Return original if parsing fails
         }
@@ -187,14 +187,14 @@ private def decodeHtmlEntities(input: String): String = {
         // Handle decimal entities (e.g., &#38;)
         try {
           val codePoint = Integer.parseInt(decValue.get)
-          new String(Character.toChars(codePoint))
+          java.util.regex.Matcher.quoteReplacement(new String(Character.toChars(codePoint)))
         } catch {
           case _: Exception => entity // Return original if parsing fails
         }
       } else if (namedValue.isDefined) {
         // Handle named entities (e.g., &amp;)
         entities get namedValue.get match
-          case Some(replacement) => replacement
+          case Some(replacement) => java.util.regex.Matcher.quoteReplacement(replacement)
           case None              => entity
       } else {
         // If no replacement is found, return the original entity
@@ -202,6 +202,8 @@ private def decodeHtmlEntities(input: String): String = {
       }
     },
   )
+  // Restore sentinel \uFDD0 back to & (was used to protect escaped & from entity decoding)
+  decoded.replace('\uFDD0', '&')
 }
 
 def analyzeDelimiter(node: DLListNode[Inline]): DelimiterInfo = {
@@ -405,6 +407,8 @@ def extractAndProcessCodeSpanContent(start: DLListNode[Inline], end: DLListNode[
         if (c.char == '\n') {
           builder.append(' ')
         } else {
+          // Restore backslash for escaped chars (code spans don't process escapes per spec)
+          if (c.isLiteral) builder.append('\\')
           builder.append(c.char)
         }
       case t: Text => builder.append(t.content)
@@ -596,7 +600,10 @@ private def consolidateCharacters(nodes: DLList[Inline]): Unit = {
 
           // Collect consecutive C nodes
           while (currentNode.notAfterEnd && currentNode.element.isInstanceOf[C]) {
-            sb.append(currentNode.element.asInstanceOf[C].char)
+            val c = currentNode.element.asInstanceOf[C]
+            // Use sentinel \uFDD0 for literal & to prevent entity decoding
+            if (c.isLiteral && c.char == '&') sb.append('\uFDD0')
+            else sb.append(c.char)
             currentNode = currentNode.following
           }
 

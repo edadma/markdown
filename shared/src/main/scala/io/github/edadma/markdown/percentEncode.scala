@@ -2,7 +2,7 @@ package io.github.edadma.markdown
 
 import java.nio.charset.StandardCharsets
 
-private val unreserved = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~:/?=&@+,".toSet
+private val unreserved = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~:/?=&@+,!*'();#$%".toSet
 
 def percentEncode(input: String): String =
   input.flatMap { ch =>

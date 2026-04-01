@@ -102,7 +102,7 @@ def renderBlockToHTML(node: Block): String =
          |</details>""".stripMargin
 
 def renderToHTML(node: Node): String = node match {
-  case Document(children) => children.map(renderBlockToHTML).map(_ + '\n').mkString
+  case Document(children) => children.map(renderBlockToHTML).map(s => if (s.endsWith("\n")) s else s + '\n').mkString
   case n: Inline          => sys.error(s"inline node in block position: '$n'")
 }
 

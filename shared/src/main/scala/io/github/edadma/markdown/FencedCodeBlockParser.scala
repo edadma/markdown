@@ -95,7 +95,8 @@ object FencedCodeBlockParser extends BlockParser {
         isFirstContentLine = false
 
         // Remove up to N spaces indentation where N is the opening fence indentation
-        val processedLine = removeIndentation(lineText, leadingIndent)
+        val rawLineText   = rawText(line)
+        val processedLine = removeIndentation(rawLineText, leadingIndent)
         contentBuilder.append(processedLine)
       }
 

@@ -89,6 +89,10 @@ object HTMLBlockParser extends BlockParser {
     line.takeWhile(_.char != '\n').map(_.char).mkString
 
   override def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = lines.headOption.exists { line =>
+    // Check if the leading < is escaped
+    val stripped = line.dropWhile(c => c.char == ' ')
+    if (stripped.nonEmpty && stripped.head.char == '<' && stripped.head.isLiteral) return false
+
     val t  = text(line).trim
     val lc = t.toLowerCase
 
@@ -117,18 +121,22 @@ object HTMLBlockParser extends BlockParser {
     def text(line: List[C]): String =
       line.takeWhile(_.char != '\n').map(_.char).mkString
 
+    // Raw text preserving backslash escapes (for content output)
+    def rawTextLine(line: List[C]): String = rawText(line)
+
     // 2. Consume up to (and including) the first line containing `close`,
     //    or all lines if never found.
     def takeUntilClose(close: String): (String, Int) = {
-      val all = lines.map(l => text(l) + "\n")
+      val all = lines.map(l => rawTextLine(l) + "\n")
       val idx = lines.indexWhere(l => text(l).contains(close), 1)
       if (idx >= 0) (all.take(idx + 1).mkString, idx + 1)
       else (all.mkString, lines.length)
     }
 
-    val firstLine = text(lines.head)
-    val trimmed   = firstLine.trim
-    val lc        = trimmed.toLowerCase
+    val firstLine    = text(lines.head)
+    val firstLineRaw = rawTextLine(lines.head)
+    val trimmed      = firstLine.trim
+    val lc           = trimmed.toLowerCase
 
     // Try each HTML‐block form in order, building an Option[(Block,Int)]
     val resultOpt: Option[(Block, Int)] =
@@ -143,7 +151,7 @@ object HTMLBlockParser extends BlockParser {
 
         // 4) <!DOCTYPE …>
         .orElse(Option.when(doctypePattern.matches(trimmed)) {
-          (HTMLBlock(firstLine + "\n"), 1)
+          (HTMLBlock(firstLineRaw + "\n"), 1)
         })
 
         // 5) <script>…</script>
@@ -177,11 +185,11 @@ object HTMLBlockParser extends BlockParser {
 
         // 9) any single‐line tag (</foo> or <span> etc.)
         .orElse(Option.when(genericTagPattern.matches(trimmed)) {
-          (HTMLBlock(firstLine + "\n"), 1)
+          (HTMLBlock(firstLineRaw + "\n"), 1)
         })
 
     // Finally, if somehow nothing matched, treat it as one‐line HTML
-    resultOpt.getOrElse((HTMLBlock(firstLine + "\n"), 1))
+    resultOpt.getOrElse((HTMLBlock(firstLineRaw + "\n"), 1))
   }
 
 }

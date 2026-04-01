@@ -8,6 +8,10 @@ object LinkReferenceDefinitionParser extends BlockParser {
   val name: String = "link refs"
 
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
+    // Check if the opening [ is escaped
+    val stripped = lines.head.dropWhile(c => c.char == ' ')
+    if (stripped.nonEmpty && stripped.head.char == '[' && stripped.head.isLiteral) return false
+
     val content = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
     val trimmed = content.trim
 

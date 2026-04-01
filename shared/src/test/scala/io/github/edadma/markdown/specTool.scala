@@ -44,7 +44,7 @@ def specTool(): Unit =
 //  genSection(sections, "Textual content")
 //  genSection(sections, "Entity and numeric character references")
 //  genSection(sections, "HTML blocks")
-//  genSection(sections, "Backslash escapes")
+  genSection(sections, "Backslash escapes")
 
 def escape(s: String): String = s.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t").replace("\"", "\\\"")
 

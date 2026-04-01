@@ -138,7 +138,7 @@ object IndentedCodeBlockParser extends BlockParser {
     }
 
     // Return the rest of the line (excluding newline)
-    line.drop(i).takeWhile(_.char != '\n').map(_.char).mkString
+    rawText(line.drop(i))
   }
 
   /** Check if a line is blank (contains only whitespace or is empty)

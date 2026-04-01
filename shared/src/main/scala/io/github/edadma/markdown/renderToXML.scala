@@ -96,6 +96,5 @@ def escapeXml(s: String): String =
     case '<'  => "&lt;"
     case '>'  => "&gt;"
     case '"'  => "&quot;"
-    case '\'' => "&apos;"
     case c    => c.toString
   }

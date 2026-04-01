@@ -118,3 +118,12 @@ class InputReader(input: String) {
     expand(stream, 0)
   }
 }
+
+/** Extract raw text from a list of C cursors, restoring backslashes for literal (escaped) characters. Use this for
+  * contexts where backslash escapes should not be processed (code blocks, code spans, HTML blocks).
+  */
+def rawText(cursors: List[C]): String =
+  cursors
+    .takeWhile(_.char != '\n')
+    .flatMap(c => if (c.isLiteral) List('\\', c.char) else List(c.char))
+    .mkString
