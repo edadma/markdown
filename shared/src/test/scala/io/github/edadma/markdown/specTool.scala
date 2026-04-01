@@ -33,7 +33,7 @@ def specTool(): Unit =
   genSection(sections, "Thematic breaks")
 //  genSection(sections, "Lists")
   genSection(sections, "Raw HTML")
-//  genSection(sections, "Block quotes")
+  genSection(sections, "Block quotes")
 //  genSection(sections, "Emphasis and strong emphasis")
 //  genSection(sections, "Links")
 //  genSection(sections, "Link reference definitions")

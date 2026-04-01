@@ -71,7 +71,16 @@ object BlockQuoteParser extends BlockParser {
         count += 1
         // Check if it's a blank line with just a > marker or content
         val contentAfterMarker = lineText.replaceFirst("^ {0,3}>[ \t]?", "")
-        inParagraph = contentAfterMarker.trim.nonEmpty // Track if we're in a paragraph
+        // Track if we're in a paragraph (not blank, not starting a non-paragraph block)
+        val contentNonBlank = contentAfterMarker.trim.nonEmpty
+        val contentIsBlock = contentNonBlank && {
+          val contentIndent = contentAfterMarker.takeWhile(_ == ' ').length
+          contentIndent >= 4 || // indented code block
+          contentAfterMarker.trim.startsWith("```") ||
+          contentAfterMarker.trim.startsWith("~~~") ||
+          contentAfterMarker.trim.startsWith("#")
+        }
+        inParagraph = contentNonBlank && !contentIsBlock
         currentLines = currentLines.tail
       } else if (isBlank) {
         // Blank line without a > marker
