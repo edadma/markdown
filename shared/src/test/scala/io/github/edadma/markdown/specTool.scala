@@ -23,7 +23,7 @@ def specTool(): Unit =
 //  genSection(sections, "Autolinks")
 //  genSection(sections, "Soft line breaks")
 //  genSection(sections, "Hard line breaks")
-//  genSection(sections, "ATX headings")
+  genSection(sections, "ATX headings")
 //  genSection(sections, "Paragraphs")
 //  genSection(sections, "Setext headings")
   genSection(sections, "Indented code blocks")
