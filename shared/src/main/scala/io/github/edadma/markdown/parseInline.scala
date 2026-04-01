@@ -1279,23 +1279,22 @@ def lookForLinkOrImage(
 
   // Parse ahead to see what kind of link/image we have
   val next = current.following
-
   // Case 1: Inline link/image [foo](url "title")
   if (isInlineLinkStart(next)) {
     logger.debug("Detected inline link/image")
     processInlineLink(openerInfo, current, next, isImage, delimiterStack, config)
   }
 
-  // Case 2: Full reference link/image [foo][bar]
-  else if (isFullReferenceLinkStart(next)) {
-    logger.debug("Detected full reference link/image")
-    processReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
-  }
-
-  // Case 3: Collapsed reference link/image [foo][]
+  // Case 2: Collapsed reference link/image [foo][] (check before full reference)
   else if (isCollapsedReferenceLinkStart(next)) {
     logger.debug("Detected collapsed reference link/image")
     processCollapsedReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
+  }
+
+  // Case 3: Full reference link/image [foo][bar]
+  else if (isFullReferenceLinkStart(next)) {
+    logger.debug("Detected full reference link/image")
+    processReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
   }
 
   // Case 4: Shortcut reference link/image [foo]

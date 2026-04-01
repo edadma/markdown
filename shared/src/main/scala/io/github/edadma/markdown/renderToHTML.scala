@@ -135,7 +135,8 @@ private def renderAltText(inlines: List[Inline]): String = {
     case CodeSpan(content)    => escapeXml(content)
     case Emphasis(children)   => renderAltText(children)
     case Strong(children)     => renderAltText(children)
-    case Link(_, _, children) => renderAltText(children)
-    case _                    => ""
+    case Link(_, _, children)  => renderAltText(children)
+    case Image(_, _, children) => renderAltText(children)
+    case _                     => ""
   }.mkString
 }
