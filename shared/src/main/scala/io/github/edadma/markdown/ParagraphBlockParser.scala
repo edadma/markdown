@@ -24,7 +24,7 @@ object ParagraphBlockParser extends BlockParser {
         !HTMLBlockParser.canStart(LazyList(line), config) &&
         !FencedCodeBlockParser.canStart(LazyList(line), config) &&
         !BlockQuoteParser.canStart(LazyList(line), config) &&
-        !ListBlockParser.canStart(LazyList(line), config) &&
+        !ListBlockParser.canInterruptParagraph(LazyList(line), config) &&
         !MathBlockParser.canStart(LazyList(line), config)
 
     // split into the leading paragraph lines, and the remainder

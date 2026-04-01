@@ -20,6 +20,28 @@ object ListBlockParser extends BlockParser {
   private val OrderedListMarker   = """^( {0,3})(\d{1,9})([.)])(\s+)(.*)$""".r
   private val MaxIndentTolerance  = 1
 
+  /** Check if this list can interrupt a paragraph. Per CommonMark spec:
+    * - An ordered list with start != 1 cannot interrupt a paragraph
+    * - An empty list item cannot interrupt a paragraph
+    */
+  def canInterruptParagraph(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
+    if (!canStart(lines, config)) return false
+    val lineText = lines.head.takeWhile(_.char != '\n').map(_.char).mkString
+    // Check ordered list start number
+    OrderedListMarker.findFirstMatchIn(lineText) match {
+      case Some(m) =>
+        val number = m.group(2).toInt
+        val content = m.group(5)
+        number == 1 && content.trim.nonEmpty // Must start at 1 and not be empty
+      case None =>
+        // Unordered list — check it's not an empty item
+        UnorderedListMarker.findFirstMatchIn(lineText) match {
+          case Some(m) => m.group(4).trim.nonEmpty
+          case None    => false
+        }
+    }
+  }
+
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.isEmpty) return false
 
