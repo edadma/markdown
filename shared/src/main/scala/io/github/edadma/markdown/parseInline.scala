@@ -496,6 +496,25 @@ def processLineBreak(node: DLListNode[Inline]): DLListNode[Inline] = {
   // If we get here, it's a soft break
   logger.debug("Creating soft line break")
   node.element = SoftLineBreak()
+
+  // Strip trailing spaces before the soft break
+  while (
+    node.preceding.notBeforeStart &&
+    node.preceding.element.isInstanceOf[C] &&
+    node.preceding.element.asInstanceOf[C].char == ' '
+  ) {
+    node.preceding.unlink
+  }
+
+  // Strip leading spaces after the soft break
+  while (
+    node.following.notAfterEnd &&
+    node.following.element.isInstanceOf[C] &&
+    node.following.element.asInstanceOf[C].char == ' '
+  ) {
+    node.following.unlink
+  }
+
   node
 }
 
