@@ -107,7 +107,14 @@ object HTMLBlockParser extends BlockParser {
     // 5. <script>/<style>/<pre>
     multiTagNames.exists(tag => lc.startsWith(s"<$tag")) ||
     // 6–7. Any other block-level or generic tag (single line)
-    genericTagPattern.matches(t)
+    // Use rawText to preserve backslash escapes for proper validation
+    {
+      val rt = rawText(line).trim
+      rt.startsWith("<") && rt.endsWith(">") && {
+        val inner = rt.substring(1, rt.length - 1)
+        inner.nonEmpty && isHtmlTag(inner)
+      }
+    }
   }
 
   override def parse(
@@ -184,9 +191,12 @@ object HTMLBlockParser extends BlockParser {
         }
 
         // 9) any single‐line tag (</foo> or <span> etc.)
-        .orElse(Option.when(genericTagPattern.matches(trimmed)) {
-          (HTMLBlock(firstLineRaw + "\n"), 1)
-        })
+        .orElse {
+          val stripped = trimmed.stripPrefix("<").stripSuffix(">")
+          Option.when(stripped.nonEmpty && isHtmlTag(stripped)) {
+            (HTMLBlock(firstLineRaw + "\n"), 1)
+          }
+        }
 
     // Finally, if somehow nothing matched, treat it as one‐line HTML
     resultOpt.getOrElse((HTMLBlock(firstLineRaw + "\n"), 1))

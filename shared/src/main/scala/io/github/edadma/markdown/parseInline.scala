@@ -524,83 +524,117 @@ def processLineBreak(node: DLListNode[Inline]): DLListNode[Inline] = {
 def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
   logger.debug(s"Starting HTML/autolink processing on node: ${node.element}")
 
-  // Find the closing '>' if it exists
   val openingNode = node
   var current     = node.following
   val content     = new StringBuilder()
 
-  // Look ahead to find a potential closing '>'
+  // Helper: append a C node to content, tracking newlines and restoring literal backslashes
   var hasNewline = false
-  while (
-    current.notAfterEnd &&
-    !(current.element.isInstanceOf[C] &&
-      current.element.asInstanceOf[C].char == '>')
-  ) {
+  def appendC(c: C): Unit = {
+    if (c.char == '\n') hasNewline = true
+    if (c.isLiteral) content.append('\\')
+    content.append(c.char)
+  }
 
+  // Collect characters to find the closing '>'
+  // Track quote state so '>' inside quoted attribute values doesn't close the tag
+  var inSingleQuote = false
+  var inDoubleQuote = false
+  while (
+    current.notAfterEnd && {
+      val isClose = current.element.isInstanceOf[C] &&
+        current.element.asInstanceOf[C].char == '>' &&
+        !inSingleQuote && !inDoubleQuote
+      !isClose
+    }
+  ) {
     current.element match {
       case c: C =>
-        if (c.char == '\n') hasNewline = true
-        if c.isLiteral then content append "\\"
-        content.append(c.char)
-      case _ => return node // Non-cursor element found, not a valid autolink/HTML
+        if (c.char == '\'' && !inDoubleQuote) inSingleQuote = !inSingleQuote
+        else if (c.char == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote
+        appendC(c)
+      case _ => return node
     }
     current = current.following
   }
 
-  // If we didn't find a closing '>', return original
-  if (
-    current.isAfterEnd ||
-    !(current.element.isInstanceOf[C] &&
-      current.element.asInstanceOf[C].char == '>')
-  ) {
+  // If no '>' found, return original
+  if (current.isAfterEnd) {
     logger.debug("No closing '>' found")
     return node
   }
 
-  if current.element.asInstanceOf[C].isLiteral then content append "\\"
+  // We have content up to the first '>'. Check if this is a special construct
+  // that needs a different closing sequence.
+  val prefix = content.toString()
+
+  // For comments (<!--), CDATA (<![CDATA[), and PIs (<?), the first '>' may not be
+  // the real end — we need to find the correct closing sequence.
+  val specialClose: Option[String] =
+    if (prefix.startsWith("!--")) Some("--")        // comment ends with -->
+    else if (prefix.startsWith("![CDATA[")) Some("]]") // CDATA ends with ]]>
+    else if (prefix.startsWith("?")) Some("?")       // PI ends with ?>
+    else None
+
+  if (specialClose.isDefined && !isHtmlTag(prefix)) {
+    val closeSuffix = specialClose.get
+    // Include the first '>' and keep scanning for the proper close
+    content.append('>')
+    current = current.following
+
+    var found = false
+    while (current.notAfterEnd && !found) {
+      current.element match {
+        case c: C =>
+          if (c.char == '>' && !c.isLiteral && content.toString().endsWith(closeSuffix)) {
+            // Found the real closing sequence
+            found = true
+          } else {
+            appendC(c)
+            current = current.following
+          }
+        case _ => return node
+      }
+    }
+
+    if (!found) {
+      logger.debug("No proper closing sequence found for special HTML construct")
+      return node
+    }
+  }
+
+  // Append trailing backslash if closing '>' is literal
+  if (current.element.asInstanceOf[C].isLiteral) content.append('\\')
 
   val contentStr = content.toString()
+
+  // Move past the closing '>'
+  val afterClose = current.following
 
   // Check for URI autolink (autolinks cannot contain newlines)
   if (!hasNewline && isAbsoluteUri(contentStr)) {
     logger.debug(s"Found URI autolink: $contentStr")
     openingNode.element = AutoLink(percentEncode(contentStr), contentStr)
-
-    // Remove everything between opening < and closing >
-    if (openingNode.following != current.following) {
-      openingNode.following.unlinkUntil(current.following)
-    }
-
+    if (openingNode.following != afterClose) openingNode.following.unlinkUntil(afterClose)
     return openingNode
   }
 
   // Check for email autolink (autolinks cannot contain newlines)
-  else if (!hasNewline && isEmailAddress(contentStr)) {
+  if (!hasNewline && isEmailAddress(contentStr)) {
     logger.debug(s"Found email autolink: $contentStr")
     openingNode.element = AutoLink(s"mailto:$contentStr", contentStr)
-
-    // Remove everything between opening < and closing >
-    if (openingNode.following != current.following) {
-      openingNode.following.unlinkUntil(current.following)
-    }
-
+    if (openingNode.following != afterClose) openingNode.following.unlinkUntil(afterClose)
     return openingNode
   }
 
   // Check for HTML tag
-  else if (isHtmlTag(contentStr)) {
+  if (isHtmlTag(contentStr)) {
     logger.debug(s"Found HTML tag: $contentStr")
     openingNode.element = RawHTML(s"<$contentStr>")
-
-    // Remove everything between opening < and closing >
-    if (openingNode.following != current.following) {
-      openingNode.following.unlinkUntil(current.following)
-    }
-
+    if (openingNode.following != afterClose) openingNode.following.unlinkUntil(afterClose)
     return openingNode
   }
 
-  println("invalid")
   // Not a valid autolink or HTML tag, treat as literal
   logger.debug("Not a valid autolink or HTML tag")
   node
@@ -688,8 +722,9 @@ def isHtmlTag(str: String): Boolean = {
   // Note: we're NOT expecting the closing '>' as part of the input string
   val closeTagRegex = s"^/$tagNameRegex\\s*$$".r
 
-  // 3. HTML comment: <!-- anything -- (no closing > expected in the string)
-  val commentRegex = """^!--(?:|(?:.|\n)*?--)$""".r
+  // 3. HTML comment: <!-->, <!--->, or <!-- text --> (text not containing -->)
+  // Content between < and > is passed, so we match: !--, !---, or !--anything--
+  val commentRegex = """(?s)^!--$|^!---$|^!--.+--$""".r
 
   // 4. Processing instruction: <?anything? (no closing > expected)
   val piRegex = """^\?(?:.|\n)*?\?$""".r
