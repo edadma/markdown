@@ -127,3 +127,73 @@ def rawText(cursors: List[C]): String =
     .takeWhile(_.char != '\n')
     .flatMap(c => if (c.isLiteral) List('\\', c.char) else List(c.char))
     .mkString
+
+/** Expand tabs to spaces in the leading whitespace of a line of C cursors.
+  * Only affects whitespace before the first non-whitespace character.
+  * Tabs inside content are preserved.
+  * @param startCol the virtual column at the start of the line (default 0)
+  */
+def expandLeadingTabs(line: List[C], startCol: Int = 0): List[C] = {
+  val result = scala.collection.mutable.ListBuffer[C]()
+  var col    = startCol
+  var rest   = line
+  // Expand tabs/spaces in the leading whitespace
+  while (rest.nonEmpty && (rest.head.char == ' ' || rest.head.char == '\t')) {
+    val c = rest.head
+    if (c.char == '\t') {
+      val spaces = 4 - (col % 4)
+      for (i <- 0 until spaces) result += C(' ', c.pos, c.line, col + i, false)
+      col += spaces
+    } else {
+      result += c
+      col += 1
+    }
+    rest = rest.tail
+  }
+  // Append the rest of the line unchanged
+  result.toList ++ rest
+}
+
+/** Count virtual column width of leading whitespace, treating tabs as expanding to next tab stop (multiples of 4). */
+def virtualIndent(line: List[C]): Int = {
+  var col = 0
+  for (c <- line) {
+    if (c.char == ' ') col += 1
+    else if (c.char == '\t') col += 4 - (col % 4)
+    else return col
+  }
+  col
+}
+
+/** Drop leading whitespace up to `n` virtual columns, expanding tabs as needed. Returns remaining chars.
+  * @param startCol the virtual column at the start of the line (default 0)
+  */
+def dropIndent(line: List[C], n: Int, startCol: Int = 0): List[C] = {
+  var col       = startCol
+  val target    = startCol + n
+  var remaining = line
+  while (remaining.nonEmpty && col < target) {
+    val c = remaining.head
+    if (c.char == ' ') {
+      col += 1
+      remaining = remaining.tail
+    } else if (c.char == '\t') {
+      val tabWidth = 4 - (col % 4)
+      if (col + tabWidth <= target) {
+        col += tabWidth
+        remaining = remaining.tail
+      } else {
+        // Partially consume the tab — replace with remaining spaces
+        val spacesNeeded = target - col
+        col = target
+        remaining = remaining.tail
+        // Prepend the leftover spaces from the partial tab
+        val leftover = tabWidth - spacesNeeded
+        remaining = (0 until leftover).map(i => C(' ', c.pos, c.line, c.column + spacesNeeded + i, false)).toList ++ remaining
+      }
+    } else {
+      return remaining // Non-whitespace, stop
+    }
+  }
+  remaining
+}

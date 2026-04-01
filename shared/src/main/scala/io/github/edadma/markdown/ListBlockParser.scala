@@ -189,14 +189,27 @@ object ListBlockParser extends BlockParser {
   private def getIndentation(line: List[C], listData: ListData): (Int, Int) = {
     val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 
+    // Calculate virtual width of a whitespace string starting at a given column
+    def virtualWidth(s: String, startCol: Int): Int = {
+      var col = startCol
+      for (c <- s) {
+        if (c == ' ') col += 1
+        else if (c == '\t') col += 4 - (col % 4)
+        else return col - startCol
+      }
+      col - startCol
+    }
+
     if (listData.isOrdered) {
       val m             = OrderedListMarker.findFirstMatchIn(lineText).get
       val leadingIndent = m.group(1).length
       val marker        = m.group(2) + m.group(3) // number + delimiter
       val spaces        = m.group(4)
+      val markerEnd     = leadingIndent + marker.length
+      val spacesWidth   = virtualWidth(spaces, markerEnd)
 
       // Content indent is marker indent + marker length + (1 or all spaces if > 4)
-      val contentIndent = leadingIndent + marker.length + Math.min(spaces.length, 1)
+      val contentIndent = markerEnd + Math.min(spacesWidth, 1)
 
       (leadingIndent, contentIndent)
     } else {
@@ -204,9 +217,11 @@ object ListBlockParser extends BlockParser {
       val leadingIndent = m.group(1).length
       val marker        = m.group(2) // bullet character
       val spaces        = m.group(3)
+      val markerEnd     = leadingIndent + marker.length
+      val spacesWidth   = virtualWidth(spaces, markerEnd)
 
       // Content indent is marker indent + marker length + (1 or all spaces if > 4)
-      val contentIndent = leadingIndent + marker.length + Math.min(spaces.length, 1)
+      val contentIndent = markerEnd + Math.min(spacesWidth, 1)
 
       (leadingIndent, contentIndent)
     }
@@ -385,7 +400,13 @@ object ListBlockParser extends BlockParser {
 
   // Helper function to count leading spaces
   private def countLeadingSpaces(text: String): Int = {
-    text.takeWhile(_ == ' ').length
+    var col = 0
+    for (c <- text) {
+      if (c == ' ') col += 1
+      else if (c == '\t') col += 4 - (col % 4)
+      else return col
+    }
+    col
   }
 
   private def processItemLines(
@@ -393,18 +414,22 @@ object ListBlockParser extends BlockParser {
       contentIndent: Int,
       listData: ListData,
   ): LazyList[List[C]] = {
-    // Process first line - remove marker and appropriate spaces
+    // Process first line - remove marker and appropriate whitespace
+    // First, skip leading whitespace and the marker itself, then skip 1 space-equivalent after marker
     val lineText = itemLines.head.takeWhile(_.char != '\n').map(_.char).mkString
-    val firstLineProcessed =
-      if (listData.isOrdered) {
-        val m            = OrderedListMarker.findFirstMatchIn(lineText).get
-        val markerEndPos = m.end(4) // End position after marker and initial spaces
-        itemLines.head.drop(markerEndPos)
-      } else {
-        val m            = UnorderedListMarker.findFirstMatchIn(lineText).get
-        val markerEndPos = m.end(3) // End position after marker and initial spaces
-        itemLines.head.drop(markerEndPos)
-      }
+    val firstLineProcessed = {
+      val markerEndCharPos =
+        if (listData.isOrdered) {
+          val m = OrderedListMarker.findFirstMatchIn(lineText).get
+          m.start(4) // Position of first whitespace char after marker
+        } else {
+          val m = UnorderedListMarker.findFirstMatchIn(lineText).get
+          m.start(3) // Position of first whitespace char after marker
+        }
+      // Drop chars up to marker end, then drop 1 virtual space-equivalent of whitespace
+      val afterMarker = itemLines.head.drop(markerEndCharPos)
+      dropIndent(afterMarker, 1, markerEndCharPos)
+    }
 
     // Process remaining lines - adjust indentation while preserving C objects
     val restProcessed = itemLines.tail.map { line =>
@@ -424,7 +449,7 @@ object ListBlockParser extends BlockParser {
       }
     }
 
-    firstLineProcessed #:: restProcessed
+    (firstLineProcessed #:: restProcessed).map(l => expandLeadingTabs(l, contentIndent))
   }
 
   // Helper method to remove indentation while preserving C objects

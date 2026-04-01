@@ -110,17 +110,25 @@ object BlockQuoteParser extends BlockParser {
       val lineText = line.takeWhile(_.char != '\n').map(_.char).mkString
 
       if (lineText.matches("^ {0,3}>.*$")) {
-        // Remove the > marker and up to one space after it
+        // Remove the > marker and up to one space/tab after it
         val markerPos    = lineText.indexOf('>')
         val contentStart = markerPos + 1
-        val adjustedContentStart =
-          if (contentStart < lineText.length && lineText(contentStart) == ' ')
-            contentStart + 1
-          else
-            contentStart
+        val afterMarker  = line.drop(contentStart)
 
-        // Create new line with marker removed
-        line.drop(adjustedContentStart)
+        // Consume optional space or partial tab after >
+        if (afterMarker.nonEmpty && afterMarker.head.char == ' ') {
+          expandLeadingTabs(afterMarker.tail, markerPos + 2)
+        } else if (afterMarker.nonEmpty && afterMarker.head.char == '\t') {
+          // Tab after > — consume one space-worth, convert rest of tab to spaces
+          val tabCol        = markerPos + 1
+          val tabWidth      = 4 - (tabCol % 4)
+          val remaining     = tabWidth - 1 // Consume 1 space-worth
+          val afterConsumed = tabCol + 1    // Column after consuming 1 space-worth
+          val spaces = (0 until remaining).map(i => C(' ', afterMarker.head.pos, afterMarker.head.line, afterConsumed + i, false)).toList
+          expandLeadingTabs(spaces ++ afterMarker.tail, afterConsumed)
+        } else {
+          expandLeadingTabs(afterMarker, markerPos + 1)
+        }
       } else {
         // For lazy continuation lines, keep as is
         line

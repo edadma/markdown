@@ -149,8 +149,8 @@ private def groupIntoLines(stream: LazyList[C]): LazyList[List[C]] = {
           (lineChars.toList, rest)
         }
 
-      // Return the current line and the remaining stream
-      Some((line, nextRemaining))
+      // Expand tabs in leading whitespace for block structure analysis
+      Some((expandLeadingTabs(line), nextRemaining))
     }
   }
 }
