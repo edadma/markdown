@@ -92,7 +92,7 @@ object ListBlockParser extends BlockParser {
     var hasBlanks          = false
 
     // Process each list item
-    while (currentLines.nonEmpty && isMatchingListItemStart(currentLines.head, listData)) {
+    while (currentLines.nonEmpty && isMatchingListItemStart(currentLines.head, listData) && !ThematicBreakBlockParser.canStart(currentLines, config)) {
       // Parse a single list item
       val (item, linesConsumed, itemHasBlanks) = parseListItem(currentLines, listData, linkRefs, parentIndent, config)
 
@@ -157,7 +157,7 @@ object ListBlockParser extends BlockParser {
     val (markerIndent, contentIndent) = getIndentation(lines.head, listData)
 
     // Collect all lines for this list item, including continuation lines
-    val (itemLines, linesConsumed, hasBlanks) = collectItemLines(lines, markerIndent, contentIndent, listData)
+    val (itemLines, linesConsumed, hasBlanks) = collectItemLines(lines, markerIndent, contentIndent, listData, config)
 
     // Process the item content to remove marker and adjust indentation
     // but KEEP the original C objects to preserve escaping information
@@ -209,6 +209,7 @@ object ListBlockParser extends BlockParser {
       markerIndent: Int,
       contentIndent: Int,
       listData: ListData,
+      config: MarkdownConfig,
   ): (LazyList[List[C]], Int, Boolean) = {
     def isSameListItem(line: String, markerIndent: Int, listData: ListData): Boolean = {
       val lineIndent = countLeadingSpaces(line)
@@ -339,8 +340,9 @@ object ListBlockParser extends BlockParser {
           itemLines += line
           count += 1
           currentLines = currentLines.tail
-        } else if (inParagraph) {
+        } else if (inParagraph && !ThematicBreakBlockParser.canStart(currentLines, config)) {
           // Lazy continuation: include non-marker line if it continues a paragraph
+          // but not if the line is a thematic break (which can interrupt a list)
           inParagraph = true
           previousWasBlank = false
           itemLines += line
