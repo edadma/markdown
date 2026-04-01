@@ -32,7 +32,7 @@ private def blockToXml(b: Block, sb: StringBuilder, indent: Int): Unit = b match
       }.mkString))
     sb.append(s"</h$level>").append("\n")
 
-  case Code(content, _) =>
+  case Code(content, _, _) =>
     appendIndent(sb, indent).append("<code>").append(escapeXml(content)).append("</code>").append("\n")
 
   case BlockQuote(children) =>

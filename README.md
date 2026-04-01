@@ -1,10 +1,11 @@
 # markdown
 
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown_sjs1_3)
+[![Last Commit](https://img.shields.io/github/last-commit/edadma/markdown)](https://github.com/edadma/markdown/commits)
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
-![Scala Version](https://img.shields.io/badge/Scala-3.7.0-blue.svg)
-![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.19.0-blue.svg)
-![Scala Native Version](https://img.shields.io/badge/Scala_Native-5.7-blue.svg)
+![Scala Version](https://img.shields.io/badge/Scala-3.8.2-blue.svg)
+![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.20.2-blue.svg)
+![Scala Native Version](https://img.shields.io/badge/Scala_Native-0.5.10-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
 
 A fast, minimal **Scala 3** library for parsing [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown.  
@@ -27,7 +28,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.21"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.22"
 ```
 
 ```scala
@@ -54,7 +55,7 @@ case class Document(children: List[Block]) extends Node
 sealed trait Block extends Node
 case class Paragraph(inlines: List[Inline]) extends Block
 case class Heading(level: Int, inlines: List[Inline]) extends Block
-case class Code(content: String, info: Option[String]) extends Block
+case class Code(content: String, info: Option[String], indented: Boolean) extends Block
 case class BlockQuote(children: List[Block]) extends Block
 case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 // … Inline types: Text, Emphasis, Strong, CodeSpan, Link, Image, AutoLink, RawHTML, etc.
@@ -62,7 +63,7 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 
 ## Roadmap
 
-- Multi-line link reference definitions (v0.0.2)
+- Multi-line link reference definitions
 - Extensions: footnotes, tables, task lists
 
 ## Contributing
