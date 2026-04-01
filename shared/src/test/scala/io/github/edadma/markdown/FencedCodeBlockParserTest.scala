@@ -173,7 +173,7 @@ Line 3""",
     System.out.println("Hello, world!");
   }
 }""",
-        Some("java highlight-line=3"),
+        Some("java"),
       ),
     ))
   }

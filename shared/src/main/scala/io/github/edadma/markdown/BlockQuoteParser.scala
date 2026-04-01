@@ -24,10 +24,18 @@ object BlockQuoteParser extends BlockParser {
   ): (Block, Int) = {
 
     // Collect all lines that belong to this block quote
-    val (blockQuoteLines, linesConsumed) = collectBlockQuoteLines(lines)
+    val (blockQuoteLines, linesConsumed, lazyIndices) = collectBlockQuoteLines(lines)
 
     // Process the content by removing the > markers
-    val processedLines = processBlockQuoteContent(blockQuoteLines)
+    val rawProcessed = processBlockQuoteContent(blockQuoteLines)
+
+    // Mark lazy continuation lines: set isLiteral on = and - chars to prevent setext heading formation
+    val processedLines = rawProcessed.zipWithIndex.map { case (line, idx) =>
+      if (lazyIndices.contains(idx))
+        line.map(c => if (c.char == '=' || c.char == '-') c.copy(isLiteral = true) else c)
+      else
+        line
+    }
 
     // Recursively parse the content as its own document
     val blocks = processLines(processedLines, linkRefs, parentIndent, config) // maybe wrong: parentIndent
@@ -35,8 +43,12 @@ object BlockQuoteParser extends BlockParser {
     (BlockQuote(blocks), linesConsumed)
   }
 
-  /** Collects all lines that belong to the block quote, handling lazy continuation */
-  private[markdown] def collectBlockQuoteLines(lines: LazyList[List[C]]): (LazyList[List[C]], Int) = {
+  /** Collects all lines that belong to the block quote, handling lazy continuation.
+    * Returns (lines, linesConsumed, lazyLineIndices) where lazyLineIndices tracks
+    * which lines are lazy continuations (0-indexed within the collected lines).
+    */
+  private[markdown] def collectBlockQuoteLines(lines: LazyList[List[C]]): (LazyList[List[C]], Int, Set[Int]) = {
+    val lazyIndices = collection.mutable.Set[Int]()
     var result             = new ListBuffer[List[C]]
     var count              = 0
     var currentLines       = lines
@@ -69,6 +81,7 @@ object BlockQuoteParser extends BlockParser {
       } else if (inParagraph && !couldStartBlock(currentLines)) {
         // Lazy continuation: include non-marker line if it continues a paragraph
         // but not if the line could start a new block construct
+        lazyIndices += result.size
         result = result :+ line
         count += 1
         currentLines = currentLines.tail
@@ -78,7 +91,7 @@ object BlockQuoteParser extends BlockParser {
       }
     }
 
-    (LazyList.from(result.toList), count)
+    (LazyList.from(result.toList), count, lazyIndices.toSet)
   }
 
   /** Check if lines could start a block-level construct that shouldn't be lazy-continued */

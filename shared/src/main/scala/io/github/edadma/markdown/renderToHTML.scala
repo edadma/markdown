@@ -22,7 +22,8 @@ def renderBlockToHTML(node: Block): String =
     case Heading(level, inlines) => s"<h$level>${renderInlines(inlines)}</h$level>"
     case Code(content, infoString, _) =>
       val languageClass = infoString.map(info => s" class=\"language-$info\"").getOrElse("")
-      s"<pre><code$languageClass>${escapeXml(content)}\n</code></pre>"
+      val trailing = if (content.nonEmpty) "\n" else ""
+      s"<pre><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
     case BlockQuote(children) => s"<blockquote>\n${children.map(renderBlockToHTML).mkString("\n")}\n</blockquote>"
     case ThematicBreak()      => "<hr />"
     case HTMLBlock(content)   => content

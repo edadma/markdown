@@ -57,7 +57,7 @@ object CalloutBlockParser extends BlockParser {
     val contentLines = lines.tail
 
     // Use the BlockQuoteParser methods for collecting and processing blockquote lines
-    val (blockQuoteLines, contentLinesConsumed) = BlockQuoteParser.collectBlockQuoteLines(contentLines)
+    val (blockQuoteLines, contentLinesConsumed, _) = BlockQuoteParser.collectBlockQuoteLines(contentLines)
     val processedLines                          = BlockQuoteParser.processBlockQuoteContent(blockQuoteLines)
 
     // Parse the processed lines into blocks

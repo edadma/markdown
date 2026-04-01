@@ -23,8 +23,14 @@ object FencedCodeBlockParser extends BlockParser {
     val afterIndent = lineText.substring(leadingSpaces)
 
     // Check for 3+ backticks or 3+ tildes
-    (afterIndent.startsWith("```") && afterIndent.takeWhile(_ == '`').length >= 3) ||
-    (afterIndent.startsWith("~~~") && afterIndent.takeWhile(_ == '~').length >= 3)
+    if (afterIndent.startsWith("```") && afterIndent.takeWhile(_ == '`').length >= 3) {
+      // Backtick fences: info string must not contain backticks
+      val fenceLen  = afterIndent.takeWhile(_ == '`').length
+      val infoStr   = afterIndent.substring(fenceLen)
+      !infoStr.contains('`')
+    } else {
+      afterIndent.startsWith("~~~") && afterIndent.takeWhile(_ == '~').length >= 3
+    }
   }
 
   /** Parse a fenced code block starting at the head of `lines`. Collects all lines until a matching closing fence is
@@ -49,10 +55,15 @@ object FencedCodeBlockParser extends BlockParser {
     val fenceChar   = afterIndent.charAt(0)
     val fenceLength = afterIndent.takeWhile(_ == fenceChar).length
 
-    // Extract info string (after fence, ignoring trailing whitespace)
+    // Extract info string (first word only, per CommonMark spec)
     val infoString = {
       val info = afterIndent.substring(fenceLength).trim
-      if (info.isEmpty) None else Some(info)
+      if (info.isEmpty) None
+      else {
+        // Use only the first word as the language
+        val firstWord = info.takeWhile(c => c != ' ' && c != '\t')
+        Some(firstWord)
+      }
     }
 
     // Process content lines

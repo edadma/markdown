@@ -39,7 +39,7 @@ def specTool(): Unit =
 //  genSection(sections, "Link reference definitions")
 //  genSection(sections, "Blank lines")
 //  genSection(sections, "Tabs")
-//  genSection(sections, "Fenced code blocks")
+  genSection(sections, "Fenced code blocks")
 //  genSection(sections, "Precedence")
 //  genSection(sections, "Textual content")
 //  genSection(sections, "Entity and numeric character references")
