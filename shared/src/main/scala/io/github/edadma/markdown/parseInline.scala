@@ -280,6 +280,31 @@ def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
 
   // If we found an opening delimiter, look for a matching closing one
   if (openingCount > 0) {
+    // Split any literal backtick nodes (from \` escapes) in the rest of the list
+    // back into separate backslash + backtick nodes, since code spans take precedence
+    // over backslash escapes per the CommonMark spec.
+    // Track split nodes so we can undo if no code span is formed.
+    val splitNodes = scala.collection.mutable.ListBuffer[(DLListNode[Inline], C)]() // (backslash node, original literal C)
+    var splitCurrent = current
+    while (splitCurrent.notAfterEnd) {
+      if (
+        splitCurrent.element.isInstanceOf[C] &&
+        splitCurrent.element.asInstanceOf[C].char == '`' &&
+        splitCurrent.element.asInstanceOf[C].isLiteral
+      ) {
+        val literalC = splitCurrent.element.asInstanceOf[C]
+        splitNodes += ((splitCurrent, literalC))
+        // Change this node to a backslash
+        splitCurrent.element = literalC.copy(char = '\\', isLiteral = false)
+        // Insert a non-literal backtick after it
+        splitCurrent.follow(literalC.copy(isLiteral = false))
+        // Skip past the inserted backtick
+        splitCurrent = splitCurrent.following.following
+      } else {
+        splitCurrent = splitCurrent.following
+      }
+    }
+
     // Remember where content starts
     val contentStart = current
     var foundClosing = false
@@ -291,34 +316,22 @@ def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
 
       if (
         current.element.isInstanceOf[C] &&
-        current.element.asInstanceOf[C].char == '`'
+        current.element.asInstanceOf[C].char == '`' &&
+        !current.element.asInstanceOf[C].isLiteral
       ) {
-        // Count consecutive backticks to see if we have a match
+        // Count ALL consecutive non-literal backticks
         var closingCount = 0
-        var closingStart = current
+        val closingStart = current
 
-        @tailrec
-        def closeCount(): Unit = {
-          if current.notAfterEnd &&
-            current.element.isInstanceOf[C] &&
-            current.element.asInstanceOf[C].char == '`' &&
-            closingCount < openingCount
-          then
-            if current.element.asInstanceOf[C].isLiteral && closingCount == 0 then
-              closingStart = current.follow(current.element.asInstanceOf[C].copy())
-              current.element = current.element.asInstanceOf[C].copy(char = '\\', isLiteral = false)
-              closingCount += 1
-              current = current.following.following
-              closeCount()
-            else if current.element.asInstanceOf[C].isLiteral then
-              current = current.following
-            else
-              closingCount += 1
-              current = current.following
-              closeCount()
+        while (
+          current.notAfterEnd &&
+          current.element.isInstanceOf[C] &&
+          current.element.asInstanceOf[C].char == '`' &&
+          !current.element.asInstanceOf[C].isLiteral
+        ) {
+          closingCount += 1
+          current = current.following
         }
-
-        closeCount()
 
         logger.debug(s"Found potential closing delimiter with $closingCount backticks")
 
@@ -339,13 +352,22 @@ def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
             openingNode.following.unlinkUntil(current)
           }
 
+          // Undo splits for any literal backticks that are AFTER the code span
+          for ((backslashNode, originalC) <- splitNodes) {
+            // Only undo if the node is still linked in the list (not consumed by the code span)
+            try {
+              backslashNode.element = originalC
+              backslashNode.following.unlink
+            } catch {
+              case _: IllegalArgumentException => // Node was unlinked, skip
+            }
+          }
+
           // Return the CodeSpan node for continued processing
           return openingNode
         }
-        // If counts don't match, continue searching
+        // If counts don't match, continue searching (current already advanced past the backticks)
       } else if (current.following.isAfterEnd) {
-        // Check if the next node would be the end sentinel
-        // This is the fix - set a flag to exit the loop when we're at the last node
         logger.debug("Reached end of input while searching for closing delimiter")
         reachedEnd = true
       } else {
@@ -353,10 +375,17 @@ def processCodeSpan(node: DLListNode[Inline]): DLListNode[Inline] = {
       }
     }
 
-    logger.debug("No matching closing delimiter found, returning original node")
-    // If no matching closing delimiter found, just return the original node unchanged
-    // The opening backticks will be treated as regular text
-    return node
+    logger.debug("No matching closing delimiter found, skipping past opening backticks")
+    // Undo the literal backtick splits since no code span was formed
+    for ((backslashNode, originalC) <- splitNodes) {
+      // Restore the original literal backtick node
+      backslashNode.element = originalC
+      // Remove the inserted backtick node after it
+      backslashNode.following.unlink
+    }
+    // Skip past the entire opening backtick string
+    // so we don't re-enter processCodeSpan for backticks within the same backtick string.
+    return contentStart
   }
 
   // If we somehow got here, just return the original node
