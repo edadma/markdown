@@ -63,8 +63,12 @@ object ListBlockParser extends BlockParser {
     // Collect list items and determine if the list is tight or loose
     val (items, linesConsumed, hasBlanks) = collectListItems(lines, listData, linkRefs, parentIndent, config)
 
-    // A list is loose if there are blank lines between items or items have multiple blocks
-    val isTight = items.size == 1 || !hasBlanks
+    // A list is loose if there are blank lines between or within items
+    // Single-item lists with only a paragraph are tight even with trailing blank
+    val isTight = !hasBlanks || (items.size == 1 && (items.head match {
+      case ListItem(List(_: Paragraph)) => true
+      case _ => false
+    }))
 
     val finalListData = listData.copy(isTight = isTight)
 
