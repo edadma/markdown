@@ -28,7 +28,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.22"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.23"
 ```
 
 ```scala

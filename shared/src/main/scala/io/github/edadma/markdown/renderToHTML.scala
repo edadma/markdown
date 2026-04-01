@@ -93,7 +93,7 @@ def renderBlockToHTML(node: Block): String =
          |</div>""".stripMargin
     case CollapsibleBlock(title, isOpen, children) =>
       val openAttr  = if (isOpen) " open" else ""
-      val titleText = if title == "" then "Click to expand" else title
+      val titleText = if title.isEmpty then "Click to expand" else renderInlines(title)
 
       s"""<details$openAttr>
          |  <summary>$titleText</summary>
