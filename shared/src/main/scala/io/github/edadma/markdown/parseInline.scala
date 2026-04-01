@@ -1227,31 +1227,24 @@ def lookForLinkOrImage(
 ): DLListNode[Inline] = {
   logger.debug(s"lookForLinkOrImage at node: ${current.element}")
 
-  // Find opening delimiter ([ or ![) on the stack using tail recursion
-  // Find opening delimiter ([ or ![) on the stack
+  // Find the most recent opening delimiter ([ or ![) on the stack
   @tailrec
-  def findOpenerOf(char: Char, idx: Int): Option[DelimiterInfo] = {
-    if (idx < 0) None
+  def findOpener(idx: Int): Option[(DelimiterInfo, Boolean)] = {
+    if (idx >= delimiterStack.size) None
     else {
       val d = delimiterStack(idx)
-      if (d.delimiterChar == char && d.isActive && isNodeValid(d.node)) Some(d)
-      else findOpenerOf(char, idx - 1)
+      if ((d.delimiterChar == '!' || d.delimiterChar == '[') && d.isActive && isNodeValid(d.node))
+        Some((d, d.delimiterChar == '!'))
+      else findOpener(idx + 1)
     }
   }
 
-  // Try to close an image first (looking for '!['), otherwise a link '['
-  val (openerInfo, isImage) = findOpenerOf('!', delimiterStack.size - 1) match {
-    case Some(imgDelim) =>
-      (imgDelim, true)
+  // Find the most recent opener (index 0 = most recently pushed)
+  val (openerInfo, isImage) = findOpener(0) match {
+    case Some(result) => result
     case None =>
-      findOpenerOf('[', delimiterStack.size - 1) match {
-        case Some(linkDelim) =>
-          (linkDelim, false)
-        case None =>
-          // No matching opener at all → literal `]`
-          logger.debug("No opener found for ]")
-          return current.following
-      }
+      logger.debug("No opener found for ]")
+      return current.following
   }
 
   // If we found one, but it's not active, remove it and return literal `]`
@@ -1261,31 +1254,44 @@ def lookForLinkOrImage(
     return current.following
   }
 
-  // Parse ahead to see what kind of link/image we have
+  // Parse ahead to see what kind of link/image we have, with fallback per spec
   val next = current.following
-  // Case 1: Inline link/image [foo](url "title")
+
+  // Case 1: Try inline link/image [foo](url "title")
   if (isInlineLinkStart(next)) {
     logger.debug("Detected inline link/image")
-    processInlineLink(openerInfo, current, next, isImage, delimiterStack, config)
+    val result = tryProcessInlineLink(openerInfo, current, next, isImage, delimiterStack, config)
+    if (result != null) return result
+    // Inline link failed — fall through to try reference-style
   }
 
-  // Case 2: Collapsed reference link/image [foo][] (check before full reference)
-  else if (isCollapsedReferenceLinkStart(next)) {
-    logger.debug("Detected collapsed reference link/image")
-    processCollapsedReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
+  // Case 2: If [ follows, try collapsed or full reference
+  if (isFullReferenceLinkStart(next)) {
+    if (isCollapsedReferenceLinkStart(next)) {
+      // Try collapsed reference [foo][]
+      logger.debug("Detected collapsed reference link/image")
+      val result = tryProcessCollapsedReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
+      if (result != null) return result
+      // Collapsed failed — fall through to shortcut
+    } else {
+      // Try full reference [foo][bar] — if [label] is present, don't fall through to shortcut
+      logger.debug("Detected full reference link/image")
+      val result = tryProcessReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
+      if (result != null) return result
+      // Full reference failed — per spec, [foo][bar] with valid [bar] means no shortcut fallback
+      delimiterStack.remove(delimiterStack.indexOf(openerInfo))
+      return current.following
+    }
   }
 
-  // Case 3: Full reference link/image [foo][bar]
-  else if (isFullReferenceLinkStart(next)) {
-    logger.debug("Detected full reference link/image")
-    processReferenceLink(openerInfo, current, next, isImage, delimiterStack, linkRefs, config)
-  }
+  // Case 3: Shortcut reference link/image [foo]
+  logger.debug("Checking for shortcut reference link/image")
+  val result = tryProcessShortcutReferenceLink(openerInfo, current, isImage, delimiterStack, linkRefs, config)
+  if (result != null) return result
 
-  // Case 4: Shortcut reference link/image [foo]
-  else {
-    logger.debug("Checking for shortcut reference link/image")
-    processShortcutReferenceLink(openerInfo, current, isImage, delimiterStack, linkRefs, config)
-  }
+  // Nothing matched — remove opener, output literal ]
+  delimiterStack.remove(delimiterStack.indexOf(openerInfo))
+  current.following
 }
 
 // Helper to check if we're at the start of an inline link
@@ -1334,7 +1340,8 @@ private def isCollapsedReferenceLinkStart(node: DLListNode[Inline]): Boolean = {
 }
 
 // Update the processInlineLink function
-private def processInlineLink(
+/** Try to process an inline link. Returns the next node on success, or null on failure (without modifying state). */
+private def tryProcessInlineLink(
     opener: DelimiterInfo,
     closeBracket: DLListNode[Inline],
     openParen: DLListNode[Inline],
@@ -1348,10 +1355,9 @@ private def processInlineLink(
   val (destination, title, afterLinkEnd) = parseInlineLinkDestination(openParen)
 
   if (destination == null) {
-    // Not a valid link destination
+    // Not a valid inline link — return null to allow fallback
     logger.debug("Invalid link destination")
-    delimiterStack.remove(delimiterStack.indexOf(opener))
-    return closeBracket.following
+    return null
   }
 
   // Extract raw link text
@@ -1495,10 +1501,7 @@ private def parseInlineLinkDestination(openParen: DLListNode[Inline]): (String, 
     current = afterDestNode
   }
 
-  // If destination is empty, it's invalid
-  if (destination.isEmpty) {
-    return (null, None, openParen.following)
-  }
+  // Empty destination is valid (e.g., [link]() or [link](<>))
 
   // Skip whitespace after destination
   current = skipWhitespace(current)
@@ -1565,8 +1568,8 @@ private def parseInlineLinkDestination(openParen: DLListNode[Inline]): (String, 
   (destination.toString, title, current)
 }
 
-// Process reference link [foo][bar]
-private def processReferenceLink(
+/** Try to process a full reference link [foo][bar]. Returns null on failure. */
+private def tryProcessReferenceLink(
     opener: DelimiterInfo,
     closeBracket: DLListNode[Inline],
     labelStart: DLListNode[Inline],
@@ -1581,10 +1584,8 @@ private def processReferenceLink(
   val (label, afterLabelEnd) = extractReferenceLabel(labelStart)
 
   if (label == null) {
-    // Not a valid reference label
     logger.debug("Invalid reference label")
-    delimiterStack.remove(delimiterStack.indexOf(opener))
-    return closeBracket.following
+    return null
   }
 
   // Look up reference in linkRefs
@@ -1592,10 +1593,8 @@ private def processReferenceLink(
   val reference       = linkRefs.get(normalizedLabel)
 
   if (reference.isEmpty) {
-    // Reference not found
     logger.debug(s"Reference not found for label: $normalizedLabel")
-    delimiterStack.remove(delimiterStack.indexOf(opener))
-    return closeBracket.following
+    return null
   }
 
   // Create link/image node with everything between opener and closeBracket
@@ -1630,8 +1629,8 @@ private def processReferenceLink(
   opener.node.following
 }
 
-// Process collapsed reference link [foo][]
-private def processCollapsedReferenceLink(
+/** Try to process a collapsed reference link [foo][]. Returns null on failure. */
+private def tryProcessCollapsedReferenceLink(
     opener: DelimiterInfo,
     closeBracket: DLListNode[Inline],
     labelStart: DLListNode[Inline],
@@ -1644,7 +1643,7 @@ private def processCollapsedReferenceLink(
 
   // Extract text between opener and closeBracket to use as label
   val linkText  = extractInlinesBetween(opener.node.following, closeBracket)
-  val labelText = inlinesToPlainText(linkText)
+  val labelText = inlinesToLabelText(linkText)
 
   // Skip the empty label []
   val afterEmptyLabel = labelStart.following.following
@@ -1654,10 +1653,8 @@ private def processCollapsedReferenceLink(
   val reference       = linkRefs.get(normalizedLabel)
 
   if (reference.isEmpty) {
-    // Reference not found
     logger.debug(s"Reference not found for label: $normalizedLabel")
-    delimiterStack.remove(delimiterStack.indexOf(opener))
-    return closeBracket.following
+    return null
   }
 
   // Process emphasis within the link text (with stack_bottom = opener)
@@ -1689,8 +1686,8 @@ private def processCollapsedReferenceLink(
   opener.node.following
 }
 
-// Process shortcut reference link [foo]
-private def processShortcutReferenceLink(
+/** Try to process a shortcut reference link [foo]. Returns null on failure. */
+private def tryProcessShortcutReferenceLink(
     opener: DelimiterInfo,
     closeBracket: DLListNode[Inline],
     isImage: Boolean,
@@ -1702,17 +1699,15 @@ private def processShortcutReferenceLink(
 
   // Extract text between opener and closeBracket to use as label
   val linkText  = extractInlinesBetween(opener.node.following, closeBracket)
-  val labelText = inlinesToPlainText(linkText)
+  val labelText = inlinesToLabelText(linkText)
 
   // Look up reference in linkRefs
   val normalizedLabel = normalizeLabel(labelText)
   val reference       = linkRefs.get(normalizedLabel)
 
   if (reference.isEmpty) {
-    // Reference not found
     logger.debug(s"Reference not found for label: $normalizedLabel")
-    delimiterStack.remove(delimiterStack.indexOf(opener))
-    return closeBracket.following
+    return null
   }
 
   // Process emphasis within the link text (with stack_bottom = opener)
@@ -1771,7 +1766,8 @@ private def extractReferenceLabel(labelStart: DLListNode[Inline]): (String, DLLi
       if (c.char == '[' && !c.isLiteral) {
         (null, labelStart.following)
       } else {
-        // Append character to label
+        // Append character to label, preserving backslash for literal chars
+        if (c.isLiteral) label.append('\\')
         label.append(c.char)
         parseLabel(node.following, label)
       }
@@ -1790,10 +1786,23 @@ private def extractReferenceLabel(labelStart: DLListNode[Inline]): (String, DLLi
   parseLabel(labelStart.following, new StringBuilder)
 }
 
+/** Convert inlines to label text, preserving backslashes for literal (escaped) characters. */
+private def inlinesToLabelText(inlines: List[Inline]): String = {
+  inlines.map {
+    case c: C if c.isLiteral => s"\\${c.char}"
+    case c: C                => c.char.toString
+    case Text(content)       => content
+    case CodeSpan(content)   => content
+    case Emphasis(children)  => inlinesToLabelText(children)
+    case Strong(children)    => inlinesToLabelText(children)
+    case _                   => ""
+  }.mkString
+}
+
 // Normalize label for lookup
 private def normalizeLabel(label: String): String = {
-  // Unicode case fold, collapse whitespace
-  label.trim.toLowerCase.replaceAll("\\s+", " ")
+  // Unicode case fold (toLowerCase + ß→ss for full case folding), collapse whitespace
+  label.trim.toLowerCase.replace("ß", "ss").replaceAll("\\s+", " ")
 }
 
 // Set all [ delimiters inactive

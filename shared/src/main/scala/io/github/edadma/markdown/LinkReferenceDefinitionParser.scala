@@ -42,7 +42,7 @@ object LinkReferenceDefinitionParser extends BlockParser {
 
     tryParse(textLines.toArray) match {
       case Some((label, dest, title, linesUsed)) =>
-        val normalizedLabel = normalizeLabel(processEscapes(label))
+        val normalizedLabel = normalizeLabel(label)
         if (!linkRefs.contains(normalizedLabel)) {
           linkRefs.put(normalizedLabel, LinkReference(dest, title))
         }
@@ -320,7 +320,7 @@ object LinkReferenceDefinitionParser extends BlockParser {
   }
 
   private def normalizeLabel(label: String): String = {
-    // Unicode case fold, strip leading/trailing whitespace, collapse internal whitespace
-    label.trim.toLowerCase.replaceAll("\\s+", " ")
+    // Unicode case fold (toLowerCase + ß→ss for full case folding), collapse internal whitespace
+    label.trim.toLowerCase.replace("ß", "ss").replaceAll("\\s+", " ")
   }
 }
