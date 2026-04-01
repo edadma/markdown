@@ -41,7 +41,7 @@ def specTool(): Unit =
 //  genSection(sections, "Tabs")
   genSection(sections, "Fenced code blocks")
 //  genSection(sections, "Precedence")
-//  genSection(sections, "Textual content")
+  genSection(sections, "Textual content")
 //  genSection(sections, "Entity and numeric character references")
 //  genSection(sections, "HTML blocks")
   genSection(sections, "Backslash escapes")
