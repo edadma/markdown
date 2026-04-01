@@ -508,6 +508,7 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
   val content     = new StringBuilder()
 
   // Look ahead to find a potential closing '>'
+  var hasNewline = false
   while (
     current.notAfterEnd &&
     !(current.element.isInstanceOf[C] &&
@@ -516,13 +517,8 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
 
     current.element match {
       case c: C =>
-        // For autolinks, we can't have line endings
-        if (c.char == '\n') {
-          logger.debug("Line ending found in potential autolink/HTML - treating as literal")
-          return node // Return original node unchanged
-        } else if c.isLiteral then
-          content append "\\"
-
+        if (c.char == '\n') hasNewline = true
+        if c.isLiteral then content append "\\"
         content.append(c.char)
       case _ => return node // Non-cursor element found, not a valid autolink/HTML
     }
@@ -543,8 +539,8 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
 
   val contentStr = content.toString()
 
-  // Check for URI autolink
-  if (isAbsoluteUri(contentStr)) {
+  // Check for URI autolink (autolinks cannot contain newlines)
+  if (!hasNewline && isAbsoluteUri(contentStr)) {
     logger.debug(s"Found URI autolink: $contentStr")
     openingNode.element = AutoLink(percentEncode(contentStr), contentStr)
 
@@ -556,8 +552,8 @@ def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
     return openingNode
   }
 
-  // Check for email autolink
-  else if (isEmailAddress(contentStr)) {
+  // Check for email autolink (autolinks cannot contain newlines)
+  else if (!hasNewline && isEmailAddress(contentStr)) {
     logger.debug(s"Found email autolink: $contentStr")
     openingNode.element = AutoLink(s"mailto:$contentStr", contentStr)
 
