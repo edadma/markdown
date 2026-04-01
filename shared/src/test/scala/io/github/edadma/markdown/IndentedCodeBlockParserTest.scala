@@ -10,7 +10,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("This is a code block.", None),
+      Code("This is a code block.", None, indented = true),
     ))
   }
 
@@ -22,7 +22,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("Line 1\nLine 2\nLine 3", None),
+      Code("Line 1\nLine 2\nLine 3", None, indented = true),
     ))
   }
 
@@ -34,7 +34,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("Line 1\n\nLine 3", None),
+      Code("Line 1\n\nLine 3", None, indented = true),
     ))
   }
 
@@ -46,7 +46,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("Code line\n    Indented line\n        More indented", None),
+      Code("Code line\n    Indented line\n        More indented", None, indented = true),
     ))
   }
 
@@ -60,9 +60,9 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("Code block\nStill code", None),
+      Code("Code block\nStill code", None, indented = true),
       Paragraph(List(Text("Not code"))),
-      Code("Another code block", None),
+      Code("Another code block", None, indented = true),
     ))
   }
 
@@ -75,7 +75,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
 
     document shouldBe Document(List(
       Paragraph(List(Text("This is a paragraph."))),
-      Code("This is a code block.", None),
+      Code("This is a code block.", None, indented = true),
     ))
   }
 
@@ -84,7 +84,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("This is indented with a tab.", None),
+      Code("This is indented with a tab.", None, indented = true),
     ))
   }
 
@@ -109,7 +109,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("  Code indented with tab and spaces\n Also code with space-tab-space", None),
+      Code("  Code indented with tab and spaces\n Also code with space-tab-space", None, indented = true),
     ))
   }
 
@@ -126,6 +126,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
   println("Hello, world!")
 }""",
         None,
+        indented = true,
       ),
     ))
   }
@@ -139,7 +140,7 @@ class IndentedCodeBlockParserTest extends AnyFlatSpec with Matchers {
     val document = parseDocumentContent(input)
 
     document shouldBe Document(List(
-      Code("Code block line.", None),
+      Code("Code block line.", None, indented = true),
       Paragraph(List(Text("Regular paragraph."))),
     ))
   }

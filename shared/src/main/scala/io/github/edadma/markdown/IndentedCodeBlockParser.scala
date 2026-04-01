@@ -85,7 +85,7 @@ object IndentedCodeBlockParser extends BlockParser {
       return (null, 0)
     }
 
-    (Code(contentBuilder.toString, None), lineCount)
+    (Code(contentBuilder.toString, None, indented = true), lineCount)
   }
 
   /** Count the virtual indent (in spaces) at the beginning of a line

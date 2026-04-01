@@ -29,7 +29,7 @@ case class BlockQuote(children: List[Block]) extends Block {
     BlockQuote(children.map(_.processInlines(linkRefs, config)))
 }
 
-case class Code(content: String, infoString: Option[String] = None) extends Block
+case class Code(content: String, infoString: Option[String] = None, indented: Boolean = false) extends Block
 case class ThematicBreak()                                          extends Block
 case class HTMLBlock(content: String)                               extends Block
 
