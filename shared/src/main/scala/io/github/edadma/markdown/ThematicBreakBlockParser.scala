@@ -27,11 +27,17 @@ object ThematicBreakBlockParser extends BlockParser {
 
     // Must be at least three identical markers (*, -, or _), and
     // the body may only contain those markers plus spaces/tabs
-    markers.nonEmpty &&
-    markers.forall(_ == markers.head) &&
-    Set('*', '-', '_').contains(markers.head) &&
-    markers.length >= 3 &&
-    body.forall(c => c == markers.head || c == ' ' || c == '\t')
+    if (!(markers.nonEmpty &&
+          markers.forall(_ == markers.head) &&
+          Set('*', '-', '_').contains(markers.head) &&
+          markers.length >= 3 &&
+          body.forall(c => c == markers.head || c == ' ' || c == '\t')))
+      return false
+
+    // Verify no marker characters are escaped (isLiteral)
+    !lines.head.takeWhile(_.char != '\n').drop(indent).exists(c =>
+      (c.char == '*' || c.char == '-' || c.char == '_') && c.isLiteral,
+    )
   }
 
   /** Parse a thematic break (always consumes exactly 1 line). */

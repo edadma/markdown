@@ -25,7 +25,7 @@ def specTool(): Unit =
 //  genSection(sections, "Hard line breaks")
   genSection(sections, "ATX headings")
 //  genSection(sections, "Paragraphs")
-//  genSection(sections, "Setext headings")
+  genSection(sections, "Setext headings")
   genSection(sections, "Indented code blocks")
 //  genSection(sections, "Images")
 //  genSection(sections, "List items")
@@ -46,7 +46,7 @@ def specTool(): Unit =
 //  genSection(sections, "HTML blocks")
 //  genSection(sections, "Backslash escapes")
 
-def escape(s: String): String = s.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t`").replace("\"", "\\\"")
+def escape(s: String): String = s.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t").replace("\"", "\\\"")
 
 def genSection(sections: Map[String, List[TestJson]], section: String): Unit =
   val buf   = new StringBuilder

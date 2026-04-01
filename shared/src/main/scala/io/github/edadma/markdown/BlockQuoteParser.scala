@@ -66,8 +66,9 @@ object BlockQuoteParser extends BlockParser {
         // According to CommonMark spec, this separates blockquotes
         continueCollecting = false
         // Don't increment count here - we don't consume the blank line
-      } else if (inParagraph) {
+      } else if (inParagraph && !couldStartBlock(currentLines)) {
         // Lazy continuation: include non-marker line if it continues a paragraph
+        // but not if the line could start a new block construct
         result = result :+ line
         count += 1
         currentLines = currentLines.tail
@@ -78,6 +79,16 @@ object BlockQuoteParser extends BlockParser {
     }
 
     (LazyList.from(result.toList), count)
+  }
+
+  /** Check if lines could start a block-level construct that shouldn't be lazy-continued */
+  private def couldStartBlock(lines: LazyList[List[C]]): Boolean = {
+    val config = MarkdownConfig.default
+    ThematicBreakBlockParser.canStart(lines, config) ||
+    ATXHeadingBlockParser.canStart(lines, config) ||
+    FencedCodeBlockParser.canStart(lines, config) ||
+    HTMLBlockParser.canStart(lines, config) ||
+    ListBlockParser.canStart(lines, config)
   }
 
   /** Process block quote content by removing the > markers */

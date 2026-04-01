@@ -12,16 +12,36 @@ object SetextHeadingBlockParser extends BlockParser {
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.size < 2) return false
 
-    // Need at least two lines - content and underline
-    val firstLine  = lines.head
-    val secondLine = lines(1)
+    val firstLine = lines.head
 
     // First line can't be blank
     if (isBlankLine(firstLine)) return false
 
-    // Check if second line is a setext heading underline
-    val secondLineText = lineToString(secondLine)
-    SetextLevel1Pattern.matches(secondLineText) || SetextLevel2Pattern.matches(secondLineText)
+    // First line must not be indented 4+ spaces (that's an indented code block)
+    val firstLineText = lineToString(firstLine)
+    if (firstLineText.takeWhile(_ == ' ').length >= 4) return false
+
+    // First line must not start a block quote (non-escaped >) — those take precedence
+    val firstNonSpace = firstLine.dropWhile(c => c.char == ' ').headOption
+    if (firstNonSpace.exists(c => c.char == '>' && !c.isLiteral)) return false
+
+    // Look ahead for an underline, skipping non-blank content lines
+    var i = 1
+    while (i < lines.size) {
+      // If we find an underline, this is a setext heading
+      if (isSetextUnderline(lines(i))) return true
+
+      // If we find a blank line, this can't be a setext heading
+      if (isBlankLine(lines(i))) return false
+
+      // If the line would start another block construct, stop looking
+      val lineText = lineToString(lines(i))
+      if (lineText.trim.startsWith(">") || lineText.takeWhile(_ == ' ').length >= 4) return false
+
+      i += 1
+    }
+
+    false
   }
 
   def parse(
@@ -30,28 +50,47 @@ object SetextHeadingBlockParser extends BlockParser {
       parentIndent: Int,
       config: MarkdownConfig,
   ): (Block, Int) = {
-    // Get the content from the first line
-    val contentLine = lines.head
+    // Collect content lines until we find the underline
+    var contentLines = List.empty[List[C]]
+    var i            = 0
 
-    // Get the underline from the second line
-    val underlineText = lineToString(lines(1))
+    while (i < lines.size && !isSetextUnderline(lines(i))) {
+      contentLines = contentLines :+ lines(i)
+      i += 1
+    }
 
-    // Determine level (1 for = and 2 for -)
-    val level = if (underlineText.charAt(0) == '=') 1 else 2
+    // The underline is at position i
+    val underlineText = lineToString(lines(i)).trim
+    val level         = if (underlineText.head == '=' || underlineText.dropWhile(_ == ' ').head == '=') 1 else 2
 
-    // Extract content (excluding newline)
-    val content = contentLine.takeWhile(c => c.char != '\n').reverse.dropWhile(c => c.char == ' ').reverse
+    // Build content from all content lines, trimming leading spaces (up to 3) and trailing spaces
+    val content = contentLines.flatMap { line =>
+      val chars = line.takeWhile(_.char != '\n')
+      // Trim up to 3 leading spaces
+      val leadingSpaces = chars.takeWhile(_.char == ' ').size
+      val trimmedStart  = chars.drop(Math.min(leadingSpaces, 3))
+      // Trim trailing whitespace (spaces and tabs)
+      val trimmed = trimmedStart.reverse.dropWhile(c => c.char == ' ' || c.char == '\t').reverse
+      // Add soft line break between lines
+      if (contentLines.head eq line) trimmed
+      else List(C('\n', 0, 0, 0, false)) ++ trimmed
+    }
 
-    (Heading(level, content), 2) // Consume two lines (content + underline)
+    (Heading(level, content), i + 1) // Consume content lines + underline
   }
 
-  // Helper function to check for blank lines
-  private def isBlankLine(line: List[C]): Boolean = {
+  private def isSetextUnderline(line: List[C]): Boolean = {
+    val text = lineToString(line)
+    // Check pattern matches and that no underline chars are escaped (isLiteral)
+    val matches = SetextLevel1Pattern.matches(text) || SetextLevel2Pattern.matches(text)
+    if (!matches) return false
+    // Verify no escaped characters in the underline portion
+    !line.takeWhile(_.char != '\n').exists(c => (c.char == '=' || c.char == '-') && c.isLiteral)
+  }
+
+  private def isBlankLine(line: List[C]): Boolean =
     line.forall(c => c.char == ' ' || c.char == '\t' || c.char == '\n')
-  }
 
-  // Helper function to convert line to string
-  private def lineToString(line: List[C]): String = {
+  private def lineToString(line: List[C]): String =
     line.takeWhile(_.char != '\n').map(_.char).mkString
-  }
 }
