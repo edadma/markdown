@@ -43,8 +43,21 @@ object IndentedCodeBlockParser extends BlockParser {
       val line = currentLines.head
 
       if (isBlankLine(line)) {
-        // Don't append blank line yet - track it as pending
-        pendingBlankLines += 1
+        // Blank line - check if it has whitespace to preserve after removing indent
+        val remaining = removeIndent(line, 4)
+        if (remaining.nonEmpty) {
+          // Has whitespace beyond the 4-space indent - preserve it
+          for (_ <- 0 until pendingBlankLines) {
+            if (hasContent) contentBuilder.append("\n")
+          }
+          pendingBlankLines = 0
+          if (hasContent) contentBuilder.append("\n")
+          contentBuilder.append(remaining)
+          hasContent = true
+        } else {
+          // Truly blank after removing indent - track as pending
+          pendingBlankLines += 1
+        }
         lineCount += 1
         currentLines = currentLines.tail
       } else {

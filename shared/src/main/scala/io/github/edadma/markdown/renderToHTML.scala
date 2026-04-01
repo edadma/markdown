@@ -35,7 +35,7 @@ def renderBlockToHTML(node: Block): String =
 
       s"<$tagName$startAttr>\n${items.flatMap {
           case ListItem(List(Paragraph(List(Text(text))))) => s"<li>$text</li>\n"
-          case ListItem(content) => s"<li>${content.map(renderBlockToHTML).mkString("\n")}\n</li>"
+          case ListItem(content) => s"<li>\n${content.map(renderBlockToHTML).mkString("\n")}\n</li>\n"
         }.mkString}</$tagName>"
     case Table(headerRow, rows, alignments) =>
       val alignAttrs = alignments.map {
