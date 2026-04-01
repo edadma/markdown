@@ -27,7 +27,7 @@ def specTool(): Unit =
 //  genSection(sections, "Paragraphs")
   genSection(sections, "Setext headings")
   genSection(sections, "Indented code blocks")
-//  genSection(sections, "Images")
+  genSection(sections, "Images")
 //  genSection(sections, "List items")
   genSection(sections, "Code spans")
   genSection(sections, "Thematic breaks")
