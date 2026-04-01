@@ -29,7 +29,7 @@ def specTool(): Unit =
   genSection(sections, "Indented code blocks")
 //  genSection(sections, "Images")
 //  genSection(sections, "List items")
-//  genSection(sections, "Code spans")
+  genSection(sections, "Code spans")
   genSection(sections, "Thematic breaks")
 //  genSection(sections, "Lists")
 //  genSection(sections, "Raw HTML")
