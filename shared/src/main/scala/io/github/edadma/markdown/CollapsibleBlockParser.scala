@@ -38,12 +38,14 @@ object CollapsibleBlockParser extends BlockParser {
             val actualTitle = if (open) titleText.substring(4).trim else titleText
             (actualTitle, open)
           }
-        val titleCursors = if (rawTitle.isEmpty) {
+        val titleCursors = if (title.isEmpty) {
           List.empty[Inline]
         } else {
           // Get the title portion from the line's cursors
-          val startMarkerLen = if (isOpen) 8 else 3
-          firstLine.dropWhile(_.char != ':').drop(startMarkerLen).toList
+          val colonIdx = firstLine.indexWhere(_.char == ':')
+          val afterColons = firstLine.drop(colonIdx).dropWhile(_.char == ':').dropWhile(_.char == ' ')
+          val titleStart = if (isOpen) afterColons.dropWhile(c => "open".contains(c.char)).dropWhile(_.char == ' ') else afterColons
+          titleStart.takeWhile(_.char != '\n').toList
         }
 
         // Scan for the matching outermost end marker
