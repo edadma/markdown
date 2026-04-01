@@ -116,10 +116,10 @@ private def renderInlines(inlines: List[Inline]): String =
     case Strong(children)   => s"<strong>${renderInlines(children)}</strong>"
     case Link(destination, title, children) =>
       val titleAttr = title.map(t => s" title=\"${escapeXml(t)}\"").getOrElse("")
-      s"""<a href="${escapeXml(destination)}"$titleAttr>${renderInlines(children)}</a>"""
+      s"""<a href="${escapeXml(percentEncode(destination))}"$titleAttr>${renderInlines(children)}</a>"""
     case Image(destination, title, children) =>
       val titleAttr = title.map(t => s" title=\"${escapeXml(t)}\"").getOrElse("")
-      s"""<img src="${escapeXml(destination)}" alt="${renderAltText(children)}"$titleAttr />"""
+      s"""<img src="${escapeXml(percentEncode(destination))}" alt="${renderAltText(children)}"$titleAttr />"""
     case AutoLink(destination, text) => s"""<a href="${escapeXml(destination)}">${escapeXml(text)}</a>"""
     case RawHTML(content)            => content // Raw HTML is passed through as-is
     case MathExpr(content)           => s"""<span class="math inline">\\(${escapeXml(content)}\\)</span>"""

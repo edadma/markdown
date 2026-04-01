@@ -158,7 +158,7 @@ private def decodeHtmlEntities(inlines: List[Inline]): List[Inline] = {
   }
 }
 
-private def decodeHtmlEntities(input: String): String = {
+def decodeHtmlEntities(input: String): String = {
   // Regex pattern to match HTML entities:
   // - Named entities: &name;
   // - Decimal entities: &#number;
@@ -179,7 +179,8 @@ private def decodeHtmlEntities(input: String): String = {
         // Handle hex entities (e.g., &#x26;)
         try {
           val codePoint = Integer.parseInt(hexValue.get, 16)
-          java.util.regex.Matcher.quoteReplacement(new String(Character.toChars(codePoint)))
+          val resolved = if (codePoint == 0) "\uFFFD" else new String(Character.toChars(codePoint))
+          java.util.regex.Matcher.quoteReplacement(resolved)
         } catch {
           case _: Exception => entity // Return original if parsing fails
         }
@@ -187,7 +188,9 @@ private def decodeHtmlEntities(input: String): String = {
         // Handle decimal entities (e.g., &#38;)
         try {
           val codePoint = Integer.parseInt(decValue.get)
-          java.util.regex.Matcher.quoteReplacement(new String(Character.toChars(codePoint)))
+          // Code point 0 must be replaced with U+FFFD per spec
+          val resolved = if (codePoint == 0) "\uFFFD" else new String(Character.toChars(codePoint))
+          java.util.regex.Matcher.quoteReplacement(resolved)
         } catch {
           case _: Exception => entity // Return original if parsing fails
         }

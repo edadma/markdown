@@ -55,14 +55,14 @@ object FencedCodeBlockParser extends BlockParser {
     val fenceChar   = afterIndent.charAt(0)
     val fenceLength = afterIndent.takeWhile(_ == fenceChar).length
 
-    // Extract info string (first word only, per CommonMark spec)
+    // Extract info string (first word only, per CommonMark spec), with entity decoding
     val infoString = {
       val info = afterIndent.substring(fenceLength).trim
       if (info.isEmpty) None
       else {
-        // Use only the first word as the language
+        // Use only the first word as the language, then decode entities
         val firstWord = info.takeWhile(c => c != ' ' && c != '\t')
-        Some(firstWord)
+        Some(decodeHtmlEntities(firstWord))
       }
     }
 
