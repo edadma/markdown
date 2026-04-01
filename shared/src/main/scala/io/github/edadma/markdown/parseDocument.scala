@@ -111,19 +111,24 @@ private def processLines(
 
   // Process lines until none remain
   while (remainingLines.nonEmpty) {
-    // Find a parser for the current line
-    blockParsers.find(_.canStart(remainingLines, config)) match {
-      case Some(parser) =>
-        // Parse the block and update remaining lines
+    // Find a parser that can start and successfully parse
+    var handled = false
+    val it = blockParsers.iterator
+    while (it.hasNext && !handled) {
+      val parser = it.next()
+      if (parser.canStart(remainingLines, config)) {
         val (block, linesConsumed) = parser.parse(remainingLines, linkRefs, parentIndent, config)
-        if (block != null) {
-          blocks.addOne(block)
+        if (linesConsumed > 0) {
+          if (block != null) blocks.addOne(block)
+          remainingLines = remainingLines.drop(linesConsumed)
+          handled = true
         }
-        remainingLines = remainingLines.drop(linesConsumed)
-
-      case None =>
-        // Skip unrecognized lines (shouldn't happen in practice)
-        remainingLines = remainingLines.tail
+        // if linesConsumed == 0, parser declined — try next parser
+      }
+    }
+    if (!handled) {
+      // No parser handled this line — skip it
+      remainingLines = remainingLines.tail
     }
   }
 
