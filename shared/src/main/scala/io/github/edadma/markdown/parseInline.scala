@@ -78,6 +78,13 @@ def parseInline(
               val nextNode = current.following.skipForward(delimiterInfo.length - 1)
               current = nextNode
 
+            case '~' if config.strikethrough =>
+              // Add to delimiter stack for strikethrough processing (~~text~~)
+              val delimiterInfo = analyzeDelimiter(current)
+              delimiterStack.push(delimiterInfo)
+              val nextNode = current.following.skipForward(delimiterInfo.length - 1)
+              current = nextNode
+
             case '[' =>
               // If this '[' is really an image opener (i.e. ![ ), unlink the '!' and record an image delimiter
               val prev = current.preceding
@@ -118,6 +125,13 @@ def parseInline(
               // Process line break
               current = processLineBreak(current)
 
+            case 'h' | 'w' if config.extendedAutolinks =>
+              val oldCurrent = current
+              current = processExtendedAutolink(current)
+              if (current == oldCurrent) {
+                current = current.following
+              }
+
             case _ =>
               // Regular character, just move on
               current = current.following
@@ -149,7 +163,8 @@ private def decodeHtmlEntities(inlines: List[Inline]): List[Inline] = {
   inlines map {
     case Text(content)     => Text(decodeHtmlEntities(content))
     case Emphasis(inlines) => Emphasis(decodeHtmlEntities(inlines))
-    case Strong(inlines)   => Strong(decodeHtmlEntities(inlines))
+    case Strong(inlines)        => Strong(decodeHtmlEntities(inlines))
+    case Strikethrough(inlines) => Strikethrough(decodeHtmlEntities(inlines))
     case Link(destination, title, inlines) =>
       Link(decodeHtmlEntities(destination), title.map(t => decodeHtmlEntities(t)), decodeHtmlEntities(inlines))
     case Image(destination, title, inlines) =>
@@ -244,18 +259,18 @@ def analyzeDelimiter(node: DLListNode[Inline]): DelimiterInfo = {
 
   // Apply rules from spec section 6.2 to determine open/close capabilities
   val canOpen = delimiterChar match {
-    case '*' => isLeftFlanking
-    case '_' => isLeftFlanking && (!isRightFlanking || isUnicodePunctuation(beforeChar))
-    case '[' => true
-    case '!' => true
-    case _   => false
+    case '*' | '~' => isLeftFlanking
+    case '_'       => isLeftFlanking && (!isRightFlanking || isUnicodePunctuation(beforeChar))
+    case '['       => true
+    case '!'       => true
+    case _         => false
   }
 
   val canClose = delimiterChar match {
-    case '*' => isRightFlanking
-    case '_' => isRightFlanking && (!isLeftFlanking || isUnicodePunctuation(afterChar))
-    case ']' => true
-    case _   => false
+    case '*' | '~' => isRightFlanking
+    case '_'       => isRightFlanking && (!isLeftFlanking || isUnicodePunctuation(afterChar))
+    case ']'       => true
+    case _         => false
   }
 
   logger.debug(s"Delimiter capabilities: canOpen=$canOpen, canClose=$canClose")
@@ -519,6 +534,70 @@ def processLineBreak(node: DLListNode[Inline]): DLListNode[Inline] = {
   }
 
   node
+}
+
+/** Process extended autolinks: bare URLs starting with http://, https://, or www. */
+def processExtendedAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
+  // Collect characters from current position
+  val chars = new StringBuilder
+  var current = node
+
+  while (current.notAfterEnd && current.element.isInstanceOf[C]) {
+    val c = current.element.asInstanceOf[C]
+    if (c.char == ' ' || c.char == '\t' || c.char == '\n' || c.char == '<') {
+      // whitespace or < ends URL
+      current = current // break
+      return finishExtendedAutolink(node, chars.toString)
+    }
+    chars.append(c.char)
+    current = current.following
+  }
+
+  finishExtendedAutolink(node, chars.toString)
+}
+
+private def finishExtendedAutolink(node: DLListNode[Inline], collected: String): DLListNode[Inline] = {
+  // Check if collected text starts with a URL pattern
+  val url = if (collected.startsWith("http://") || collected.startsWith("https://")) {
+    if (collected.length > 8) Some(collected) else None
+  } else if (collected.startsWith("www.")) {
+    if (collected.length > 4 && collected.indexOf('.', 4) > 0) Some(s"http://$collected") else None
+  } else None
+
+  url match {
+    case None => node // not a URL, return unchanged
+    case Some(dest) =>
+      // Strip trailing punctuation per GFM spec
+      var text = collected
+      while (text.nonEmpty && "?!.,:*_~'\"".contains(text.last)) text = text.dropRight(1)
+      // Strip trailing ) if more ) than ( in URL
+      while (text.nonEmpty && text.last == ')' && text.count(_ == ')') > text.count(_ == '(')) text = text.dropRight(1)
+      // Strip trailing ; and entity-like suffixes (&amp; etc)
+      if (text.endsWith(";")) {
+        val ampIdx = text.lastIndexOf('&')
+        if (ampIdx >= 0) text = text.take(ampIdx)
+      }
+
+      if (text.isEmpty) return node
+
+      val finalDest = if (collected.startsWith("www.")) s"http://$text" else text
+
+      // Replace the URL character nodes with an AutoLink node
+      node.element = AutoLink(percentEncode(finalDest), text)
+
+      // Unlink consumed characters (skip the first which is now AutoLink)
+      var skip = node.following
+      for (_ <- 1 until text.length) {
+        if (skip.notAfterEnd) {
+          val next = skip.following
+          skip.unlink
+          skip = next
+        }
+      }
+
+      // If there are leftover characters (trailing punctuation we stripped), they stay as C nodes
+      node.following
+  }
 }
 
 def processHtmlOrAutolink(node: DLListNode[Inline]): DLListNode[Inline] = {
@@ -834,7 +913,7 @@ def processEmphasis(delimiterStack: mutable.Stack[DelimiterInfo]): Unit = {
 
     while (closerIdx < delims.size && !foundCloser) {
       val d = delims(closerIdx)
-      if (d != null && d.isActive && (d.delimiterChar == '*' || d.delimiterChar == '_') && d.canClose && isNodeValid(d.node)) {
+      if (d != null && d.isActive && (d.delimiterChar == '*' || d.delimiterChar == '_' || d.delimiterChar == '~') && d.canClose && isNodeValid(d.node)) {
         foundCloser = true
       }
       else
@@ -874,9 +953,15 @@ def processEmphasis(delimiterStack: mutable.Stack[DelimiterInfo]): Unit = {
       } else {
         val opener = delims(openerIdx)
 
+        // Strikethrough requires exactly 2 tildes on each side
+        if (closer.delimiterChar == '~' && (opener.length < 2 || closer.length < 2)) {
+          openersBottom((closerChar, closer.canOpen)) = closerIdx
+          currentPos = closerIdx + 1
+        } else {
+
         // Determine how many delimiters to use
-        val use = if (opener.length >= 2 && closer.length >= 2) 2 else 1
-        val isStrong = use == 2
+        val use = if (closer.delimiterChar == '~') 2
+          else if (opener.length >= 2 && closer.length >= 2) 2 else 1
 
         // --- Build emphasis node from the DLList ---
 
@@ -894,8 +979,10 @@ def processEmphasis(delimiterStack: mutable.Stack[DelimiterInfo]): Unit = {
         val contents = extractInlinesBetween(contentStart, contentEnd)
         val processedContents = consolidateTextInContents(contents)
 
-        // Create emphasis/strong node
-        val emphNode: Inline = if (isStrong) Strong(processedContents) else Emphasis(processedContents)
+        // Create emphasis/strong/strikethrough node
+        val emphNode: Inline = if (closer.delimiterChar == '~') Strikethrough(processedContents)
+          else if (use == 2) Strong(processedContents)
+          else Emphasis(processedContents)
 
         // Remove `use` delimiter nodes from the END of the opener run
         // (keep the earlier ones for potential further matching)
@@ -949,6 +1036,7 @@ def processEmphasis(delimiterStack: mutable.Stack[DelimiterInfo]): Unit = {
 
         // Continue from the closer position (don't restart from beginning)
         currentPos = closerIdx
+      } // end strikethrough length check else
       }
     }
   }
@@ -1835,10 +1923,11 @@ private def normalizeLabel(label: String): String = {
 // Check if a list of inlines contains any Link nodes (recursively)
 private def containsLink(inlines: List[Inline]): Boolean = {
   inlines.exists {
-    case _: Link          => true
-    case Emphasis(children) => containsLink(children)
-    case Strong(children)   => containsLink(children)
-    case _                  => false
+    case _: Link                 => true
+    case Emphasis(children)      => containsLink(children)
+    case Strong(children)        => containsLink(children)
+    case Strikethrough(children) => containsLink(children)
+    case _                       => false
   }
 }
 

@@ -57,23 +57,51 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
             if (content.isEmpty) {
               s"<li></li>\n"
             } else {
-              val rendered = content.map { block =>
+              // Check for task list item: first paragraph starts with [ ]/[x]/[X] followed by space
+              val (taskCheckbox, adjustedContent) = if (config.taskListItems) {
+                content.headOption match {
+                  case Some(Paragraph(inlines)) =>
+                    inlines.headOption match {
+                      case Some(Text(text)) if text.startsWith("[ ] ") =>
+                        (Some(false), Paragraph(Text(text.drop(4)) :: inlines.tail) :: content.tail)
+                      case Some(Text(text)) if text.toLowerCase.startsWith("[x] ") =>
+                        (Some(true), Paragraph(Text(text.drop(4)) :: inlines.tail) :: content.tail)
+                      case _ => (None, content)
+                    }
+                  case _ => (None, content)
+                }
+              } else (None, content)
+
+              val rendered = adjustedContent.map { block =>
                 if (data.isTight) block match {
                   case Paragraph(inlines) => renderInlines(inlines)
                   case other              => renderBlockToHTML(other, config)
                 }
                 else renderBlockToHTML(block, config)
               }
-              if (data.isTight && content.headOption.exists(_.isInstanceOf[Paragraph])) {
+
+              val checkboxHtml = taskCheckbox match {
+                case Some(true)  => """<input checked="" disabled="" type="checkbox"> """
+                case Some(false) => """<input disabled="" type="checkbox"> """
+                case None        => ""
+              }
+
+              if (data.isTight && adjustedContent.headOption.exists(_.isInstanceOf[Paragraph])) {
                 // Tight list: first paragraph inline after <li>, rest on new lines
                 if (rendered.size == 1)
-                  s"<li>${rendered.head}</li>\n"
+                  s"<li>$checkboxHtml${rendered.head}</li>\n"
                 else
-                  s"<li>${rendered.head}\n${rendered.tail.mkString("\n")}\n</li>\n"
+                  s"<li>$checkboxHtml${rendered.head}\n${rendered.tail.mkString("\n")}\n</li>\n"
               } else {
-                val body = rendered.mkString("\n")
+                val renderedWithCheckbox = if (checkboxHtml.nonEmpty && rendered.nonEmpty) {
+                  // In loose lists, inject checkbox after the opening <p> tag
+                  val first = rendered.head
+                  val injected = if (first.startsWith("<p>")) s"<p>$checkboxHtml${first.drop(3)}" else s"$checkboxHtml$first"
+                  injected :: rendered.tail.toList
+                } else rendered
+                val body = renderedWithCheckbox.mkString("\n")
                 val closingNl = if (body.endsWith("\n") ||
-                    (data.isTight && content.lastOption.exists(_.isInstanceOf[Paragraph]))) ""
+                    (data.isTight && adjustedContent.lastOption.exists(_.isInstanceOf[Paragraph]))) ""
                   else "\n"
                 s"<li>\n$body$closingNl</li>\n"
               }
@@ -156,7 +184,8 @@ private def renderInlines(inlines: List[Inline]): String =
     case HardLineBreak()    => "<br />\n"
     case CodeSpan(content)  => s"<code>${escapeXml(content)}</code>"
     case Emphasis(children) => s"<em>${renderInlines(children)}</em>"
-    case Strong(children)   => s"<strong>${renderInlines(children)}</strong>"
+    case Strong(children)        => s"<strong>${renderInlines(children)}</strong>"
+    case Strikethrough(children) => s"<del>${renderInlines(children)}</del>"
     case Link(destination, title, children) =>
       val titleAttr = title.map(t => s" title=\"${escapeXml(t)}\"").getOrElse("")
       s"""<a href="${escapeXml(percentEncode(destination))}"$titleAttr>${renderInlines(children)}</a>"""
@@ -177,8 +206,9 @@ private def renderAltText(inlines: List[Inline]): String = {
     case Text(content)        => escapeXml(content)
     case CodeSpan(content)    => escapeXml(content)
     case Emphasis(children)   => renderAltText(children)
-    case Strong(children)     => renderAltText(children)
-    case Link(_, _, children)  => renderAltText(children)
+    case Strong(children)        => renderAltText(children)
+    case Strikethrough(children) => renderAltText(children)
+    case Link(_, _, children)    => renderAltText(children)
     case Image(_, _, children) => renderAltText(children)
     case _                     => ""
   }.mkString

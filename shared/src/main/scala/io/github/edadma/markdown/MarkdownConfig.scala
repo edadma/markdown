@@ -9,6 +9,9 @@ case class MarkdownConfig(
     math: Boolean = false,
     emoji: EmojiConfig = EmojiConfig.Disabled,
     callouts: Boolean = false,
+    strikethrough: Boolean = false,
+    taskListItems: Boolean = false,
+    extendedAutolinks: Boolean = false,
     codeHighlighter: Option[(String, String) => Option[String]] = None,
     indentedCodeLanguage: Option[String] = None,
     indentedCodeBreaksList: Boolean = false,
@@ -17,7 +20,8 @@ case class MarkdownConfig(
 object MarkdownConfig:
   val default: MarkdownConfig = MarkdownConfig()
   val all: MarkdownConfig =
-    MarkdownConfig(definitionLists = true, tables = true, math = true, emoji = EmojiConfig.Unicode, callouts = true)
+    MarkdownConfig(definitionLists = true, tables = true, math = true, emoji = EmojiConfig.Unicode, callouts = true,
+      strikethrough = true, taskListItems = true, extendedAutolinks = true)
 
 enum EmojiConfig:
   case Disabled
