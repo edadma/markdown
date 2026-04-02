@@ -11,6 +11,7 @@ case class MarkdownConfig(
     callouts: Boolean = false,
     codeHighlighter: Option[(String, String) => Option[String]] = None,
     indentedCodeLanguage: Option[String] = None,
+    indentedCodeBreaksList: Boolean = false,
 )
 
 object MarkdownConfig:

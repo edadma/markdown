@@ -30,7 +30,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.2.0"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.2.1"
 ```
 
 ```scala
@@ -86,16 +86,20 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 // … Inline types: Text, Emphasis, Strong, CodeSpan, Link, Image, AutoLink, RawHTML, etc.
 ```
 
-## Extensions
+## Configuration
 
-Beyond CommonMark, the library also supports:
+`MarkdownConfig` controls optional features. Use `MarkdownConfig.default` for spec-only behavior or `MarkdownConfig.all` for everything enabled.
 
-- Tables (GFM-style)
-- Definition lists
-- Math blocks and inline math
-- Callout blocks
-- Collapsible blocks
-- Emoji shortcodes
+| Option | Default | Description |
+|--------|---------|-------------|
+| `tables` | `false` | GFM-style tables |
+| `definitionLists` | `false` | Definition lists |
+| `math` | `false` | Math blocks and inline math |
+| `callouts` | `false` | Callout blocks |
+| `emoji` | `Disabled` | Emoji shortcodes (`Unicode` or `Image(baseURL)`) |
+| `codeHighlighter` | `None` | Pluggable syntax highlighting function |
+| `indentedCodeLanguage` | `None` | Default language for indented code blocks |
+| `indentedCodeBreaksList` | `false` | Indented code block after a blank line ends the enclosing list item instead of being absorbed into it |
 
 ## Contributing
 

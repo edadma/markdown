@@ -380,6 +380,9 @@ object ListBlockParser extends BlockParser {
               if (nextIndent < markerIndent && !isListMarker(nextText)) {
                 // Not indented enough and not a new list - end of item
                 inItem = false
+              } else if (config.indentedCodeBreaksList && nextIndent >= 4) {
+                // Option: indented code block after blank line ends the list item
+                inItem = false
               }
             }
           }

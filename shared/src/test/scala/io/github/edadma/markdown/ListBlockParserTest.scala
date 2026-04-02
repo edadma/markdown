@@ -377,4 +377,30 @@ class ListBlockParserTest extends AnyFlatSpec with Matchers {
       ),
     ))
   }
+
+  // indentedCodeBreaksList option tests
+
+  it should "absorb indented block into list item by default" in {
+    renderToHTML("- item\n\n    code\n") shouldBe
+      "<ul>\n<li>\n<p>item</p>\n<p>code</p>\n</li>\n</ul>\n"
+  }
+
+  it should "break indented code out of list when indentedCodeBreaksList is enabled" in {
+    val config = MarkdownConfig(indentedCodeBreaksList = true)
+    renderToHTML("- item\n\n    code\n", config) shouldBe
+      "<ul>\n<li>item</li>\n</ul>\n<pre><code>code\n</code></pre>\n"
+  }
+
+  it should "break indented code out of indented list when indentedCodeBreaksList is enabled" in {
+    val config = MarkdownConfig(indentedCodeBreaksList = true)
+    renderToHTML("  - item\n\n      code\n", config) shouldBe
+      "<ul>\n<li>item</li>\n</ul>\n<pre><code>  code\n</code></pre>\n"
+  }
+
+  it should "not break non-indented continuation out of list when indentedCodeBreaksList is enabled" in {
+    // Content indented to contentIndent but not enough for indented code block
+    val config = MarkdownConfig(indentedCodeBreaksList = true)
+    renderToHTML("- item\n\n  more\n", config) shouldBe
+      "<ul>\n<li>\n<p>item</p>\n<p>more</p>\n</li>\n</ul>\n"
+  }
 }
