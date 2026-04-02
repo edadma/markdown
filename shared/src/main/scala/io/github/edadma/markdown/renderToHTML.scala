@@ -38,21 +38,25 @@ def renderBlockToHTML(node: Block): String =
 
       s"<$tagName$startAttr>\n${items.map {
           case ListItem(content) =>
-            val rendered = content.map { block =>
-              if (data.isTight) block match {
-                case Paragraph(inlines) => renderInlines(inlines)
-                case other              => renderBlockToHTML(other)
-              }
-              else renderBlockToHTML(block)
-            }
-            if (data.isTight && content.headOption.exists(_.isInstanceOf[Paragraph])) {
-              // Tight list: first paragraph inline after <li>, rest on new lines
-              if (rendered.size == 1)
-                s"<li>${rendered.head}</li>\n"
-              else
-                s"<li>${rendered.head}\n${rendered.tail.mkString("\n")}\n</li>\n"
+            if (content.isEmpty) {
+              s"<li></li>\n"
             } else {
-              s"<li>\n${rendered.mkString("\n")}\n</li>\n"
+              val rendered = content.map { block =>
+                if (data.isTight) block match {
+                  case Paragraph(inlines) => renderInlines(inlines)
+                  case other              => renderBlockToHTML(other)
+                }
+                else renderBlockToHTML(block)
+              }
+              if (data.isTight && content.headOption.exists(_.isInstanceOf[Paragraph])) {
+                // Tight list: first paragraph inline after <li>, rest on new lines
+                if (rendered.size == 1)
+                  s"<li>${rendered.head}</li>\n"
+                else
+                  s"<li>${rendered.head}\n${rendered.tail.mkString("\n")}\n</li>\n"
+              } else {
+                s"<li>\n${rendered.mkString("\n")}\n</li>\n"
+              }
             }
         }.mkString}</$tagName>"
     case Table(headerRow, rows, alignments) =>
