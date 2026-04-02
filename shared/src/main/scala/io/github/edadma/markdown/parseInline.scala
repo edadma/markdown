@@ -1239,12 +1239,13 @@ def lookForLinkOrImage(
   logger.debug(s"lookForLinkOrImage at node: ${current.element}")
 
   // Find the most recent opening delimiter ([ or ![) on the stack
+  // Per spec: find the FIRST one regardless of active status; if inactive, remove and output ]
   @tailrec
   def findOpener(idx: Int): Option[(DelimiterInfo, Boolean)] = {
     if (idx >= delimiterStack.size) None
     else {
       val d = delimiterStack(idx)
-      if ((d.delimiterChar == '!' || d.delimiterChar == '[') && d.isActive && isNodeValid(d.node))
+      if ((d.delimiterChar == '!' || d.delimiterChar == '[') && isNodeValid(d.node))
         Some((d, d.delimiterChar == '!'))
       else findOpener(idx + 1)
     }
@@ -1382,6 +1383,12 @@ private def tryProcessInlineLink(
 
   // Extract raw link text
   val linkText = extractInlinesBetween(opener.node.following, closeBracket)
+
+  // Per spec: a link cannot contain other links (but images can)
+  if (!isImage && containsLink(linkText)) {
+    logger.debug("Link text contains a link — cannot form link-in-link")
+    return null
+  }
 
   // Process emphasis and other formatting within the link text
   val processedLinkText = parseInline(linkText, Map(), config)
@@ -1823,6 +1830,16 @@ private def inlinesToLabelText(inlines: List[Inline]): String = {
 private def normalizeLabel(label: String): String = {
   // Unicode case fold (toLowerCase + ß→ss for full case folding), collapse whitespace
   label.trim.toLowerCase.replace("ß", "ss").replaceAll("\\s+", " ")
+}
+
+// Check if a list of inlines contains any Link nodes (recursively)
+private def containsLink(inlines: List[Inline]): Boolean = {
+  inlines.exists {
+    case _: Link          => true
+    case Emphasis(children) => containsLink(children)
+    case Strong(children)   => containsLink(children)
+    case _                  => false
+  }
 }
 
 // Set all [ delimiters inactive

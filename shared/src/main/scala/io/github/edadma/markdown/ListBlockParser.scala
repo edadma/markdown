@@ -82,21 +82,24 @@ object ListBlockParser extends BlockParser {
     val listData      = extractListData(firstLineText)
 
     // Collect list items and determine if the list is tight or loose
-    val (items, linesConsumed, hasBlanksBetweenItems, itemBlanksFlags) =
+    val (items, linesConsumed, hasBlanksBetweenItems, itemBlanksFlags, itemRefsConsumed) =
       collectListItems(lines, listData, linkRefs, parentIndent, config)
 
     // A list is loose if:
     // 1. There are blank lines between items, OR
     // 2. Any item directly contains two block-level elements with a blank line between them
-    val anyItemLoose = items.zip(itemBlanksFlags).exists { case (item, (atItemLevel, anywhere)) =>
-      item.content.size >= 2 && (
-        // Blank at exact item level → definitely between direct children
-        (atItemLevel) ||
-        // Multiple paragraphs always implies blank lines between them
-        (anywhere && item.content.count(_.isInstanceOf[Paragraph]) >= 2) ||
-        // Non-list/non-paragraph blocks (code, blockquote, html) with blanks → loose
-        (anywhere && item.content.exists(b => !b.isInstanceOf[Paragraph] && !b.isInstanceOf[ListBlock]))
-      )
+    //    (link ref defs count as block-level constructs even though they produce no visible block)
+    val anyItemLoose = items.lazyZip(itemBlanksFlags).lazyZip(itemRefsConsumed).exists {
+      case (item, (atItemLevel, anywhere), refsConsumed) =>
+        val effectiveBlockCount = item.content.size + refsConsumed
+        effectiveBlockCount >= 2 && (
+          // Blank at exact item level → definitely between direct children
+          (atItemLevel) ||
+          // Multiple paragraphs always implies blank lines between them
+          (anywhere && item.content.count(_.isInstanceOf[Paragraph]) >= 2) ||
+          // Non-list/non-paragraph blocks (code, blockquote, html) with blanks → loose
+          (anywhere && item.content.exists(b => !b.isInstanceOf[Paragraph] && !b.isInstanceOf[ListBlock]))
+        )
     }
     val isTight = !hasBlanksBetweenItems && !anyItemLoose
 
@@ -132,9 +135,10 @@ object ListBlockParser extends BlockParser {
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
-  ): (List[ListItem], Int, Boolean, List[(Boolean, Boolean)]) = {
+  ): (List[ListItem], Int, Boolean, List[(Boolean, Boolean)], List[Int]) = {
     val items                  = new mutable.ListBuffer[ListItem]
     val itemBlanksFlags        = new mutable.ListBuffer[(Boolean, Boolean)] // (atItemLevel, anywhere)
+    val itemRefsConsumed       = new mutable.ListBuffer[Int]
     var currentLines           = lines
     var totalLinesConsumed     = 0
     var hasBlanksBetweenItems  = false
@@ -148,10 +152,11 @@ object ListBlockParser extends BlockParser {
       }
 
       // Parse a single list item
-      val (item, linesConsumed, blankFlags) = parseListItem(currentLines, listData, linkRefs, parentIndent, config)
+      val (item, linesConsumed, blankFlags, refsConsumed) = parseListItem(currentLines, listData, linkRefs, parentIndent, config)
 
       items += item
       itemBlanksFlags += blankFlags
+      itemRefsConsumed += refsConsumed
       totalLinesConsumed += linesConsumed
 
       // Check if the last consumed line(s) were blank (blank lines trailing this item)
@@ -161,7 +166,7 @@ object ListBlockParser extends BlockParser {
       currentLines = currentLines.drop(linesConsumed)
     }
 
-    (items.toList, totalLinesConsumed, hasBlanksBetweenItems, itemBlanksFlags.toList)
+    (items.toList, totalLinesConsumed, hasBlanksBetweenItems, itemBlanksFlags.toList, itemRefsConsumed.toList)
   }
 
   private def isMatchingListItemStart(line: List[C], listData: ListData): Boolean = {
@@ -193,7 +198,7 @@ object ListBlockParser extends BlockParser {
       linkRefs: mutable.Map[String, LinkReference],
       parentIndent: Int,
       config: MarkdownConfig,
-  ): (ListItem, Int, (Boolean, Boolean)) = {
+  ): (ListItem, Int, (Boolean, Boolean), Int) = {
     // Get indentation information from first line
     val (markerIndent, contentIndent) = getIndentation(lines.head, listData)
 
@@ -207,6 +212,9 @@ object ListBlockParser extends BlockParser {
     // Use the existing block parsing machinery directly, without creating a new document
     val totalIndent = parentIndent + contentIndent
 
+    // Track link ref defs consumed during item parsing (they count as block-level constructs)
+    val refCountBefore = linkRefs.size
+
     // Pass the total indent to any recursive list parsing
     val itemBlocks = processLines(processedLines, linkRefs, totalIndent, config).map {
       case nestedList: ListBlock =>
@@ -215,8 +223,11 @@ object ListBlockParser extends BlockParser {
       case other => other
     }
 
+    val refsConsumed = linkRefs.size - refCountBefore
+
     // Create the list item with the parsed blocks
-    (ListItem(itemBlocks), linesConsumed, blankFlags)
+    // Effective block count includes consumed link ref defs for loose/tight detection
+    (ListItem(itemBlocks), linesConsumed, blankFlags, refsConsumed)
   }
 
   private def getIndentation(line: List[C], listData: ListData): (Int, Int) = {
