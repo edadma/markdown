@@ -9,6 +9,7 @@ case class MarkdownConfig(
     math: Boolean = false,
     emoji: EmojiConfig = EmojiConfig.Disabled,
     callouts: Boolean = false,
+    codeHighlighter: Option[(String, String) => Option[String]] = None,
 )
 
 object MarkdownConfig:

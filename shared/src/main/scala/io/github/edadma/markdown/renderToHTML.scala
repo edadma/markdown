@@ -1,7 +1,7 @@
 package io.github.edadma.markdown
 
 def renderToHTML(md: String, config: MarkdownConfig = MarkdownConfig.default): String =
-  renderToHTML(parseDocumentContent(md, config))
+  renderToHTML(parseDocumentContent(md, config), config)
 
 def parseDocumentContent(input: String, config: MarkdownConfig = MarkdownConfig.default): Document =
   val (document, _) = parseDocumentContentWithRefs(input, config)
@@ -16,18 +16,28 @@ def parseDocumentContentWithRefs(
 
   parseDocument(reader.stream, config)
 
-def renderBlockToHTML(node: Block): String =
+def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.default): String =
   node match
     case Paragraph(inlines)      => s"<p>${renderInlines(inlines)}</p>"
     case Heading(level, inlines) => s"<h$level>${renderInlines(inlines)}</h$level>"
     case Code(content, infoString, _) =>
-      val languageClass = infoString.map(info => s" class=\"language-$info\"").getOrElse("")
-      val trailing = if (content.nonEmpty) "\n" else ""
-      s"<pre><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
+      val highlighted = for
+        highlighter <- config.codeHighlighter
+        lang <- infoString
+        html <- highlighter(content, lang)
+      yield
+        val languageClass = s""" class="language-$lang""""
+        s"<pre><code$languageClass>$html</code></pre>"
+
+      highlighted.getOrElse {
+        val languageClass = infoString.map(info => s" class=\"language-$info\"").getOrElse("")
+        val trailing = if (content.nonEmpty) "\n" else ""
+        s"<pre><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
+      }
     case BlockQuote(children) =>
       if (children.isEmpty) "<blockquote>\n</blockquote>"
       else
-        val body = children.map(renderBlockToHTML).mkString("\n")
+        val body = children.map(renderBlockToHTML(_, config)).mkString("\n")
         val sep = if (body.endsWith("\n")) "" else "\n"
         s"<blockquote>\n$body$sep</blockquote>"
     case ThematicBreak()      => "<hr />"
@@ -47,9 +57,9 @@ def renderBlockToHTML(node: Block): String =
               val rendered = content.map { block =>
                 if (data.isTight) block match {
                   case Paragraph(inlines) => renderInlines(inlines)
-                  case other              => renderBlockToHTML(other)
+                  case other              => renderBlockToHTML(other, config)
                 }
-                else renderBlockToHTML(block)
+                else renderBlockToHTML(block, config)
               }
               if (data.isTight && content.headOption.exists(_.isInstanceOf[Paragraph])) {
                 // Tight list: first paragraph inline after <li>, rest on new lines
@@ -101,7 +111,7 @@ def renderBlockToHTML(node: Block): String =
 
         definitions.foreach { defBlock =>
           sb.append("  <dd>\n")
-          sb.append(renderToHTML(defBlock))
+          sb.append(renderToHTML(defBlock, config))
           sb.append("  </dd>\n")
         }
       }
@@ -117,7 +127,7 @@ def renderBlockToHTML(node: Block): String =
       s"""<div class="callout callout-$calloutType">
          |  $titleHtml
          |  <div class="callout-content">
-         |    ${children.map(renderBlockToHTML).mkString("\n    ")}
+         |    ${children.map(renderBlockToHTML(_, config)).mkString("\n    ")}
          |  </div>
          |</div>""".stripMargin
     case CollapsibleBlock(title, isOpen, children) =>
@@ -126,11 +136,13 @@ def renderBlockToHTML(node: Block): String =
 
       s"""<details$openAttr>
          |  <summary>$titleText</summary>
-         |  ${children.map(renderBlockToHTML).mkString("\n")}
+         |  ${children.map(renderBlockToHTML(_, config)).mkString("\n")}
          |</details>""".stripMargin
 
-def renderToHTML(node: Node): String = node match {
-  case Document(children) => children.map(renderBlockToHTML).map(s => if (s.endsWith("\n")) s else s + '\n').mkString
+def renderToHTML(node: Node): String = renderToHTML(node, MarkdownConfig.default)
+
+def renderToHTML(node: Node, config: MarkdownConfig): String = node match {
+  case Document(children) => children.map(renderBlockToHTML(_, config)).map(s => if (s.endsWith("\n")) s else s + '\n').mkString
   case n: Inline          => sys.error(s"inline node in block position: '$n'")
 }
 

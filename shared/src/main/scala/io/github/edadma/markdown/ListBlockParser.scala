@@ -235,11 +235,14 @@ object ListBlockParser extends BlockParser {
 
     // Calculate virtual width of a whitespace string starting at a given column
     def virtualWidth(s: String, startCol: Int): Int = {
+      import scala.util.boundary, boundary.break
       var col = startCol
-      for (c <- s) {
-        if (c == ' ') col += 1
-        else if (c == '\t') col += 4 - (col % 4)
-        else return col - startCol
+      boundary {
+        for (c <- s) {
+          if (c == ' ') col += 1
+          else if (c == '\t') col += 4 - (col % 4)
+          else break()
+        }
       }
       col - startCol
     }
@@ -449,11 +452,14 @@ object ListBlockParser extends BlockParser {
 
   // Helper function to count leading spaces
   private def countLeadingSpaces(text: String): Int = {
+    import scala.util.boundary, boundary.break
     var col = 0
-    for (c <- text) {
-      if (c == ' ') col += 1
-      else if (c == '\t') col += 4 - (col % 4)
-      else return col
+    boundary {
+      for (c <- text) {
+        if (c == ' ') col += 1
+        else if (c == '\t') col += 4 - (col % 4)
+        else break()
+      }
     }
     col
   }

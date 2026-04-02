@@ -1,5 +1,7 @@
 package io.github.edadma.markdown
 
+import scala.util.boundary, boundary.break
+
 object HTMLBlockParser extends BlockParser {
   val name: String = "HTML blocks"
 
@@ -22,29 +24,29 @@ object HTMLBlockParser extends BlockParser {
     line.takeWhile(_.char != '\n').map(_.char).mkString
 
   /** Classify an HTML block by its CommonMark type (1-7), or 0 if not an HTML block. */
-  private def classifyHtmlBlock(line: List[C]): Int = {
+  private def classifyHtmlBlock(line: List[C]): Int = boundary {
     // Check if the leading < is escaped
     val stripped = line.dropWhile(c => c.char == ' ')
-    if (stripped.nonEmpty && stripped.head.char == '<' && stripped.head.isLiteral) return 0
+    if (stripped.nonEmpty && stripped.head.char == '<' && stripped.head.isLiteral) break(0)
 
     // Check leading indent (must be 0-3 spaces)
     val leadingSpaces = line.takeWhile(c => c.char == ' ' && !c.isLiteral).length
-    if (leadingSpaces > 3) return 0
+    if (leadingSpaces > 3) break(0)
 
     val t  = text(line).trim
     val lc = t.toLowerCase
 
     // Type 2: HTML comment
-    if (lc.startsWith("<!--")) return 2
+    if (lc.startsWith("<!--")) break(2)
 
     // Type 3: Processing instruction
-    if (lc.startsWith("<?")) return 3
+    if (lc.startsWith("<?")) break(3)
 
     // Type 5: CDATA
-    if (lc.startsWith("<![cdata[")) return 5
+    if (lc.startsWith("<![cdata[")) break(5)
 
     // Type 4: <!LETTER (includes DOCTYPE)
-    if (t.length >= 3 && t.charAt(0) == '<' && t.charAt(1) == '!' && t.charAt(2).isUpper) return 4
+    if (t.length >= 3 && t.charAt(0) == '<' && t.charAt(1) == '!' && t.charAt(2).isUpper) break(4)
 
     // Type 1: <script, <pre, <style, <textarea followed by space/tab/>/end-of-line
     for (tag <- type1Tags) {
@@ -52,7 +54,7 @@ object HTMLBlockParser extends BlockParser {
         val afterTag = lc.drop(tag.length + 1)
         if (afterTag.isEmpty || afterTag.charAt(0) == ' ' || afterTag.charAt(0) == '\t' ||
             afterTag.charAt(0) == '>' || afterTag.charAt(0) == '\n')
-          return 1
+          break(1)
       }
     }
 
@@ -66,7 +68,7 @@ object HTMLBlockParser extends BlockParser {
         val afterTag = rest.drop(tagName.length)
         if (afterTag.isEmpty || afterTag.charAt(0) == ' ' || afterTag.charAt(0) == '\t' ||
             afterTag.charAt(0) == '>')
-          return 6
+          break(6)
       }
     } else if (lc.startsWith("<")) {
       val rest = lc.drop(1)
@@ -75,7 +77,7 @@ object HTMLBlockParser extends BlockParser {
         val afterTag = rest.drop(tagName.length)
         if (afterTag.isEmpty || afterTag.charAt(0) == ' ' || afterTag.charAt(0) == '\t' ||
             afterTag.charAt(0) == '>' || afterTag.charAt(0) == '/' || afterTag.charAt(0) == '\n')
-          return 6
+          break(6)
       }
     }
 
@@ -89,7 +91,7 @@ object HTMLBlockParser extends BlockParser {
         val tagNameFromInner = if (inner.startsWith("/")) inner.drop(1).takeWhile(c => c.isLetterOrDigit || c == '-')
                                else inner.takeWhile(c => c.isLetterOrDigit || c == '-')
         if (!type1Tags.contains(tagNameFromInner.toLowerCase))
-          return 7
+          break(7)
       }
     }
 

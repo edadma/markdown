@@ -156,11 +156,14 @@ def expandLeadingTabs(line: List[C], startCol: Int = 0): List[C] = {
 
 /** Count virtual column width of leading whitespace, treating tabs as expanding to next tab stop (multiples of 4). */
 def virtualIndent(line: List[C]): Int = {
+  import scala.util.boundary, boundary.break
   var col = 0
-  for (c <- line) {
-    if (c.char == ' ') col += 1
-    else if (c.char == '\t') col += 4 - (col % 4)
-    else return col
+  boundary {
+    for (c <- line) {
+      if (c.char == ' ') col += 1
+      else if (c.char == '\t') col += 4 - (col % 4)
+      else break()
+    }
   }
   col
 }
