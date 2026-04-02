@@ -26,7 +26,10 @@ def renderBlockToHTML(node: Block): String =
       s"<pre><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
     case BlockQuote(children) =>
       if (children.isEmpty) "<blockquote>\n</blockquote>"
-      else s"<blockquote>\n${children.map(renderBlockToHTML).mkString("\n")}\n</blockquote>"
+      else
+        val body = children.map(renderBlockToHTML).mkString("\n")
+        val sep = if (body.endsWith("\n")) "" else "\n"
+        s"<blockquote>\n$body$sep</blockquote>"
     case ThematicBreak()      => "<hr />"
     case HTMLBlock(content)   => content
     case ListBlock(data, items) =>
@@ -56,9 +59,9 @@ def renderBlockToHTML(node: Block): String =
                   s"<li>${rendered.head}\n${rendered.tail.mkString("\n")}\n</li>\n"
               } else {
                 val body = rendered.mkString("\n")
-                // In tight lists, if the last element is a paragraph (rendered inline),
-                // don't add a newline before </li>
-                val closingNl = if (data.isTight && content.lastOption.exists(_.isInstanceOf[Paragraph])) "" else "\n"
+                val closingNl = if (body.endsWith("\n") ||
+                    (data.isTight && content.lastOption.exists(_.isInstanceOf[Paragraph]))) ""
+                  else "\n"
                 s"<li>\n$body$closingNl</li>\n"
               }
             }

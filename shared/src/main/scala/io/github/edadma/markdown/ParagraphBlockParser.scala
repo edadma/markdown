@@ -21,7 +21,7 @@ object ParagraphBlockParser extends BlockParser {
       !isBlankLine(line) &&
         !ATXHeadingBlockParser.canStart(LazyList(line), config) &&
         !ThematicBreakBlockParser.canStart(LazyList(line), config) &&
-        !HTMLBlockParser.canStart(LazyList(line), config) &&
+        !HTMLBlockParser.canInterruptParagraph(LazyList(line), config) &&
         !FencedCodeBlockParser.canStart(LazyList(line), config) &&
         !BlockQuoteParser.canStart(LazyList(line), config) &&
         !ListBlockParser.canInterruptParagraph(LazyList(line), config) &&

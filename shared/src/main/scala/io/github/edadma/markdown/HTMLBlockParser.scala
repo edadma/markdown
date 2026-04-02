@@ -3,119 +3,108 @@ package io.github.edadma.markdown
 object HTMLBlockParser extends BlockParser {
   val name: String = "HTML blocks"
 
-  // 1–3 openers and closers
-  private val multilineOpeners = List(
-    "<!--"      -> "-->",
-    "<?"        -> "?>",
-    "<![CDATA[" -> "]]>",
-  )
+  // Type 1: raw content tags (content not parsed as markdown)
+  private val type1Tags = Set("script", "style", "pre", "textarea")
 
-  // 4: DOCTYPE (single‐line)
-  private val doctypePattern = """(?i)^<!DOCTYPE\b.*>$""".r
-
-  // 5: script|style|pre
-  private val multiTagNames = Set("script", "style", "pre")
-
-  // 6: other block tags (exact list from spec § 4.6)
+  // Type 6: block-level tags (exact list from CommonMark spec § 4.6)
   private val blockTags = Set(
-    "address",
-    "article",
-    "aside",
-    "base",
-    "basefont",
-    "blockquote",
-    "body",
-    "caption",
-    "center",
-    "col",
-    "colgroup",
-    "dd",
-    "details",
-    "dialog",
-    "dir",
-    "div",
-    "dl",
-    "dt",
-    "fieldset",
-    "figcaption",
-    "figure",
-    "footer",
-    "form",
-    "frame",
-    "frameset",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "head",
-    "header",
-    "hr",
-    "html",
-    "li",
-    "link",
-    "main",
-    "menu",
-    "menuitem",
-    "meta",
-    "nav",
-    "noframes",
-    "ol",
-    "optgroup",
-    "option",
-    "p",
-    "param",
-    "section",
-    "source",
-    "summary",
-    "table",
-    "tbody",
-    "td",
-    "tfoot",
-    "th",
-    "thead",
-    "title",
-    "tr",
-    "track",
-    "ul",
-    "wbr",
+    "address", "article", "aside", "base", "basefont", "blockquote", "body",
+    "caption", "center", "col", "colgroup", "dd", "details", "dialog", "dir",
+    "div", "dl", "dt", "fieldset", "figcaption", "figure", "footer", "form",
+    "frame", "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header",
+    "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem",
+    "nav", "noframes", "ol", "optgroup", "option", "p", "param", "search",
+    "section", "source", "summary", "table", "tbody", "td", "tfoot", "th",
+    "thead", "title", "tr", "track", "ul",
   )
 
-  // 7: any other <tag…> or </tag>
-  private val genericTagPattern = """^</?[A-Za-z][A-Za-z0-9\-]*(\s+[^>]*)?>\s*$""".r
-
-  private def text(line: List[C]) =
+  private def text(line: List[C]): String =
     line.takeWhile(_.char != '\n').map(_.char).mkString
 
-  override def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = lines.headOption.exists { line =>
+  /** Classify an HTML block by its CommonMark type (1-7), or 0 if not an HTML block. */
+  private def classifyHtmlBlock(line: List[C]): Int = {
     // Check if the leading < is escaped
     val stripped = line.dropWhile(c => c.char == ' ')
-    if (stripped.nonEmpty && stripped.head.char == '<' && stripped.head.isLiteral) return false
+    if (stripped.nonEmpty && stripped.head.char == '<' && stripped.head.isLiteral) return 0
+
+    // Check leading indent (must be 0-3 spaces)
+    val leadingSpaces = line.takeWhile(c => c.char == ' ' && !c.isLiteral).length
+    if (leadingSpaces > 3) return 0
 
     val t  = text(line).trim
     val lc = t.toLowerCase
 
-    // 1. HTML comment
-    lc.startsWith("<!--") ||
-    // 2. Processing instruction
-    lc.startsWith("<?") ||
-    // 3. CDATA
-    lc.startsWith("<![cdata[") ||
-    // 4. DOCTYPE
-    doctypePattern.matches(t) ||
-    // 5. <script>/<style>/<pre>
-    multiTagNames.exists(tag => lc.startsWith(s"<$tag")) ||
-    // 6–7. Any other block-level or generic tag (single line)
-    // Use rawText to preserve backslash escapes for proper validation
-    {
-      val rt = rawText(line).trim
-      rt.startsWith("<") && rt.endsWith(">") && {
-        val inner = rt.substring(1, rt.length - 1)
-        inner.nonEmpty && isHtmlTag(inner)
+    // Type 2: HTML comment
+    if (lc.startsWith("<!--")) return 2
+
+    // Type 3: Processing instruction
+    if (lc.startsWith("<?")) return 3
+
+    // Type 5: CDATA
+    if (lc.startsWith("<![cdata[")) return 5
+
+    // Type 4: <!LETTER (includes DOCTYPE)
+    if (t.length >= 3 && t.charAt(0) == '<' && t.charAt(1) == '!' && t.charAt(2).isUpper) return 4
+
+    // Type 1: <script, <pre, <style, <textarea followed by space/tab/>/end-of-line
+    for (tag <- type1Tags) {
+      if (lc.startsWith(s"<$tag")) {
+        val afterTag = lc.drop(tag.length + 1)
+        if (afterTag.isEmpty || afterTag.charAt(0) == ' ' || afterTag.charAt(0) == '\t' ||
+            afterTag.charAt(0) == '>' || afterTag.charAt(0) == '\n')
+          return 1
       }
     }
+
+    // Type 6: block-level tag opener or closer
+    // <tagname followed by space/tab/>/end-of-line or />
+    // </tagname followed by space/tab/>/end-of-line
+    if (lc.startsWith("</")) {
+      val rest = lc.drop(2)
+      val tagName = rest.takeWhile(c => c.isLetterOrDigit || c == '-')
+      if (tagName.nonEmpty && blockTags.contains(tagName)) {
+        val afterTag = rest.drop(tagName.length)
+        if (afterTag.isEmpty || afterTag.charAt(0) == ' ' || afterTag.charAt(0) == '\t' ||
+            afterTag.charAt(0) == '>')
+          return 6
+      }
+    } else if (lc.startsWith("<")) {
+      val rest = lc.drop(1)
+      val tagName = rest.takeWhile(c => c.isLetterOrDigit || c == '-')
+      if (tagName.nonEmpty && blockTags.contains(tagName)) {
+        val afterTag = rest.drop(tagName.length)
+        if (afterTag.isEmpty || afterTag.charAt(0) == ' ' || afterTag.charAt(0) == '\t' ||
+            afterTag.charAt(0) == '>' || afterTag.charAt(0) == '/' || afterTag.charAt(0) == '\n')
+          return 6
+      }
+    }
+
+    // Type 7: complete open tag or closing tag, alone on a line
+    // Use rawText to preserve backslash escapes
+    val rt = rawText(line).trim
+    if (rt.startsWith("<") && rt.endsWith(">")) {
+      val inner = rt.substring(1, rt.length - 1)
+      if (inner.nonEmpty && isHtmlTag(inner)) {
+        // But not if it's a type 1 tag name
+        val tagNameFromInner = if (inner.startsWith("/")) inner.drop(1).takeWhile(c => c.isLetterOrDigit || c == '-')
+                               else inner.takeWhile(c => c.isLetterOrDigit || c == '-')
+        if (!type1Tags.contains(tagNameFromInner.toLowerCase))
+          return 7
+      }
+    }
+
+    0
   }
+
+  override def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean =
+    lines.headOption.exists(line => classifyHtmlBlock(line) > 0)
+
+  /** Type 7 cannot interrupt a paragraph. Types 1-6 can. */
+  def canInterruptParagraph(lines: LazyList[List[C]], config: MarkdownConfig): Boolean =
+    lines.headOption.exists(line => {
+      val t = classifyHtmlBlock(line)
+      t >= 1 && t <= 6
+    })
 
   override def parse(
       lines: LazyList[List[C]],
@@ -124,82 +113,53 @@ object HTMLBlockParser extends BlockParser {
       config: MarkdownConfig,
   ): (Block, Int) = {
 
-    // 1. Turn one LazyList[C] into its String (dropping the trailing '\n')
-    def text(line: List[C]): String =
-      line.takeWhile(_.char != '\n').map(_.char).mkString
-
-    // Raw text preserving backslash escapes (for content output)
     def rawTextLine(line: List[C]): String = rawText(line)
 
-    // 2. Consume up to (and including) the first line containing `close`,
-    //    or all lines if never found.
+    // Collect lines until one contains `close` (case-insensitive), starting from line 0
     def takeUntilClose(close: String): (String, Int) = {
+      val closeLower = close.toLowerCase
       val all = lines.map(l => rawTextLine(l) + "\n")
-      val idx = lines.indexWhere(l => text(l).contains(close), 1)
+      val idx = lines.indexWhere(l => text(l).toLowerCase.contains(closeLower))
       if (idx >= 0) (all.take(idx + 1).mkString, idx + 1)
       else (all.mkString, lines.length)
     }
 
-    val firstLine    = text(lines.head)
-    val firstLineRaw = rawTextLine(lines.head)
-    val trimmed      = firstLine.trim
-    val lc           = trimmed.toLowerCase
+    def isBlank(line: List[C]): Boolean = {
+      val content = line.filter(_.char != '\n')
+      content.isEmpty || content.forall(c => c.char == ' ' || c.char == '\t')
+    }
 
-    // Try each HTML‐block form in order, building an Option[(Block,Int)]
-    val resultOpt: Option[(Block, Int)] =
+    // Collect lines until a blank line (exclusive) or end of input
+    def takeUntilBlank(): (String, Int) = {
+      val all = lines.map(l => rawTextLine(l) + "\n")
+      val idx = lines.indexWhere(l => isBlank(l))
+      if (idx >= 0) (all.take(idx).mkString, idx)
+      else (all.mkString, lines.length)
+    }
 
-      // 1–3) <!--…-->, <?…?>, <![CDATA[…]]>
-      multilineOpeners
-        .collectFirst { case (open, close) if lc.startsWith(open.toLowerCase) => close }
-        .map(close => {
-          val (body, cnt) = takeUntilClose(close)
-          (HTMLBlock(body), cnt)
-        })
+    val htmlType = classifyHtmlBlock(lines.head)
 
-        // 4) <!DOCTYPE …>
-        .orElse(Option.when(doctypePattern.matches(trimmed)) {
-          (HTMLBlock(firstLineRaw + "\n"), 1)
-        })
+    val (block, count) = htmlType match {
+      case 1 =>
+        // Find which type 1 tag matched
+        val lc = text(lines.head).trim.toLowerCase
+        val tag = type1Tags.find(t => lc.startsWith(s"<$t")).get
+        takeUntilClose(s"</$tag>")
 
-        // 5) <script>…</script>
-        .orElse(Option.when(lc.startsWith("<script")) {
-          val (body, cnt) = takeUntilClose("</script>")
-          (HTMLBlock(body), cnt)
-        })
+      case 2 => takeUntilClose("-->")
+      case 3 => takeUntilClose("?>")
+      case 4 => takeUntilClose(">")
+      case 5 => takeUntilClose("]]>")
 
-        // 6) <style>…</style>
-        .orElse(Option.when(lc.startsWith("<style")) {
-          val (body, cnt) = takeUntilClose("</style>")
-          (HTMLBlock(body), cnt)
-        })
+      case 6 => takeUntilBlank()
+      case 7 => takeUntilBlank()
 
-        // 7) <pre>…</pre>
-        .orElse(Option.when(lc.startsWith("<pre")) {
-          val (body, cnt) = takeUntilClose("</pre>")
-          (HTMLBlock(body), cnt)
-        })
+      case _ =>
+        // Fallback: single line
+        (rawTextLine(lines.head) + "\n", 1)
+    }
 
-        // 8) any other block‐level tag (div, blockquote, table, h1–h6, ul, ol, etc.)
-        .orElse {
-          // `blockTags` is your Set("div","blockquote","table", "div", …)
-          blockTags
-            .find(tag => lc.startsWith(s"<$tag"))
-            .map(tag => {
-              val (body, cnt) = takeUntilClose(s"</$tag>")
-              (HTMLBlock(body), cnt)
-            })
-        }
-
-        // 9) any single‐line tag (</foo> or <span> etc.)
-        .orElse {
-          val stripped = trimmed.stripPrefix("<").stripSuffix(">")
-          Option.when(stripped.nonEmpty && isHtmlTag(stripped)) {
-            (HTMLBlock(firstLineRaw + "\n"), 1)
-          }
-        }
-
-    // Finally, if somehow nothing matched, treat it as one‐line HTML
-    resultOpt.getOrElse((HTMLBlock(firstLineRaw + "\n"), 1))
+    (HTMLBlock(block), count)
   }
 
 }
