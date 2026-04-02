@@ -19,6 +19,7 @@ Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
 - **HTML entity decoding** outside of code, with literal preservation inside code spans/blocks
 - **HTML rendering**: safe escaping for `<`, `>`, `&`, and `"`; outputs standard tags (`<p>`, `<h1–6>`, `<ul>`, `<ol>`, `<pre><code>`, `<blockquote>`, `<a>`, `<img>`, etc.)
 - **Zero runtime dependencies** and lightweight API
+- **Optional syntax highlighting** for fenced and indented code blocks via a pluggable highlighter function (works with [highlighter](https://github.com/edadma/highlighter) or any custom implementation)
 
 ## Online Demo
 
@@ -29,7 +30,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.1.0"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.2.0"
 ```
 
 ```scala
@@ -44,6 +45,29 @@ This is **bold**, *italic*, and `code`.
 val html = renderToHTML(md)
 
 println(html)
+```
+
+## Code Highlighting
+
+Fenced and indented code blocks can be syntax-highlighted by providing a highlighter function. Works with [highlighter](https://github.com/edadma/highlighter) or any custom implementation.
+
+```scala
+import io.github.edadma.markdown.*
+import io.github.edadma.highlighter.*
+
+// Parse grammars once, cache per language
+val mode = ClassMode("hl-")
+val highlighters = Map(
+  "scala" -> Highlighter.fromJson(scalaGrammarJson, mode).toOption.get,
+  "js"    -> Highlighter.fromJson(jsGrammarJson, mode).toOption.get,
+)
+
+val config = MarkdownConfig.all.copy(
+  codeHighlighter = Some((code, lang) => highlighters.get(lang).map(_.highlight(code))),
+  indentedCodeLanguage = Some("scala"), // optional: assume indented blocks are Scala
+)
+
+val html = renderToHTML("```scala\nval x = 42\n```", config)
 ```
 
 ## AST Access

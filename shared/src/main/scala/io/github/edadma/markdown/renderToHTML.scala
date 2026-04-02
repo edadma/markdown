@@ -20,17 +20,20 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
   node match
     case Paragraph(inlines)      => s"<p>${renderInlines(inlines)}</p>"
     case Heading(level, inlines) => s"<h$level>${renderInlines(inlines)}</h$level>"
-    case Code(content, infoString, _) =>
+    case Code(content, infoString, indented) =>
+      // Use the info string language, or for indented blocks use the configured default
+      val lang = infoString.orElse(if indented then config.indentedCodeLanguage else None)
+
       val highlighted = for
         highlighter <- config.codeHighlighter
-        lang <- infoString
-        html <- highlighter(content, lang)
+        l <- lang
+        html <- highlighter(content, l)
       yield
-        val languageClass = s""" class="language-$lang""""
+        val languageClass = s""" class="language-$l""""
         s"<pre><code$languageClass>$html</code></pre>"
 
       highlighted.getOrElse {
-        val languageClass = infoString.map(info => s" class=\"language-$info\"").getOrElse("")
+        val languageClass = lang.map(l => s" class=\"language-$l\"").getOrElse("")
         val trailing = if (content.nonEmpty) "\n" else ""
         s"<pre><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
       }

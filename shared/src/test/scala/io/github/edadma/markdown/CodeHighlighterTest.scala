@@ -104,4 +104,50 @@ class CodeHighlighterTest extends AnyFlatSpec with Matchers {
     val html = renderToHTML(md, inlineConfig)
     html should include("style=\"color:")
   }
+
+  // -- Indented code block tests --
+
+  val indentedConfig = MarkdownConfig(
+    codeHighlighter = Some(codeHighlighter),
+    indentedCodeLanguage = Some("scala"),
+  )
+
+  it should "highlight indented code blocks when indentedCodeLanguage is set" in {
+    val md = "    val x = 42"
+    val html = renderToHTML(md, indentedConfig)
+    html should include("""class="hl-keyword"""")
+    html should include("""class="hl-number"""")
+    html should include("""class="language-scala"""")
+  }
+
+  it should "not highlight indented code blocks when indentedCodeLanguage is None" in {
+    val md = "    val x = 42"
+    val html = renderToHTML(md, config)
+    html should not include "hl-"
+    html should not include "language-"
+    html should include("val x = 42")
+  }
+
+  it should "not apply indentedCodeLanguage to fenced blocks without a language" in {
+    val md = "```\nval x = 42\n```"
+    val html = renderToHTML(md, indentedConfig)
+    html should not include "hl-"
+    html should not include "language-"
+  }
+
+  it should "highlight indented blocks with a different language than fenced blocks" in {
+    val jsIndentedConfig = MarkdownConfig(
+      codeHighlighter = Some(codeHighlighter),
+      indentedCodeLanguage = Some("javascript"),
+    )
+    val md =
+      """```scala
+        |val x = 42
+        |```
+        |
+        |    const y = 99""".stripMargin
+    val html = renderToHTML(md, jsIndentedConfig)
+    html should include("""class="language-scala"""")
+    html should include("""class="language-javascript"""")
+  }
 }

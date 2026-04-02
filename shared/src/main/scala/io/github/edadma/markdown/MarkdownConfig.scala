@@ -10,6 +10,7 @@ case class MarkdownConfig(
     emoji: EmojiConfig = EmojiConfig.Disabled,
     callouts: Boolean = false,
     codeHighlighter: Option[(String, String) => Option[String]] = None,
+    indentedCodeLanguage: Option[String] = None,
 )
 
 object MarkdownConfig:
