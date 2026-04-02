@@ -8,13 +8,14 @@
 ![Scala Native Version](https://img.shields.io/badge/Scala_Native-0.5.10-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
 
-A fast, minimal **Scala 3** library for parsing [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown.  
+A fast, minimal **Scala 3** library for parsing [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown.
 Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
+
+**Full CommonMark 0.31.2 spec compliance** — all 877 spec tests passing across all 25 sections.
 
 ## Features
 
-- **Core CommonMark 0.31.2 compliance**: ATX & Setext headings, lists, block quotes, fenced & indented code, HTML blocks, thematic breaks, reference definitions
-- **Inline parsing**: emphasis, strong, code spans, inline & reference links/images, autolinks, raw HTML, entity references
+- **100% CommonMark 0.31.2 compliance**: all 877 spec tests passing — ATX & Setext headings, lists (tight/loose), block quotes, fenced & indented code, HTML blocks (types 1–7), thematic breaks, link reference definitions, images, emphasis/strong emphasis, code spans, autolinks, raw HTML, entity references, backslash escapes, hard/soft line breaks
 - **HTML entity decoding** outside of code, with literal preservation inside code spans/blocks
 - **HTML rendering**: safe escaping for `<`, `>`, `&`, and `"`; outputs standard tags (`<p>`, `<h1–6>`, `<ul>`, `<ol>`, `<pre><code>`, `<blockquote>`, `<a>`, `<img>`, etc.)
 - **Zero runtime dependencies** and lightweight API
@@ -28,7 +29,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.0.23"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.1.0"
 ```
 
 ```scala
@@ -61,10 +62,16 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 // … Inline types: Text, Emphasis, Strong, CodeSpan, Link, Image, AutoLink, RawHTML, etc.
 ```
 
-## Roadmap
+## Extensions
 
-- Multi-line link reference definitions
-- Extensions: footnotes, tables, task lists
+Beyond CommonMark, the library also supports:
+
+- Tables (GFM-style)
+- Definition lists
+- Math blocks and inline math
+- Callout blocks
+- Collapsible blocks
+- Emoji shortcodes
 
 ## Contributing
 
