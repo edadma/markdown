@@ -55,7 +55,11 @@ def renderBlockToHTML(node: Block): String =
                 else
                   s"<li>${rendered.head}\n${rendered.tail.mkString("\n")}\n</li>\n"
               } else {
-                s"<li>\n${rendered.mkString("\n")}\n</li>\n"
+                val body = rendered.mkString("\n")
+                // In tight lists, if the last element is a paragraph (rendered inline),
+                // don't add a newline before </li>
+                val closingNl = if (data.isTight && content.lastOption.exists(_.isInstanceOf[Paragraph])) "" else "\n"
+                s"<li>\n$body$closingNl</li>\n"
               }
             }
         }.mkString}</$tagName>"

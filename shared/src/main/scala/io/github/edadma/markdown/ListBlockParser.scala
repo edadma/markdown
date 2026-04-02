@@ -333,35 +333,40 @@ object ListBlockParser extends BlockParser {
       if (isBlankLine(line)) {
         inParagraph = false // Blank line ends paragraph
 
-        // Handle a blank line
-        itemLines += line
-        count += 1
-        currentLines = currentLines.tail
+        // Empty item (no content seen yet) — blank line ends the item immediately
+        // Per spec: "-\n\n  foo" means empty item, then paragraph outside the list
+        // Consume the blank line so collectListItems can detect between-item blanks
+        if (!hasSeenContent) {
+          itemLines += line
+          count += 1
+          currentLines = currentLines.tail
+          inItem = false
+        } else {
+          // Handle a blank line
+          itemLines += line
+          count += 1
+          currentLines = currentLines.tail
 
-        // If we've seen content and this is a blank line, mark it
-        if (hasSeenContent) {
           previousWasBlank = true
-        }
 
-        // Look ahead to see if this blank line ends the item
-        if (currentLines.nonEmpty) {
-          val nextLine = currentLines.head
-          val nextText = nextLine.takeWhile(_.char != '\n').map(_.char).mkString
+          // Look ahead to see if this blank line ends the item
+          if (currentLines.nonEmpty) {
+            val nextLine = currentLines.head
+            val nextText = nextLine.takeWhile(_.char != '\n').map(_.char).mkString
 
-          if (isListItemStart(nextText, contentIndent)) {
-            // Next line is a new list item at same nesting level - end this item
-            inItem = false
-            if (previousWasBlank) {
+            if (isListItemStart(nextText, contentIndent)) {
+              // Next line is a new list item at same nesting level - end this item
+              inItem = false
               blanksAtItemLevel = true
               blanksAnywhere = true
-            }
-          } else if (!isBlankLine(nextLine)) {
-            // Next line is not blank - check if it's indented enough
-            val nextIndent = countLeadingSpaces(nextText)
+            } else if (!isBlankLine(nextLine)) {
+              // Next line is not blank - check if it's indented enough
+              val nextIndent = countLeadingSpaces(nextText)
 
-            if (nextIndent < markerIndent && !isListMarker(nextText)) {
-              // Not indented enough and not a new list - end of item
-              inItem = false
+              if (nextIndent < markerIndent && !isListMarker(nextText)) {
+                // Not indented enough and not a new list - end of item
+                inItem = false
+              }
             }
           }
         }
