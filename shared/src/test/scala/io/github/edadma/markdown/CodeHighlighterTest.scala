@@ -6,37 +6,77 @@ import io.github.edadma.highlighter.*
 
 class CodeHighlighterTest extends AnyFlatSpec with Matchers {
 
-  val grammarJson = """{
-    "scopeName": "source.test",
+  // -- Setup: demonstrates the recommended integration pattern --
+  // Parse each grammar once and cache the Highlighter instance per language.
+  // The codeHighlighter function just does a map lookup — no re-parsing.
+
+  val scalaGrammarJson = """{
+    "scopeName": "source.scala",
     "patterns": [
-      { "match": "\\b(val|def|if|else|return)\\b", "name": "keyword.control.test" },
-      { "match": "\\b\\d+\\b", "name": "constant.numeric.test" },
-      { "begin": "\"", "end": "\"", "name": "string.quoted.double.test" },
-      { "match": "//.*$", "name": "comment.line.test" }
+      { "match": "\\b(val|var|def|class|object|if|else|match|case|for|while|return)\\b", "name": "keyword.control.scala" },
+      { "match": "\\b\\d+\\b", "name": "constant.numeric.scala" },
+      { "begin": "\"", "end": "\"", "name": "string.quoted.double.scala" },
+      { "match": "//.*$", "name": "comment.line.scala" }
     ]
   }"""
 
-  val Right(hl) = Highlighter.fromJson(grammarJson, ClassMode("hl-")): @unchecked
+  val jsGrammarJson = """{
+    "scopeName": "source.js",
+    "patterns": [
+      { "match": "\\b(const|let|var|function|return|if|else)\\b", "name": "keyword.control.js" },
+      { "match": "\\b\\d+\\b", "name": "constant.numeric.js" },
+      { "begin": "\"", "end": "\"", "name": "string.quoted.double.js" },
+      { "match": "//.*$", "name": "comment.line.js" }
+    ]
+  }"""
 
-  val highlighter: (String, String) => Option[String] = (code, lang) =>
-    if lang == "test" then Some(hl.highlight(code)) else None
+  val mode = ClassMode("hl-")
 
-  val config = MarkdownConfig(codeHighlighter = Some(highlighter))
+  // Cache: parse grammars once, reuse across all code blocks
+  val highlighters: Map[String, Highlighter] = Map(
+    "scala"      -> Highlighter.fromJson(scalaGrammarJson, mode).toOption.get,
+    "javascript" -> Highlighter.fromJson(jsGrammarJson, mode).toOption.get,
+    "js"         -> Highlighter.fromJson(jsGrammarJson, mode).toOption.get,
+  )
+
+  // The function passed to MarkdownConfig — just a map lookup per block
+  val codeHighlighter: (String, String) => Option[String] = (code, lang) =>
+    highlighters.get(lang).map(_.highlight(code))
+
+  val config = MarkdownConfig(codeHighlighter = Some(codeHighlighter))
+
+  // -- Tests --
 
   "Code highlighter integration" should "highlight fenced code blocks with a known language" in {
-    val md = "```test\nval x = 42\n```"
+    val md = "```scala\nval x = 42\n```"
     val html = renderToHTML(md, config)
     html should include("""class="hl-keyword"""")
     html should include("""class="hl-number"""")
-    html should include("""class="language-test"""")
+    html should include("""class="language-scala"""")
+  }
+
+  it should "highlight multiple languages in the same document" in {
+    val md =
+      """```scala
+        |val x = 42
+        |```
+        |
+        |```js
+        |const y = 99
+        |```""".stripMargin
+    val html = renderToHTML(md, config)
+    html should include("""class="language-scala"""")
+    html should include("""class="language-js"""")
+    // Both blocks should be highlighted
+    html.split("hl-keyword").length should be >= 3
   }
 
   it should "fall back to plain rendering for unknown languages" in {
-    val md = "```unknown\nval x = 42\n```"
+    val md = "```python\nprint(42)\n```"
     val html = renderToHTML(md, config)
-    html should include("""class="language-unknown"""")
+    html should include("""class="language-python"""")
     html should not include "hl-"
-    html should include("val x = 42")
+    html should include("print(42)")
   }
 
   it should "fall back to plain rendering when no language specified" in {
@@ -47,19 +87,20 @@ class CodeHighlighterTest extends AnyFlatSpec with Matchers {
   }
 
   it should "not highlight when no codeHighlighter configured" in {
-    val md = "```test\nval x = 42\n```"
+    val md = "```scala\nval x = 42\n```"
     val html = renderToHTML(md)
     html should not include "hl-"
     html should include("val x = 42")
   }
 
   it should "work with inline style mode" in {
-    val Right(inlineHl) = Highlighter.fromJson(grammarJson, InlineMode(Theme.OneDark)): @unchecked
-    val inlineHighlighter: (String, String) => Option[String] = (code, lang) =>
-      if lang == "test" then Some(inlineHl.highlight(code)) else None
-
-    val inlineConfig = MarkdownConfig(codeHighlighter = Some(inlineHighlighter))
-    val md = "```test\nval x = 42\n```"
+    val inlineHighlighters = Map(
+      "scala" -> Highlighter.fromJson(scalaGrammarJson, InlineMode(Theme.OneDark)).toOption.get,
+    )
+    val inlineConfig = MarkdownConfig(codeHighlighter =
+      Some((code, lang) => inlineHighlighters.get(lang).map(_.highlight(code)))
+    )
+    val md = "```scala\nval x = 42\n```"
     val html = renderToHTML(md, inlineConfig)
     html should include("style=\"color:")
   }
