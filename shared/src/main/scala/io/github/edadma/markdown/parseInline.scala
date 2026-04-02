@@ -76,7 +76,7 @@ def parseInline(
 
               // Skip ahead past all the delimiters
               val nextNode = current.following.skipForward(delimiterInfo.length - 1)
-              current = if (nextNode.notAfterEnd) nextNode else current.following
+              current = nextNode
 
             case '[' =>
               // If this '[' is really an image opener (i.e. ![ ), unlink the '!' and record an image delimiter
@@ -761,18 +761,24 @@ def getCharFromNode(node: DLListNode[Inline]): Char = {
   node.element match {
     case c: C                          => c.char
     case t: Text if t.content.nonEmpty => t.content(0)
-    case _                             => ' ' // Default for other node types
+    case _: CodeSpan | _: Link | _: Image | _: Emphasis | _: Strong | _: HardLineBreak =>
+      'a' // Non-whitespace, non-punctuation — inline elements should not affect flanking
+    case _ => ' ' // Default for other node types (e.g., SoftLineBreak)
   }
 }
 
-// Check for Unicode whitespace
+// Check for Unicode whitespace (CommonMark: Zs category + U+0009, U+000A, U+000C, U+000D, U+0020)
 def isUnicodeWhitespace(c: Char): Boolean = {
-  c.isWhitespace || c == '\n' || c == '\r' || c == '\t'
+  c == ' ' || c == '\t' || c == '\n' || c == '\u000C' || c == '\r' ||
+  Character.getType(c) == Character.SPACE_SEPARATOR
 }
 
-// Check for Unicode punctuation
+// Check for Unicode punctuation (CommonMark: ASCII punctuation + Unicode P and S categories)
 def isUnicodePunctuation(c: Char): Boolean = {
-  // Check Unicode category for punctuation
+  // ASCII punctuation: !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, _, `, {, |, }, ~
+  if ((c >= '!' && c <= '/') || (c >= ':' && c <= '@') || (c >= '[' && c <= '`') || (c >= '{' && c <= '~'))
+    return true
+  // Unicode P (punctuation) categories
   val chartype = Character.getType(c)
   chartype == Character.CONNECTOR_PUNCTUATION ||
   chartype == Character.DASH_PUNCTUATION ||
@@ -780,7 +786,12 @@ def isUnicodePunctuation(c: Char): Boolean = {
   chartype == Character.FINAL_QUOTE_PUNCTUATION ||
   chartype == Character.INITIAL_QUOTE_PUNCTUATION ||
   chartype == Character.OTHER_PUNCTUATION ||
-  chartype == Character.START_PUNCTUATION
+  chartype == Character.START_PUNCTUATION ||
+  // Unicode S (symbol) categories
+  chartype == Character.CURRENCY_SYMBOL ||
+  chartype == Character.MODIFIER_SYMBOL ||
+  chartype == Character.MATH_SYMBOL ||
+  chartype == Character.OTHER_SYMBOL
 }
 
 // Extract inlines between nodes
