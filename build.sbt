@@ -7,7 +7,8 @@ ThisBuild / scalaVersion           := "3.8.2"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.2.1"
+ThisBuild / version                := "0.3.0"
+ThisBuild / description            := "A fast, cross-platform Scala 3 CommonMark 0.31.2 Markdown parser with extensions"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
 ThisBuild / publishConfiguration := publishConfiguration.value.withOverwrite(true).withChecksums(Vector.empty)
