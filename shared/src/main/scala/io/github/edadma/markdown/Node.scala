@@ -1,5 +1,7 @@
 package io.github.edadma.markdown
 
+case class Attributes(id: Option[String] = None, classes: List[String] = Nil, kvPairs: Map[String, String] = Map.empty)
+
 trait Node {
   def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Node = this
 }
@@ -19,9 +21,9 @@ case class Paragraph(inlines: List[Inline]) extends Block {
     Paragraph(parseInline(inlines, linkRefs, config))
 }
 
-case class Heading(level: Int, inlines: List[Inline]) extends Block {
+case class Heading(level: Int, inlines: List[Inline], attrs: Option[Attributes] = None) extends Block {
   override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Heading =
-    Heading(level, parseInline(inlines, linkRefs, config))
+    Heading(level, parseInline(inlines, linkRefs, config), attrs)
 }
 
 case class BlockQuote(children: List[Block]) extends Block {
@@ -29,7 +31,7 @@ case class BlockQuote(children: List[Block]) extends Block {
     BlockQuote(children.map(_.processInlines(linkRefs, config)))
 }
 
-case class Code(content: String, infoString: Option[String] = None, indented: Boolean = false) extends Block
+case class Code(content: String, infoString: Option[String] = None, indented: Boolean = false, attrs: Option[Attributes] = None) extends Block
 case class ThematicBreak()                                          extends Block
 case class HTMLBlock(content: String)                               extends Block
 
@@ -82,6 +84,11 @@ case class DefinitionListBlock(items: List[(List[Inline], List[Block])]) extends
 
 case class MathBlock(content: String) extends Block
 
+case class FootnoteDefinition(label: String, content: List[Block]) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block =
+    FootnoteDefinition(label, content.map(_.processInlines(linkRefs, config)))
+}
+
 /** Represents a callout block in the document.
   *
   * A callout block is a specialized form of block quote with additional metadata for type and optional title to create
@@ -130,12 +137,13 @@ case class CodeSpan(content: String)                                            
 case class Emphasis(inlines: List[Inline])                                          extends Inline
 case class Strong(inlines: List[Inline])                                            extends Inline
 case class Link(destination: String, title: Option[String], inlines: List[Inline])  extends Inline
-case class Image(destination: String, title: Option[String], inlines: List[Inline]) extends Inline
+case class Image(destination: String, title: Option[String], inlines: List[Inline], attrs: Option[Attributes] = None) extends Inline
 case class AutoLink(destination: String, text: String)                              extends Inline
 case class RawHTML(content: String)                                                 extends Inline
 case class MathExpr(content: String)                                                extends Inline
 case class Emoji(name: String)                                                      extends Inline
 case class Strikethrough(inlines: List[Inline])                                     extends Inline
+case class FootnoteReference(label: String)                                         extends Inline
 
 case class C(
     char: Char,        // The character (possibly transformed)

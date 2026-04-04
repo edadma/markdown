@@ -74,6 +74,17 @@ object ATXHeadingBlockParser extends BlockParser {
         afterTrailingWhitespace.reverse
       }
 
+    // Check for trailing attributes {#id .class key=value}
+    if (config.attributes) {
+      val contentStr = contentCursorsTrimmed.map(_.char).mkString
+      val (stripped, attrs) = extractTrailingAttributes(contentStr)
+      if (attrs.isDefined) {
+        // Rebuild cursor list from stripped content
+        val newCursors = contentCursorsTrimmed.take(stripped.length)
+        return (Heading(level, newCursors, attrs), 1)
+      }
+    }
+
     (Heading(level, contentCursorsTrimmed), 1)
   }
 }

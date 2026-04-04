@@ -1,5 +1,19 @@
 package io.github.edadma.markdown
 
+// Footnote label → number mapping for current render
+private var _footnoteNumbers: Map[String, Int] = Map.empty
+
+/** Render Attributes as HTML attribute string (with leading space if non-empty). */
+private def renderAttrs(attrs: Option[Attributes]): String = attrs match {
+  case None => ""
+  case Some(Attributes(id, classes, kvPairs)) =>
+    val parts = new scala.collection.mutable.ListBuffer[String]
+    id.foreach(v => parts += s"""id="${escapeXml(v)}"""")
+    if (classes.nonEmpty) parts += s"""class="${escapeXml(classes.mkString(" "))}""""
+    kvPairs.foreach { case (k, v) => parts += s"""${escapeXml(k)}="${escapeXml(v)}"""" }
+    if (parts.nonEmpty) " " + parts.mkString(" ") else ""
+}
+
 def renderToHTML(md: String, config: MarkdownConfig = MarkdownConfig.default): String =
   renderToHTML(parseDocumentContent(md, config), config)
 
@@ -19,10 +33,11 @@ def parseDocumentContentWithRefs(
 def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.default): String =
   node match
     case Paragraph(inlines)      => s"<p>${renderInlines(inlines)}</p>"
-    case Heading(level, inlines) => s"<h$level>${renderInlines(inlines)}</h$level>"
-    case Code(content, infoString, indented) =>
+    case Heading(level, inlines, attrs) => s"<h$level${renderAttrs(attrs)}>${renderInlines(inlines)}</h$level>"
+    case Code(content, infoString, indented, codeAttrs) =>
       // Use the info string language, or for indented blocks use the configured default
       val lang = infoString.orElse(if indented then config.indentedCodeLanguage else None)
+      val extraAttrs = renderAttrs(codeAttrs)
 
       val highlighted = for
         highlighter <- config.codeHighlighter
@@ -30,12 +45,12 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
         html <- highlighter(content, l)
       yield
         val languageClass = s""" class="language-$l""""
-        s"<pre><code$languageClass>$html</code></pre>"
+        s"<pre$extraAttrs><code$languageClass>$html</code></pre>"
 
       highlighted.getOrElse {
         val languageClass = lang.map(l => s" class=\"language-$l\"").getOrElse("")
         val trailing = if (content.nonEmpty) "\n" else ""
-        s"<pre><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
+        s"<pre$extraAttrs><code$languageClass>${escapeXml(content)}$trailing</code></pre>"
       }
     case BlockQuote(children) =>
       if (children.isEmpty) "<blockquote>\n</blockquote>"
@@ -161,6 +176,7 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
          |    ${children.map(renderBlockToHTML(_, config)).mkString("\n    ")}
          |  </div>
          |</div>""".stripMargin
+    case FootnoteDefinition(_, _) => "" // Rendered separately in footnote section
     case CollapsibleBlock(title, isOpen, children) =>
       val openAttr  = if (isOpen) " open" else ""
       val titleText = if title.isEmpty then "Click to expand" else renderInlines(title)
@@ -173,8 +189,83 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
 def renderToHTML(node: Node): String = renderToHTML(node, MarkdownConfig.default)
 
 def renderToHTML(node: Node, config: MarkdownConfig): String = node match {
-  case Document(children) => children.map(renderBlockToHTML(_, config)).map(s => if (s.endsWith("\n")) s else s + '\n').mkString
-  case n: Inline          => sys.error(s"inline node in block position: '$n'")
+  case Document(children) =>
+    if (config.footnotes) {
+      // Collect footnote definitions
+      val footnoteDefs = children.collect { case fd: FootnoteDefinition => fd.label -> fd }.toMap
+      // Collect referenced footnotes in order
+      val referencedLabels = collectFootnoteReferences(children)
+      val orderedLabels    = referencedLabels.distinct
+
+      // Build label-to-number mapping and set for renderInlines
+      _footnoteNumbers = orderedLabels.zipWithIndex.map { case (l, i) => l -> (i + 1) }.toMap
+
+      // Render non-footnote blocks
+      val mainContent = children.filterNot(_.isInstanceOf[FootnoteDefinition])
+        .map(renderBlockToHTML(_, config))
+        .map(s => if (s.endsWith("\n")) s else s + '\n').mkString
+
+      // Render footnote section
+      if (orderedLabels.nonEmpty) {
+        val footnoteItems = orderedLabels.map { label =>
+          val content = footnoteDefs.get(label) match {
+            case Some(fd) => fd.content.map(renderBlockToHTML(_, config)).mkString("\n")
+            case None     => ""
+          }
+          // Inject backref into last paragraph if present, otherwise append
+          val backref = s""" <a href="#fnref-$label" class="footnote-backref">&#8617;</a>"""
+          val withBackref = if (content.contains("</p>")) {
+            content.reverse.replaceFirst(">p/<", s">${backref.reverse}>p/<").reverse
+          } else {
+            content + s"\n<p>$backref</p>"
+          }
+          s"""<li id="fn-$label">\n$withBackref\n</li>"""
+        }.mkString("\n")
+        val result = mainContent + s"""<section class="footnotes">\n<ol>\n$footnoteItems\n</ol>\n</section>\n"""
+        _footnoteNumbers = Map.empty
+        result
+      } else {
+        _footnoteNumbers = Map.empty
+        mainContent
+      }
+    } else {
+      children.map(renderBlockToHTML(_, config)).map(s => if (s.endsWith("\n")) s else s + '\n').mkString
+    }
+  case n: Inline => sys.error(s"inline node in block position: '$n'")
+}
+
+/** Collect footnote reference labels in document order */
+private def collectFootnoteReferences(blocks: List[Block]): List[String] = {
+  val result = new scala.collection.mutable.ListBuffer[String]
+
+  def visitInlines(inlines: List[Inline]): Unit = inlines.foreach {
+    case FootnoteReference(label) => result += label
+    case Emphasis(children)       => visitInlines(children)
+    case Strong(children)         => visitInlines(children)
+    case Strikethrough(children)  => visitInlines(children)
+    case Link(_, _, children)     => visitInlines(children)
+    case Image(_, _, children, _) => visitInlines(children)
+    case _                        =>
+  }
+
+  def visitBlocks(blocks: List[Block]): Unit = blocks.foreach {
+    case Paragraph(inlines)      => visitInlines(inlines)
+    case Heading(_, inlines, _)  => visitInlines(inlines)
+    case BlockQuote(children)    => visitBlocks(children)
+    case ListBlock(_, items)     => items.foreach(i => visitBlocks(i.content))
+    case ListItem(content)       => visitBlocks(content)
+    case Table(h, rows, _)       => visitBlocks(h.cells); rows.foreach(r => visitBlocks(r.cells))
+    case TableRow(cells)         => cells.foreach(c => visitInlines(c.content))
+    case TableCell(content)      => visitInlines(content)
+    case FootnoteDefinition(_, content) => visitBlocks(content)
+    case CalloutBlock(_, _, children)   => visitBlocks(children)
+    case CollapsibleBlock(title, _, children) => visitInlines(title); visitBlocks(children)
+    case DefinitionListBlock(items) => items.foreach { case (term, defs) => visitInlines(term); visitBlocks(defs) }
+    case _ =>
+  }
+
+  visitBlocks(blocks)
+  result.toList
 }
 
 private def renderInlines(inlines: List[Inline]): String =
@@ -189,13 +280,16 @@ private def renderInlines(inlines: List[Inline]): String =
     case Link(destination, title, children) =>
       val titleAttr = title.map(t => s" title=\"${escapeXml(t)}\"").getOrElse("")
       s"""<a href="${escapeXml(percentEncode(destination))}"$titleAttr>${renderInlines(children)}</a>"""
-    case Image(destination, title, children) =>
+    case Image(destination, title, children, imgAttrs) =>
       val titleAttr = title.map(t => s" title=\"${escapeXml(t)}\"").getOrElse("")
-      s"""<img src="${escapeXml(percentEncode(destination))}" alt="${renderAltText(children)}"$titleAttr />"""
+      s"""<img src="${escapeXml(percentEncode(destination))}" alt="${renderAltText(children)}"$titleAttr${renderAttrs(imgAttrs)} />"""
     case AutoLink(destination, text) => s"""<a href="${escapeXml(destination)}">${escapeXml(text)}</a>"""
     case RawHTML(content)            => content // Raw HTML is passed through as-is
     case MathExpr(content)           => s"""<span class="math inline">\\(${escapeXml(content)}\\)</span>"""
     case Emoji(name)                 => emojis(name)
+    case FootnoteReference(label) =>
+      val num = _footnoteNumbers.getOrElse(label, 0)
+      s"""<sup class="footnote-ref"><a href="#fn-$label" id="fnref-$label">$num</a></sup>"""
     case c: C                        => sys.error(s"unparsed character wrapper: '$c'")
   }.mkString
 
@@ -209,7 +303,7 @@ private def renderAltText(inlines: List[Inline]): String = {
     case Strong(children)        => renderAltText(children)
     case Strikethrough(children) => renderAltText(children)
     case Link(_, _, children)    => renderAltText(children)
-    case Image(_, _, children) => renderAltText(children)
+    case Image(_, _, children, _) => renderAltText(children)
     case _                     => ""
   }.mkString
 }

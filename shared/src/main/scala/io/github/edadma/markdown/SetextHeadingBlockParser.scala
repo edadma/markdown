@@ -76,6 +76,16 @@ object SetextHeadingBlockParser extends BlockParser {
       else List(C('\n', 0, 0, 0, false)) ++ trimmed
     }
 
+    // Check for trailing attributes on the last content line
+    if (config.attributes) {
+      val contentStr = content.map(_.char).mkString
+      val (stripped, attrs) = extractTrailingAttributes(contentStr)
+      if (attrs.isDefined) {
+        val newContent = content.take(stripped.length)
+        return (Heading(level, newContent, attrs), i + 1)
+      }
+    }
+
     (Heading(level, content), i + 1) // Consume content lines + underline
   }
 

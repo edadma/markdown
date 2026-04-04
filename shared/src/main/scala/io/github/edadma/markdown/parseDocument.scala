@@ -19,7 +19,7 @@ def extractHeaders(document: Document): List[(Int, String)] = {
 
   def visit(node: Node): Unit = node match {
     case Document(children)      => children.foreach(visit)
-    case Heading(level, inlines) => headers += ((level, inlinesToPlainText(inlines)))
+    case Heading(level, inlines, _) => headers += ((level, inlinesToPlainText(inlines)))
     case _                       => // Skip other node types
   }
 
@@ -83,6 +83,7 @@ trait BlockParser {
 
 val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
   LinkReferenceDefinitionParser,
+  FootnoteDefinitionParser,
   ThematicBreakBlockParser,
   ListBlockParser,
   IndentedCodeBlockParser,

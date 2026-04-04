@@ -85,6 +85,16 @@ def parseInline(
               val nextNode = current.following.skipForward(delimiterInfo.length - 1)
               current = nextNode
 
+            case '[' if config.footnotes =>
+              // Try footnote reference [^label] first
+              val fnResult = tryProcessFootnoteReference(current)
+              if (fnResult != null) {
+                current = fnResult
+              } else {
+                // Not a footnote reference — fall through to normal [ handling
+                current = processOpenBracket(current, delimiterStack)
+              }
+
             case '[' =>
               // If this '[' is really an image opener (i.e. ![ ), unlink the '!' and record an image delimiter
               val prev = current.preceding
@@ -156,7 +166,11 @@ def parseInline(
   consolidateCharacters(inlineNodes)
 
   // Return as List
-  decodeHtmlEntities(inlineNodes.toList)
+  val decoded = decodeHtmlEntities(inlineNodes.toList)
+
+  // Apply smart punctuation if enabled
+  if (config.smartPunctuation) applySmartPunctuation(decoded)
+  else decoded
 }
 
 private def decodeHtmlEntities(inlines: List[Inline]): List[Inline] = {
@@ -167,8 +181,8 @@ private def decodeHtmlEntities(inlines: List[Inline]): List[Inline] = {
     case Strikethrough(inlines) => Strikethrough(decodeHtmlEntities(inlines))
     case Link(destination, title, inlines) =>
       Link(decodeHtmlEntities(destination), title.map(t => decodeHtmlEntities(t)), decodeHtmlEntities(inlines))
-    case Image(destination, title, inlines) =>
-      Image(decodeHtmlEntities(destination), title.map(t => decodeHtmlEntities(t)), decodeHtmlEntities(inlines))
+    case Image(destination, title, inlines, imgAttrs) =>
+      Image(decodeHtmlEntities(destination), title.map(t => decodeHtmlEntities(t)), decodeHtmlEntities(inlines), imgAttrs)
     case inline => inline
   }
 }
@@ -1302,8 +1316,8 @@ private def consolidateTextInContents(inlines: List[Inline]): List[Inline] = {
           result += Strong(consolidateTextInContents(children))
         case Link(dest, title, children) =>
           result += Link(dest, title, consolidateTextInContents(children))
-        case Image(dest, title, children) =>
-          result += Image(dest, title, consolidateTextInContents(children))
+        case Image(dest, title, children, imgAttrs) =>
+          result += Image(dest, title, consolidateTextInContents(children), imgAttrs)
         case _ =>
           result += other
       }
@@ -1481,7 +1495,7 @@ private def tryProcessInlineLink(
   // Process emphasis and other formatting within the link text
   val processedLinkText = parseInline(linkText, Map(), config)
 
-  val linkNode = if (isImage)
+  var linkNode: Inline = if (isImage)
     Image(destination, title, processedLinkText)
   else
     Link(destination, title, processedLinkText)
@@ -1496,6 +1510,16 @@ private def tryProcessInlineLink(
     opener.node.following.unlinkUntil(afterLinkEnd)
   }
 
+  // Try to consume trailing attributes for images
+  var nextNode = opener.node.following
+  if (isImage && config.attributes) {
+    val (attrs, afterAttrs) = tryConsumeInlineAttributes(nextNode)
+    if (attrs.isDefined) {
+      opener.node.element = linkNode.asInstanceOf[Image].copy(attrs = attrs)
+      nextNode = afterAttrs
+    }
+  }
+
   // Remove opener from stack
   delimiterStack.remove(delimiterStack.indexOf(opener))
 
@@ -1504,7 +1528,7 @@ private def tryProcessInlineLink(
     deactivateLinkDelimiters(delimiterStack)
   }
 
-  opener.node.following
+  nextNode
 }
 
 // Parse link destination and title from an inline link
@@ -2064,5 +2088,184 @@ private def processEmoji(node: DLListNode[Inline]): DLListNode[Inline] = {
     node
   } else {
     openingNode
+  }
+}
+
+/** Try to process a footnote reference [^label]. Returns next node on success, null on failure. */
+private def tryProcessFootnoteReference(node: DLListNode[Inline]): DLListNode[Inline] = {
+  // node is at '['. Check if next is '^'
+  val caretNode = node.following
+  if (caretNode.isAfterEnd || !caretNode.element.isInstanceOf[C] ||
+      caretNode.element.asInstanceOf[C].char != '^' || caretNode.element.asInstanceOf[C].isLiteral)
+    return null
+
+  // Collect label characters until ']'
+  val label = new StringBuilder
+  var current = caretNode.following
+
+  while (current.notAfterEnd) {
+    current.element match {
+      case c: C if c.char == ']' && !c.isLiteral =>
+        // Found closing bracket
+        if (label.isEmpty) return null
+        val labelStr = label.toString
+
+        // Replace the '[' node with FootnoteReference
+        node.element = FootnoteReference(labelStr)
+
+        // Unlink everything between '[' and after ']'
+        val afterClose = current.following
+        if (node.following != afterClose) {
+          node.following.unlinkUntil(afterClose)
+        }
+
+        return node.following
+      case c: C if c.char == '[' && !c.isLiteral =>
+        return null // unescaped [ inside label
+      case c: C if c.char == '\n' =>
+        return null // newline inside label
+      case c: C if c.char == ' ' =>
+        return null // space inside footnote label
+      case c: C =>
+        label.append(c.char)
+      case _ =>
+        return null
+    }
+    current = current.following
+  }
+
+  null // No closing bracket found
+}
+
+/** Helper for normal [ processing (link/image openers) */
+private def processOpenBracket(current: DLListNode[Inline], delimiterStack: mutable.Stack[DelimiterInfo]): DLListNode[Inline] = {
+  val prev = current.preceding
+  val (delimChar, unlinkPrev) =
+    if (
+      prev.notBeforeStart &&
+      prev.element.isInstanceOf[C] &&
+      prev.element.asInstanceOf[C].char == '!' &&
+      !prev.element.asInstanceOf[C].isLiteral
+    ) {
+      ('!', true)
+    } else {
+      ('[', false)
+    }
+
+  if (unlinkPrev) prev.unlink
+
+  val delimiterInfo = DelimiterInfo(
+    current,
+    delimChar,
+    1,
+    isActive = true,
+    canOpen = true,
+    canClose = false,
+  )
+  delimiterStack.push(delimiterInfo)
+
+  current.following
+}
+
+/** Apply smart punctuation transformations to inline nodes. */
+private def applySmartPunctuation(inlines: List[Inline]): List[Inline] = {
+  inlines.map {
+    case Text(content)              => Text(smartPunctuationText(content))
+    case Emphasis(children)         => Emphasis(applySmartPunctuation(children))
+    case Strong(children)           => Strong(applySmartPunctuation(children))
+    case Strikethrough(children)    => Strikethrough(applySmartPunctuation(children))
+    case Link(dest, title, children)  => Link(dest, title, applySmartPunctuation(children))
+    case Image(dest, title, children, imgAttrs) => Image(dest, title, applySmartPunctuation(children), imgAttrs)
+    case other                      => other
+  }
+}
+
+/** Transform straight quotes, dashes, and ellipses in a text string. */
+private def smartPunctuationText(text: String): String = {
+  val sb  = new StringBuilder
+  val len = text.length
+  var i   = 0
+
+  while (i < len) {
+    val c = text.charAt(i)
+
+    c match {
+      case '-' if i + 2 < len && text.charAt(i + 1) == '-' && text.charAt(i + 2) == '-' =>
+        sb.append('\u2014') // em dash
+        i += 3
+      case '-' if i + 1 < len && text.charAt(i + 1) == '-' =>
+        sb.append('\u2013') // en dash
+        i += 2
+      case '.' if i + 2 < len && text.charAt(i + 1) == '.' && text.charAt(i + 2) == '.' =>
+        sb.append('\u2026') // ellipsis
+        i += 3
+      case '"' =>
+        // Opening double quote if at start, after whitespace, or after opening punctuation
+        if (i == 0 || isOpenQuoteContext(text.charAt(i - 1)))
+          sb.append('\u201C') // left double quote
+        else
+          sb.append('\u201D') // right double quote
+        i += 1
+      case '\'' =>
+        // Opening single quote if at start, after whitespace, or after opening punctuation
+        if (i == 0 || isOpenQuoteContext(text.charAt(i - 1)))
+          sb.append('\u2018') // left single quote
+        else
+          sb.append('\u2019') // right single quote (also used for apostrophe)
+        i += 1
+      case _ =>
+        sb.append(c)
+        i += 1
+    }
+  }
+
+  sb.toString
+}
+
+private def isOpenQuoteContext(c: Char): Boolean =
+  c == ' ' || c == '\t' || c == '\n' || c == '(' || c == '[' || c == '{' ||
+  c == '\u2014' || c == '\u2013' || c == '\u2018' || c == '\u201C'
+
+/** Try to consume a `{...}` attribute block from the DLList starting at `node`.
+  * Returns `(Some(Attributes), nodeAfterAttrs)` or `(None, node)`.
+  */
+private def tryConsumeInlineAttributes(node: DLListNode[Inline]): (Option[Attributes], DLListNode[Inline]) = {
+  if (node.isAfterEnd) return (None, node)
+
+  // Check if current node is '{'
+  node.element match {
+    case c: C if c.char == '{' && !c.isLiteral =>
+      // Collect characters until '}'
+      val content = new StringBuilder
+      content.append('{')
+      var current = node.following
+
+      while (current.notAfterEnd) {
+        current.element match {
+          case c: C if c.char == '}' && !c.isLiteral =>
+            content.append('}')
+            val afterClose = current.following
+            parseAttributes(content.toString) match {
+              case Some(attrs) =>
+                // Unlink all consumed nodes
+                if (node.following != afterClose) {
+                  node.following.unlinkUntil(afterClose)
+                }
+                node.unlink
+                return (Some(attrs), afterClose)
+              case None =>
+                return (None, node)
+            }
+          case c: C if c.char == '\n' =>
+            return (None, node) // No newlines in attributes
+          case c: C =>
+            content.append(c.char)
+            current = current.following
+          case _ =>
+            return (None, node)
+        }
+      }
+      (None, node) // No closing brace found
+    case _ => (None, node)
   }
 }

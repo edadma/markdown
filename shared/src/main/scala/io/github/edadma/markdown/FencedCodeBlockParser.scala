@@ -56,13 +56,17 @@ object FencedCodeBlockParser extends BlockParser {
     val fenceLength = afterIndent.takeWhile(_ == fenceChar).length
 
     // Extract info string (first word only, per CommonMark spec), with entity decoding
-    val infoString = {
-      val info = afterIndent.substring(fenceLength).trim
-      if (info.isEmpty) None
+    // Also extract optional trailing attributes {#id .class}
+    val fullInfo = afterIndent.substring(fenceLength).trim
+    val (infoString, codeAttrs) = {
+      if (fullInfo.isEmpty) (None, None)
       else {
-        // Use only the first word as the language, then decode entities
-        val firstWord = info.takeWhile(c => c != ' ' && c != '\t')
-        Some(decodeHtmlEntities(firstWord))
+        val firstWord = fullInfo.takeWhile(c => c != ' ' && c != '\t')
+        val rest = fullInfo.drop(firstWord.length).trim
+        val attrs = if (config.attributes && rest.nonEmpty) {
+          parseAttributes(rest)
+        } else None
+        (Some(decodeHtmlEntities(firstWord)), attrs)
       }
     }
 
@@ -105,7 +109,7 @@ object FencedCodeBlockParser extends BlockParser {
     }
 
     // Create the code block
-    (Code(contentBuilder.toString, infoString), lineCount)
+    (Code(contentBuilder.toString, infoString, indented = false, attrs = codeAttrs), lineCount)
   }
 
   /** Remove up to N spaces of indentation from a line

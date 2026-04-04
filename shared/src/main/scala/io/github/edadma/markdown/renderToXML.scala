@@ -24,7 +24,7 @@ private def blockToXml(b: Block, sb: StringBuilder, indent: Int): Unit = b match
     inls.foreach(inlineToXml(_, sb, 0))
     sb.append("</paragraph>").append("\n")
 
-  case Heading(level, inls) =>
+  case Heading(level, inls, _) =>
     appendIndent(sb, indent).append(s"<h$level>")
       .append(escapeXml(inls.map {
         case Text(t) => t
@@ -32,7 +32,7 @@ private def blockToXml(b: Block, sb: StringBuilder, indent: Int): Unit = b match
       }.mkString))
     sb.append(s"</h$level>").append("\n")
 
-  case Code(content, _, _) =>
+  case Code(content, _, _, _) =>
     appendIndent(sb, indent).append("<code>").append(escapeXml(content)).append("</code>").append("\n")
 
   case BlockQuote(children) =>
@@ -72,7 +72,7 @@ private def inlineToXml(inl: Inline, sb: StringBuilder, indent: Int): Unit = inl
     sb.append(">")
     ch.foreach(inlineToXml(_, sb, 0))
     sb.append("</link>")
-  case Image(dest, title, ch) =>
+  case Image(dest, title, ch, _) =>
     sb.append(s"<image destination=\"${escapeXml(dest)}\"")
     title.foreach(t => sb.append(s" title=\"${escapeXml(t)}\""))
     sb.append(">")
@@ -82,8 +82,10 @@ private def inlineToXml(inl: Inline, sb: StringBuilder, indent: Int): Unit = inl
     sb.append(s"<autolink destination=\"${escapeXml(dest)}\">").append(escapeXml(text)).append("</autolink>")
   case RawHTML(html)     => sb.append(html)
   case MathExpr(content) => sb append s"""<math display="false">${escapeXml(content)}</math>"""
-  case Emoji(name)       => sb append s"<emoji>$name</emoji>"
-  case c: C              => sb.append(escapeXml(c.char.toString))
+  case Emoji(name)              => sb append s"<emoji>$name</emoji>"
+  case Strikethrough(ch)        => sb.append("<strikethrough>"); ch.foreach(inlineToXml(_, sb, 0)); sb.append("</strikethrough>")
+  case FootnoteReference(label) => sb append s"""<footnote-ref label="$label"/>"""
+  case c: C                     => sb.append(escapeXml(c.char.toString))
 }
 
 private def appendIndent(sb: StringBuilder, n: Int): StringBuilder = {
