@@ -3,7 +3,7 @@
 ![Maven Central](https://img.shields.io/maven-central/v/io.github.edadma/markdown_sjs1_3)
 [![Last Commit](https://img.shields.io/github/last-commit/edadma/markdown)](https://github.com/edadma/markdown/commits)
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
-![Scala Version](https://img.shields.io/badge/Scala-3.8.2-blue.svg)
+![Scala Version](https://img.shields.io/badge/Scala-3.8.3-blue.svg)
 ![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.20.2-blue.svg)
 ![Scala Native Version](https://img.shields.io/badge/Scala_Native-0.5.10-blue.svg)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
@@ -30,7 +30,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.2.1"
+libraryDependencies += "io.github.edadma" %% "markdown" % "0.4.0"
 ```
 
 ```scala
@@ -97,9 +97,43 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 | `math` | `false` | Math blocks and inline math |
 | `callouts` | `false` | Callout blocks |
 | `emoji` | `Disabled` | Emoji shortcodes (`Unicode` or `Image(baseURL)`) |
+| `strikethrough` | `false` | GFM `~~strikethrough~~` |
+| `taskListItems` | `false` | GFM task list items (`- [ ]` / `- [x]`) |
+| `extendedAutolinks` | `false` | GFM extended autolinks (bare URLs) |
+| `footnotes` | `false` | `[^label]` references with `[^label]: ...` definitions |
+| `smartPunctuation` | `false` | Curly quotes, en/em dashes, ellipsis |
+| `attributes` | `false` | `{#id .class key=value}` on headings, fenced blocks, images |
+| `docTags` | `DocTagConfig.disabled` | Opt-in API doc-tag extension (`@name [target] — body`) |
 | `codeHighlighter` | `None` | Pluggable syntax highlighting function |
 | `indentedCodeLanguage` | `None` | Default language for indented code blocks |
 | `indentedCodeBreaksList` | `false` | Indented code block after a blank line ends the enclosing list item instead of being absorbed into it |
+
+### Doc-tag extension
+
+Enable `docTags` with a caller-supplied `TagRegistry` to parse `@name [target] — body` lines as block-level
+`DocTagBlock` AST nodes. Designed for documentation tools built on top of the AST — the processor only parses the
+syntax and renders a sensible default (`<dl class="doc-tag doc-tag-{name}">`); binding tags to code declarations,
+extracting reference pages, and resolving cross-references happen in downstream tools.
+
+```scala
+import io.github.edadma.markdown.*
+
+val registry = TagRegistry(
+  TagDefinition("api",    acceptsTarget = false, ContentMode.InlineMarkdown),
+  TagDefinition("param",  acceptsTarget = true,  ContentMode.InlineMarkdown),
+  TagDefinition("example", acceptsTarget = false, ContentMode.BlockMarkdown),
+)
+
+val config = MarkdownConfig(
+  docTags = DocTagConfig(enabled = true, registry = registry),
+)
+
+renderToHTML("@param msg — the error message\n", config)
+```
+
+Each `TagDefinition` specifies whether the tag takes an identifier target and how its body is parsed
+(`Opaque`, `InlineMarkdown`, or `BlockMarkdown`). Unknown tags are emitted as lenient `DocTagBlock` nodes by default,
+or fall back to plain text with `strictUnknownTags = true`.
 
 ## Contributing
 
