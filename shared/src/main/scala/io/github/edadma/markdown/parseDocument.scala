@@ -83,6 +83,7 @@ trait BlockParser {
 
 val blockParsers: ArrayBuffer[BlockParser] = ArrayBuffer(
   LinkReferenceDefinitionParser,
+  DocTagBlockParser,
   FootnoteDefinitionParser,
   ThematicBreakBlockParser,
   ListBlockParser,

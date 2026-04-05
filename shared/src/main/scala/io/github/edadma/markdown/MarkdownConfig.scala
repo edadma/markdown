@@ -15,6 +15,7 @@ case class MarkdownConfig(
     footnotes: Boolean = false,
     smartPunctuation: Boolean = false,
     attributes: Boolean = false,
+    docTags: DocTagConfig = DocTagConfig.disabled,
     codeHighlighter: Option[(String, String) => Option[String]] = None,
     indentedCodeLanguage: Option[String] = None,
     indentedCodeBreaksList: Boolean = false,

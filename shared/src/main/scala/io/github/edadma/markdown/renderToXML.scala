@@ -49,6 +49,12 @@ private def blockToXml(b: Block, sb: StringBuilder, indent: Int): Unit = b match
   case MathBlock(content) =>
     appendIndent(sb, indent).append("<math display=\"true\">").append(escapeXml(content)).append("</math>").append("\n")
 
+  case DocTagBlock(name, target, body, mode) =>
+    appendIndent(sb, indent).append(s"""<doc-tag name="${escapeXml(name)}"""")
+    target.foreach(t => sb.append(s""" target="${escapeXml(t)}""""))
+    sb.append(s""" mode="${mode.toString}">""").append("\n")
+    body.foreach(c => blockToXml(c, sb, indent + 2))
+    appendIndent(sb, indent).append("</doc-tag>").append("\n")
 }
 
 private def itemToXml(item: ListItem, sb: StringBuilder, indent: Int): Unit = {

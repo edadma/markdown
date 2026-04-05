@@ -25,7 +25,8 @@ object ParagraphBlockParser extends BlockParser {
         !FencedCodeBlockParser.canStart(LazyList(line), config) &&
         !BlockQuoteParser.canStart(LazyList(line), config) &&
         !ListBlockParser.canInterruptParagraph(LazyList(line), config) &&
-        !MathBlockParser.canStart(LazyList(line), config)
+        !MathBlockParser.canStart(LazyList(line), config) &&
+        !DocTagBlockParser.canStart(LazyList(line), config)
 
     // split into the leading paragraph lines, and the remainder
     val (paraLines, rest) = lines.span(isParaLine)

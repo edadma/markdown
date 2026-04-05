@@ -84,6 +84,31 @@ case class DefinitionListBlock(items: List[(List[Inline], List[Block])]) extends
 
 case class MathBlock(content: String) extends Block
 
+/** Block-level doc-tag annotation (e.g. `@param name — description`).
+  *
+  * The tag is produced by the doc-tag extension (see `DocTagConfig`). Downstream tools walk these nodes to drive
+  * documentation generators, linters, and indexers — this processor only parses the syntax.
+  *
+  * @param name
+  *   the tag name (the identifier following `@`)
+  * @param target
+  *   optional identifier target; only populated when the registry entry has `acceptsTarget = true`
+  * @param body
+  *   body content, parsed per the tag's `ContentMode`. For `Opaque`, a single `Paragraph(List(Text(...)))`.
+  *   For `InlineMarkdown`, a single `Paragraph` with parsed inlines. For `BlockMarkdown`, arbitrary blocks.
+  * @param contentMode
+  *   the content mode used to parse the body (retained so renderers / downstream tools can distinguish modes)
+  */
+case class DocTagBlock(
+    name: String,
+    target: Option[String],
+    body: List[Block],
+    contentMode: ContentMode,
+) extends Block {
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block =
+    DocTagBlock(name, target, body.map(_.processInlines(linkRefs, config)), contentMode)
+}
+
 case class FootnoteDefinition(label: String, content: List[Block]) extends Block {
   override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Block =
     FootnoteDefinition(label, content.map(_.processInlines(linkRefs, config)))

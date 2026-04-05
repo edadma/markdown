@@ -176,6 +176,26 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
          |    ${children.map(renderBlockToHTML(_, config)).mkString("\n    ")}
          |  </div>
          |</div>""".stripMargin
+    case DocTagBlock(name, target, body, contentMode) =>
+      val dt = target match {
+        case Some(t) => s"${escapeXml(name)}: ${escapeXml(t)}"
+        case None    => escapeXml(name)
+      }
+      val bodyHtml = contentMode match {
+        case ContentMode.Opaque =>
+          body match {
+            case Paragraph(List(Text(s))) :: Nil => escapeXml(s)
+            case _                               => body.map(renderBlockToHTML(_, config)).mkString("\n")
+          }
+        case ContentMode.InlineMarkdown =>
+          body match {
+            case Paragraph(inlines) :: Nil => renderInlines(inlines)
+            case _                         => body.map(renderBlockToHTML(_, config)).mkString("\n")
+          }
+        case ContentMode.BlockMarkdown =>
+          body.map(renderBlockToHTML(_, config)).mkString("\n")
+      }
+      s"""<dl class="doc-tag doc-tag-${escapeXml(name)}">\n  <dt>$dt</dt>\n  <dd>$bodyHtml</dd>\n</dl>"""
     case FootnoteDefinition(_, _) => "" // Rendered separately in footnote section
     case CollapsibleBlock(title, isOpen, children) =>
       val openAttr  = if (isOpen) " open" else ""
@@ -258,6 +278,7 @@ private def collectFootnoteReferences(blocks: List[Block]): List[String] = {
     case TableRow(cells)         => cells.foreach(c => visitInlines(c.content))
     case TableCell(content)      => visitInlines(content)
     case FootnoteDefinition(_, content) => visitBlocks(content)
+    case DocTagBlock(_, _, body, _)     => visitBlocks(body)
     case CalloutBlock(_, _, children)   => visitBlocks(children)
     case CollapsibleBlock(title, _, children) => visitInlines(title); visitBlocks(children)
     case DefinitionListBlock(items) => items.foreach { case (term, defs) => visitInlines(term); visitBlocks(defs) }
