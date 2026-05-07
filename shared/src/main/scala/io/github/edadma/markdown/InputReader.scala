@@ -11,7 +11,10 @@ class InputReader(input: String) {
 
   // Normalize input - handle null characters and line endings
   private def normalizeInput(input: String): String = {
-    input.replace("\u0000", "\uFFFD") // Replace null with replacement character
+    // Use the (Char, Char) overload so the null byte is never seen as a
+    // CharSequence target — Scala Native's CharSequence-based String.replace
+    // can't reliably handle U+0000 (the C-string terminator).
+    input.replace('\u0000', '\uFFFD') // Replace null with replacement character
       .replace("\r\n", "\n")          // Normalize CRLF
       .replace("\r", "\n")            // Normalize CR
   }
