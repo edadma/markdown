@@ -7,7 +7,7 @@ ThisBuild / scalaVersion           := "3.8.3"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.4.0"
+ThisBuild / version                := "0.4.1"
 ThisBuild / description            := "A fast, cross-platform Scala 3 CommonMark 0.31.2 Markdown parser with extensions"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
@@ -56,7 +56,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "com.github.scopt" %%% "scopt"          % "4.1.0",
       "com.lihaoyi"      %%% "pprint"         % "0.9.0"  % "test",
       "dev.zio"          %%% "zio-json"       % "0.7.42" % "test",
-      "io.github.edadma" %%% "cross_platform" % "0.1.3",
+      "io.github.edadma" %%% "cross_platform" % "0.1.6",
       "io.github.edadma" %%% "logger"         % "0.0.11",
       "io.github.edadma" %%% "dllist"         % "0.0.6",
       "io.github.edadma" %%% "highlighter"    % "0.0.1" % "test",

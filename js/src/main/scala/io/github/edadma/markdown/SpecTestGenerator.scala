@@ -45,10 +45,10 @@ import scala.scalajs.js.{Dictionary, JSON}
 
   // Print package and imports
   println("package io.github.edadma.markdown")
-  println
+  println()
   println("import org.scalatest.funsuite.AnyFunSuite")
   println("import org.scalatest.matchers.should.Matchers")
-  println
+  println()
 
   // Emit one suite per section
   for ((section, cases) <- grouped) {
