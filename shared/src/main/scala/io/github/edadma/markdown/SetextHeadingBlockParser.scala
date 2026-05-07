@@ -9,6 +9,18 @@ object SetextHeadingBlockParser extends BlockParser {
   private val SetextLevel1Pattern = """^ {0,3}=+[ \t]*$""".r // Level 1 with =
   private val SetextLevel2Pattern = """^ {0,3}-+[ \t]*$""".r // Level 2 with -
 
+  // A line that itself opens a fenced code block (3+ backticks or 3+ tildes
+  // after up to 3 leading spaces) cannot be the first line of a setext
+  // heading — the fence wins per CommonMark precedence. Without this check,
+  // input like
+  //
+  //   ```markdown
+  //   ---
+  //
+  // gets misread as `<h2>\`\`\`markdown</h2>` because the `---` is mistaken
+  // for a setext underline below a "paragraph line".
+  private val FenceOpenerPattern = """^ {0,3}(`{3,}|~{3,}).*$""".r
+
   def canStart(lines: LazyList[List[C]], config: MarkdownConfig): Boolean = {
     if (lines.size < 2) return false
 
@@ -24,6 +36,10 @@ object SetextHeadingBlockParser extends BlockParser {
     // First line must not start a block quote (non-escaped >) — those take precedence
     val firstNonSpace = firstLine.dropWhile(c => c.char == ' ').headOption
     if (firstNonSpace.exists(c => c.char == '>' && !c.isLiteral)) return false
+
+    // First line must not itself open a fenced code block (`````, ~~~).
+    // The fence wins; any `---` after it is code content, not a setext underline.
+    if (FenceOpenerPattern.matches(firstLineText)) return false
 
     // Look ahead for an underline, skipping non-blank content lines
     var i = 1

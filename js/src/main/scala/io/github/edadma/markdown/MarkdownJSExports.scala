@@ -94,5 +94,5 @@ object MarkdownJSExports {
     * in `build.sbt`.
     */
   @JSExportTopLevel("version")
-  val versionJS: String = "0.4.2"
+  val versionJS: String = "0.4.3"
 }

@@ -20,7 +20,7 @@ npm install @edadma/markdown
 ```js
 import { renderToHTML, extractHeadings, plainText, version } from "@edadma/markdown"
 
-console.log(version)                                      // "0.4.2"
+console.log(version)                                      // "0.4.3"
 
 console.log(renderToHTML("# Hello, World!"))
 // → "<h1>Hello, World!</h1>"
