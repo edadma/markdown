@@ -12,11 +12,11 @@
 A fast, minimal **Scala 3** library for parsing [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown.
 Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
 
-**Full CommonMark 0.31.2 spec compliance** — all 877 spec tests passing across all 25 sections.
+**Full CommonMark 0.31.2 spec compliance** — all 652 spec tests passing across all 26 sections.
 
 ## Features
 
-- **100% CommonMark 0.31.2 compliance**: all 877 spec tests passing — ATX & Setext headings, lists (tight/loose), block quotes, fenced & indented code, HTML blocks (types 1–7), thematic breaks, link reference definitions, images, emphasis/strong emphasis, code spans, autolinks, raw HTML, entity references, backslash escapes, hard/soft line breaks
+- **100% CommonMark 0.31.2 compliance**: all 652 spec tests passing — ATX & Setext headings, lists (tight/loose), block quotes, fenced & indented code, HTML blocks (types 1–7), thematic breaks, link reference definitions, images, emphasis/strong emphasis, code spans, autolinks, raw HTML, entity references, backslash escapes, hard/soft line breaks
 - **HTML entity decoding** outside of code, with literal preservation inside code spans/blocks
 - **HTML rendering**: safe escaping for `<`, `>`, `&`, and `"`; outputs standard tags (`<p>`, `<h1–6>`, `<ul>`, `<ol>`, `<pre><code>`, `<blockquote>`, `<a>`, `<img>`, etc.)
 - **Zero runtime dependencies** and lightweight API

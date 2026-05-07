@@ -1,7 +1,7 @@
 # @edadma/markdown
 
 A fast, cross-platform [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/)
-markdown parser. **Full spec compliance** — all 877 spec tests pass on this
+markdown parser. **Full spec compliance** — all 652 spec tests pass on this
 build.
 
 This is the npm distribution of the Scala 3 / Scala.js library
@@ -78,7 +78,7 @@ Full type definitions are in `index.d.ts`.
 
 ## Notes
 
-- **CommonMark 0.31.2 compliance.** All 877 spec tests pass. Each option
+- **CommonMark 0.31.2 compliance.** All 652 spec tests pass. Each option
   above adds a non-CommonMark extension on top.
 - **Heading IDs.** With `autoHeadingIds: true`, ids are slugified the same
   way Hugo / mkdocs / GitHub do: lowercase, non-alphanumeric runs collapsed
