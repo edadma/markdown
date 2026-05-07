@@ -10,6 +10,12 @@ trait Node {
 case class Document(children: List[Block]) extends Node {
   override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Document =
     Document(children.map(_.processInlines(linkRefs, config)))
+
+  /** All top-level [[Heading]] blocks, in source order. Convenience accessor
+    * for table-of-contents builders, page-title extraction, etc. — the same
+    * `children.collect { case h: Heading => h }` repeated everywhere.
+    */
+  def headings: List[Heading] = children.collect { case h: Heading => h }
 }
 
 trait Block extends Node {
@@ -22,8 +28,22 @@ case class Paragraph(inlines: List[Inline]) extends Block {
 }
 
 case class Heading(level: Int, inlines: List[Inline], attrs: Option[Attributes] = None) extends Block {
-  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Heading =
-    Heading(level, parseInline(inlines, linkRefs, config), attrs)
+  override def processInlines(linkRefs: Map[String, LinkReference], config: MarkdownConfig): Heading = {
+    val parsed = parseInline(inlines, linkRefs, config)
+
+    // Auto-generate an `id` attribute from the heading's plain-text content,
+    // unless the heading already has one (set by the `attributes` extension
+    // — `## Heading {#explicit-anchor}`). Explicit ids always win.
+    val finalAttrs =
+      if (config.autoHeadingIds && !attrs.exists(_.id.isDefined)) {
+        val text = plainText(parsed)
+        val slug = config.slugify(text)
+        if (slug.isEmpty) attrs
+        else Some(attrs.getOrElse(Attributes()).copy(id = Some(slug)))
+      } else attrs
+
+    Heading(level, parsed, finalAttrs)
+  }
 }
 
 case class BlockQuote(children: List[Block]) extends Block {

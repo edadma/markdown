@@ -4,8 +4,9 @@
 [![Last Commit](https://img.shields.io/github/last-commit/edadma/markdown)](https://github.com/edadma/markdown/commits)
 ![GitHub](https://img.shields.io/github/license/edadma/markdown)
 ![Scala Version](https://img.shields.io/badge/Scala-3.8.3-blue.svg)
-![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.20.2-blue.svg)
-![Scala Native Version](https://img.shields.io/badge/Scala_Native-0.5.10-blue.svg)
+![ScalaJS Version](https://img.shields.io/badge/Scala.js-1.21.0-blue.svg)
+![Scala Native Version](https://img.shields.io/badge/Scala_Native-0.5.11-blue.svg)
+![npm](https://img.shields.io/npm/v/@edadma/markdown)
 ![CommonMark Version](https://img.shields.io/badge/CommonMark-0.31.2-purple.svg)
 
 A fast, minimal **Scala 3** library for parsing [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown.
@@ -27,10 +28,10 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 
 ## Installation
 
-Add to your `build.sbt`:
+### Scala (sbt)
 
 ```scala
-libraryDependencies += "io.github.edadma" %% "markdown" % "0.4.0"
+libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.2"
 ```
 
 ```scala
@@ -46,6 +47,30 @@ val html = renderToHTML(md)
 
 println(html)
 ```
+
+### JavaScript / TypeScript (npm)
+
+The library also ships as a published npm package — the linked Scala.js
+output, plus TypeScript typings:
+
+```bash
+npm install @edadma/markdown
+```
+
+```js
+import { renderToHTML, extractHeadings, plainText } from "@edadma/markdown"
+
+renderToHTML("# Hello", { autoHeadingIds: true })
+// → '<h1 id="hello">Hello</h1>'
+
+extractHeadings("# Intro\n## Setup")
+// → [{ level: 1, text: "Intro", id: "intro" },
+//    { level: 2, text: "Setup", id: "setup" }]
+```
+
+See [`npm/README.md`](npm/README.md) for the full JS/TS API. Maintainers:
+`./npm/build.sh` re-links the bundle and copies it into `npm/`; `cd npm &&
+npm publish` from there.
 
 ## Code Highlighting
 
@@ -79,12 +104,50 @@ sealed trait Node
 case class Document(children: List[Block]) extends Node
 sealed trait Block extends Node
 case class Paragraph(inlines: List[Inline]) extends Block
-case class Heading(level: Int, inlines: List[Inline]) extends Block
+case class Heading(level: Int, inlines: List[Inline], attrs: Option[Attributes]) extends Block
 case class Code(content: String, info: Option[String], indented: Boolean) extends Block
 case class BlockQuote(children: List[Block]) extends Block
 case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 // … Inline types: Text, Emphasis, Strong, CodeSpan, Link, Image, AutoLink, RawHTML, etc.
 ```
+
+## Helpers for AST consumers
+
+A few public helpers for code that walks the AST (TOC builders, anchor-text
+generators, search-index excerpt builders, etc.):
+
+```scala
+val doc: Document = parseDocumentContent(md)
+
+// All top-level Heading blocks, in source order.
+val hs: List[Heading] = doc.headings
+
+// Plain-text projection of a list of inlines (strips formatting).
+val title: String = plainText(hs.head.inlines)
+
+// Render inlines directly to HTML (no surrounding `<p>` wrapper).
+val html: String = renderInlines(hs.head.inlines)
+```
+
+## Auto-generated heading IDs
+
+Set `autoHeadingIds = true` to have the parser populate every heading's `id`
+attribute from its plain-text content. Slugs are pluggable.
+
+```scala
+val cfg = MarkdownConfig.default.copy(autoHeadingIds = true)
+renderToHTML("## Hello, World!", cfg)
+// → <h2 id="hello-world">Hello, World!</h2>
+
+// Custom slug function:
+val cfg2 = MarkdownConfig.default.copy(
+  autoHeadingIds = true,
+  slugify = s => s.toLowerCase.replaceAll("[^a-z0-9]+", "_").stripPrefix("_").stripSuffix("_"),
+)
+```
+
+Explicit ids set via the `attributes` extension (`## Heading {#explicit}`)
+always win.
 
 ## Configuration
 
@@ -103,6 +166,8 @@ case class ListBlock(data: ListData, items: List[ListItem]) extends Block
 | `footnotes` | `false` | `[^label]` references with `[^label]: ...` definitions |
 | `smartPunctuation` | `false` | Curly quotes, en/em dashes, ellipsis |
 | `attributes` | `false` | `{#id .class key=value}` on headings, fenced blocks, images |
+| `autoHeadingIds` | `false` | Auto-generate `<hN id="…">` from heading text. Explicit ids (via `attributes`) win. |
+| `slugify` | `defaultSlugify` | Pluggable slug function used by `autoHeadingIds` |
 | `docTags` | `DocTagConfig.disabled` | Opt-in API doc-tag extension (`@name [target] — body`) |
 | `codeHighlighter` | `None` | Pluggable syntax highlighting function |
 | `indentedCodeLanguage` | `None` | Default language for indented code blocks |

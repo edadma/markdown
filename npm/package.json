@@ -1,0 +1,47 @@
+{
+  "name": "@edadma/markdown",
+  "version": "0.4.2",
+  "description": "A fast, cross-platform CommonMark 0.31.2 markdown parser. ES module distribution of the Scala 3 / Scala.js library at io.github.edadma:markdown.",
+  "type": "module",
+  "main": "./main.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./main.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "files": [
+    "main.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "markdown",
+    "commonmark",
+    "parser",
+    "scala-js",
+    "html"
+  ],
+  "homepage": "https://github.com/edadma/markdown",
+  "bugs": {
+    "url": "https://github.com/edadma/markdown/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edadma/markdown.git"
+  },
+  "license": "ISC",
+  "author": {
+    "name": "Edward A. Maxedon, Sr.",
+    "email": "edadma@gmail.com",
+    "url": "https://github.com/edadma"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

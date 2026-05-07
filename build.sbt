@@ -7,7 +7,7 @@ ThisBuild / scalaVersion           := "3.8.3"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.4.1"
+ThisBuild / version                := "0.4.2"
 ThisBuild / description            := "A fast, cross-platform Scala 3 CommonMark 0.31.2 Markdown parser with extensions"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
@@ -78,7 +78,11 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     scalaJSLinkerConfig ~= { _.withSourceMap(false) },
     Test / scalaJSUseMainModuleInitializer := false,
     Test / scalaJSUseTestModuleInitializer := true,
-    scalaJSUseMainModuleInitializer        := true,
+    // Library-mode: the linked .js exposes its API via @JSExportTopLevel
+    // entry points (see `MarkdownJSExports.scala`), so npm consumers
+    // `import { renderToHTML } from '@edadma/markdown'` rather than the
+    // module being run at load time.
+    scalaJSUseMainModuleInitializer        := false,
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
   )
 

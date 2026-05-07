@@ -289,7 +289,13 @@ private def collectFootnoteReferences(blocks: List[Block]): List[String] = {
   result.toList
 }
 
-private def renderInlines(inlines: List[Inline]): String =
+/** Render a list of inline nodes to HTML.
+  *
+  * Public so consumers (TOC builders, anchor-text generators, etc.) can
+  * render heading or link-text content as HTML without first wrapping it in
+  * a [[Paragraph]] and stripping the `<p>` tags.
+  */
+def renderInlines(inlines: List[Inline]): String =
   inlines.map {
     case Text(content)      => escapeXml(content)
     case SoftLineBreak()    => "\n"
@@ -315,16 +321,36 @@ private def renderInlines(inlines: List[Inline]): String =
   }.mkString
 
 // Helper for image alt text - extracts plain text only
-private def renderAltText(inlines: List[Inline]): String = {
-  // For image alt text, we only want the literal text content without formatting
-  inlines.map {
-    case Text(content)        => escapeXml(content)
-    case CodeSpan(content)    => escapeXml(content)
-    case Emphasis(children)   => renderAltText(children)
-    case Strong(children)        => renderAltText(children)
-    case Strikethrough(children) => renderAltText(children)
-    case Link(_, _, children)    => renderAltText(children)
-    case Image(_, _, children, _) => renderAltText(children)
-    case _                     => ""
-  }.mkString
+private def renderAltText(inlines: List[Inline]): String = plainText(inlines, escape = true)
+
+/** Plain-text projection of a list of inline nodes — strips all formatting
+  * and returns just the textual content. Used internally for image `alt`
+  * attributes; exposed publicly because it's the obvious building block for
+  * heading-id slugs, ARIA labels, page `<title>` extraction, etc.
+  *
+  * @param inlines the inlines to flatten
+  * @param escape  if `true`, run the result through XML escaping (suitable for
+  *                emitting straight into an HTML attribute or `<title>` tag);
+  *                if `false`, return the raw text (suitable for slugify
+  *                callbacks and other downstream string processing).
+  */
+def plainText(inlines: List[Inline], escape: Boolean = false): String = {
+  def esc(s: String): String = if (escape) escapeXml(s) else s
+  val buf                    = new StringBuilder
+  def go(node: Inline): Unit = node match {
+    case Text(content)            => buf ++= esc(content)
+    case CodeSpan(content)        => buf ++= esc(content)
+    case Emphasis(children)       => children.foreach(go)
+    case Strong(children)         => children.foreach(go)
+    case Strikethrough(children)  => children.foreach(go)
+    case Link(_, _, children)     => children.foreach(go)
+    case Image(_, _, children, _) => children.foreach(go)
+    case AutoLink(href, text)     => buf ++= esc(text)
+    case SoftLineBreak()          => buf += ' '
+    case HardLineBreak()          => buf += ' '
+    case Emoji(name)              => buf ++= emojis(name)
+    case _                        => () // RawHTML, MathExpr, FootnoteReference, C: no plain-text contribution
+  }
+  inlines.foreach(go)
+  buf.toString
 }
