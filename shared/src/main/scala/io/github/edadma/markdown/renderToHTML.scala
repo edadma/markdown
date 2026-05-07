@@ -155,9 +155,13 @@ def renderBlockToHTML(node: Block, config: MarkdownConfig = MarkdownConfig.defau
       items.foreach { case (term, definitions) =>
         sb.append("  <dt>").append(renderInlines(term)).append("</dt>\n")
 
+        // `definitions` is a List[Block], not Document — call the block
+        // renderer directly. Calling the public `renderToHTML(node, config)`
+        // would only succeed for Document and throw a MatchError on
+        // Paragraph / List / etc.
         definitions.foreach { defBlock =>
           sb.append("  <dd>\n")
-          sb.append(renderToHTML(defBlock, config))
+          sb.append(renderBlockToHTML(defBlock, config))
           sb.append("  </dd>\n")
         }
       }

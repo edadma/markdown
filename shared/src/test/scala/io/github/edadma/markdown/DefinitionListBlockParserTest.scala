@@ -137,4 +137,26 @@ class DefinitionListBlockParserTest extends AnyFlatSpec with Matchers {
       )),
     ))
   }
+
+  // Regression: renderToHTML used to call the public `renderToHTML(node, config)`
+  // entry point on each definition body, but that pattern-matches only on
+  // Document, throwing `MatchError: Paragraph(...)` for the Paragraph that
+  // every parsed definition body actually contains. Now goes through
+  // renderBlockToHTML directly.
+  it should "render a definition list to HTML without throwing MatchError" in {
+    val input = """Apple
+                  |: A round fruit, typically red or green.
+                  |
+                  |Orange
+                  |: A citrus fruit. Also a color.""".stripMargin
+
+    val doc  = parseDocumentContent(input, config)
+    val html = renderToHTML(doc, config)
+    html should include("<dl>")
+    html should include("<dt>Apple</dt>")
+    html should include("A round fruit, typically red or green.")
+    html should include("<dt>Orange</dt>")
+    html should include("A citrus fruit. Also a color.")
+    html should include("</dl>")
+  }
 }
