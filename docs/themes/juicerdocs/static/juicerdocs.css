@@ -526,8 +526,8 @@ hr {
   align-items: center;
   gap: 0.375rem;
 }
-.juicerdocs-breadcrumbs a { color: inherit; }
-.juicerdocs-breadcrumbs a:hover {
+.juicerdocs-breadcrumbs-link { color: inherit; }
+.juicerdocs-breadcrumbs-link:hover {
   color: var(--brand);
   text-decoration: none;
 }
@@ -836,14 +836,16 @@ hr {
   color: var(--fg-soft);
 }
 
-.juicerdocs-content a {
+/* Markdown-body links — scoped via :not() so the rule doesn't bleed into
+   buttons / cards / prev-next anchors, which own their own colors. */
+.juicerdocs-content a:not([class*="juicerdocs-"]) {
   color: var(--brand);
   text-decoration: underline;
   text-decoration-color: rgb(from var(--brand) r g b / 0.4);
   text-underline-offset: 2px;
   transition: text-decoration-color 0.15s;
 }
-.juicerdocs-content a:hover {
+.juicerdocs-content a:not([class*="juicerdocs-"]):hover {
   text-decoration-color: var(--brand);
 }
 
