@@ -1,0 +1,40 @@
+# markdown docs site, deployed to https://edadma.github.io/markdown/.
+#
+# Built with juicer (the SSG) and themed with juicerdocs (vendored under
+# themes/juicerdocs/ so this repo stays self-contained).
+#
+# Local preview:
+#   sbt 'juicerJVM/run serve -s ../markdown/docs -L'      # from juicer's repo
+#
+# Production: pushed to `stable`, built + deployed by .github/workflows/docs.yml.
+
+title           = "markdown"
+author          = "Ed Maxedon"
+baseURL         = "https://edadma.github.io/markdown/"
+
+theme           = "juicerdocs"
+
+# The page <h1> comes from frontmatter title — markdown headings start at h2.
+headingShift    = 0
+
+# Static-host deploy: URL space must match disk layout. The default 'html'
+# segment is a dev-time convenience that doesn't survive GitHub Pages.
+htmlDir         = ""
+
+[juicerdocs]
+version         = "v0.4.4"
+
+# Brand palette — slate-ink + warm paper, evoking a printed manuscript.
+# Distinct from juicer's plum and squiggly's cyan so the three sites read
+# as siblings, not clones.
+brand           = "#334155"        # slate-700  — primary
+brandStrong     = "#1e293b"        # slate-800  — hover
+brandSoft       = "#f1f5f9"        # slate-100  — backgrounds
+accent          = "#b45309"        # amber-700  — secondary (manuscript ink)
+leaf            = "#15803d"        # green-700  — success / leaf
+
+brandDark       = "#cbd5e1"        # slate-300
+brandStrongDark = "#e2e8f0"        # slate-200
+brandSoftDark   = "rgb(203 213 225 / .12)"
+accentDark      = "#fbbf24"        # amber-400
+leafDark        = "#4ade80"        # green-400

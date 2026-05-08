@@ -1,0 +1,89 @@
+# Build & deploy https://edadma.github.io/markdown/.
+#
+#   Push to `stable` → builds and deploys to GitHub Pages.
+#   Push to other branches / PR  → builds and uploads as an artifact.
+#
+# This site is built with juicer (the SSG that uses this library to render
+# its markdown content — meta-circular dogfood). Until juicer is on Maven
+# Central, the workflow checks out juicer's `stable` branch and runs its
+# build against this repo's docs/ directory.
+
+name: Docs
+
+on:
+  push:
+    branches: ["stable"]
+  pull_request:
+    branches: ["stable"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "docs-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout markdown
+        uses: actions/checkout@v4
+
+      - name: Checkout juicer (the SSG)
+        uses: actions/checkout@v4
+        with:
+          repository: edadma/juicer
+          ref: stable
+          path: .juicer
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Cache sbt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.cache/coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/project/**', '.juicer/**/build.sbt', '.juicer/**/project/**') }}
+          restore-keys: ${{ runner.os }}-sbt-
+
+      - name: Build docs site
+        working-directory: .juicer
+        run: |
+          sbt "juicerJVM/run build -s ${{ github.workspace }}/docs -d ${{ github.workspace }}/_site -b https://edadma.github.io/markdown/"
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site
+          path: _site
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/stable'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.ref == 'refs/heads/stable'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

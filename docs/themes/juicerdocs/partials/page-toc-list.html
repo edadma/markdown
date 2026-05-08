@@ -1,0 +1,13 @@
+{{ for h <- . }}
+  <li>
+    <a href="#{{ h.id }}" data-juicerdocs-toc-link data-jd-toc-id="{{ h.id }}"
+       class="juicerdocs-toc-link" data-toc-level="{{ h.level }}">
+      {{ h.heading }}
+    </a>
+    {{ if h.sub }}
+      <ul>
+        {{ partial 'page-toc-list' h.sub }}
+      </ul>
+    {{ end }}
+  </li>
+{{ end }}

@@ -1,0 +1,12 @@
+<nav id="juicerdocs-sidebar" aria-label="Site navigation" class="juicerdocs-nav">
+  {{ if .site.root }}
+    <ul class="juicerdocs-nav-list">
+      {{ for sec <- .site.root.subsections }}
+        <li class="juicerdocs-nav-section">
+          <a href="{{ sec.url }}" data-juicerdocs-nav-link class="juicerdocs-nav-heading">{{ sec.title }}</a>
+          {{ partial 'nav-children' sec }}
+        </li>
+      {{ end }}
+    </ul>
+  {{ end }}
+</nav>

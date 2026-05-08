@@ -23,3 +23,6 @@ project/plugins/project/
 
 codebase.txt
 log_*
+
+# docs site build output (rendered by juicer; CI deploys)
+_site/

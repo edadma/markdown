@@ -1,0 +1,19 @@
+{{ if .pages }}
+  <ul class="juicerdocs-nav-children">
+    {{ for p <- .pages }}
+      <li>
+        <a href="{{ p.url }}" data-juicerdocs-nav-link class="juicerdocs-nav-link">{{ p.title }}</a>
+      </li>
+    {{ end }}
+  </ul>
+{{ end }}
+{{ if .subsections }}
+  <ul class="juicerdocs-nav-children">
+    {{ for sub <- .subsections }}
+      <li>
+        <a href="{{ sub.url }}" data-juicerdocs-nav-link class="juicerdocs-nav-link">{{ sub.title }}</a>
+        {{ partial 'nav-children' sub }}
+      </li>
+    {{ end }}
+  </ul>
+{{ end }}

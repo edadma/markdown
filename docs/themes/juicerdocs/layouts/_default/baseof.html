@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {{ partial 'head' . }}
+</head>
+<body>
+  {{ partial 'topbar' . }}
+
+  <div class="juicerdocs-page">
+    <aside class="juicerdocs-sidebar-aside">
+      {{ partial 'sidebar' . }}
+    </aside>
+    <div class="juicerdocs-sidebar-backdrop" aria-hidden="true"></div>
+
+    <main class="juicerdocs-main">
+      <div class="juicerdocs-content">
+        {{ partial 'breadcrumbs' . }}
+        {{ block main . }}
+          <article>
+            <h1>{{ .page.title }}</h1>
+            {{ .content }}
+          </article>
+        {{ end }}
+        {{ partial 'prev-next' . }}
+      </div>
+    </main>
+
+    <aside class="juicerdocs-rail-aside">
+      {{ partial 'page-toc' . }}
+    </aside>
+  </div>
+
+  {{ partial 'footer' . }}
+
+  <script src="{{ relURL '/juicerdocs.js' }}"></script>
+</body>
+</html>
