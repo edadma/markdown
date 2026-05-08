@@ -3,7 +3,9 @@
 <title>{{ if .page.title }}{{ .page.title }} – {{ end }}{{ .site.title }}</title>
 {{ if .page.summary }}<meta name="description" content="{{ .page.summary }}" />{{ end }}
 <link rel="canonical" href="{{ .page.permalink }}" />
-<link rel="icon" type="image/png" href="{{ if .site.juicerdocs.logo }}{{ relURL .site.juicerdocs.logo }}{{ else }}{{ relURL '/juicer-logo.png' }}{{ end }}" />
+{{ if .site.juicerdocs.logo }}
+<link rel="icon" type="image/png" href="{{ relURL .site.juicerdocs.logo }}" />
+{{ end }}
 <link rel="alternate" type="application/atom+xml" href="{{ relURL '/feed.xml' }}" title="{{ .site.title }}" />
 
 <!-- Inter font (variable) for clean typography -->

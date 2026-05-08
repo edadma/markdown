@@ -1,7 +1,9 @@
 <header class="juicerdocs-topbar">
   <div class="juicerdocs-topbar-inner">
     <a href="{{ relURL '/' }}" class="juicerdocs-brand">
-      <img src="{{ if .site.juicerdocs.logo }}{{ relURL .site.juicerdocs.logo }}{{ else }}{{ relURL '/juicer-logo.png' }}{{ end }}" alt="" class="juicerdocs-brand-logo" />
+      {{ if .site.juicerdocs.logo }}
+      <img src="{{ relURL .site.juicerdocs.logo }}" alt="" class="juicerdocs-brand-logo" />
+      {{ end }}
       <span class="juicerdocs-brand-name">{{ .site.title }}</span>
     </a>
 

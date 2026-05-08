@@ -36,7 +36,9 @@
 {{ else }}
   <section class="juicerdocs-hero">
     <div class="juicerdocs-hero-meta">
-      <img src="{{ if .site.juicerdocs.logo }}{{ relURL .site.juicerdocs.logo }}{{ else }}{{ relURL '/juicer-logo.png' }}{{ end }}" alt="" class="juicerdocs-hero-logo" />
+      {{ if .site.juicerdocs.logo }}
+      <img src="{{ relURL .site.juicerdocs.logo }}" alt="" class="juicerdocs-hero-logo" />
+      {{ end }}
       {{ if .site.juicerdocs.version }}<span class="juicerdocs-hero-version">{{ .site.juicerdocs.version }}</span>{{ end }}
     </div>
     <h1 class="juicerdocs-hero-title">

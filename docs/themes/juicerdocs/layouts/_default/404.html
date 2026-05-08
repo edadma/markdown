@@ -5,7 +5,9 @@
 </head>
 <body class="juicerdocs-404">
   <div class="juicerdocs-404-inner">
-    <img src="{{ if .site.juicerdocs.logo }}{{ relURL .site.juicerdocs.logo }}{{ else }}{{ relURL '/juicer-logo.png' }}{{ end }}" alt="" class="juicerdocs-404-logo" />
+    {{ if .site.juicerdocs.logo }}
+    <img src="{{ relURL .site.juicerdocs.logo }}" alt="" class="juicerdocs-404-logo" />
+    {{ end }}
     <h1 class="juicerdocs-404-title">404</h1>
     <p class="juicerdocs-404-msg">No such page on this site.</p>
     <a href="{{ relURL '/' }}" class="juicerdocs-btn juicerdocs-btn-primary">
