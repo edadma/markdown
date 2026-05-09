@@ -22,6 +22,11 @@ Cross‑platform support: **JVM**, **Scala.js**, and **Scala Native**.
 - **Zero runtime dependencies** and lightweight API
 - **Optional syntax highlighting** for fenced and indented code blocks via a pluggable highlighter function (works with [highlighter](https://github.com/edadma/highlighter) or any custom implementation)
 
+## Documentation
+
+Full reference, AST guide, and configuration index:
+**https://edadma.github.io/markdown/**
+
 ## Online Demo
 
 Try out the Markdown parser in your browser using the [Dingus](https://edadma.github.io/dingus/).
