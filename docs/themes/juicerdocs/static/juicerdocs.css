@@ -410,10 +410,19 @@ hr {
   text-transform: uppercase;
   color: var(--fg);
   text-decoration: none;
+  border-radius: var(--radius-md);
 }
 .juicerdocs-nav-heading:hover {
   color: var(--brand);
   text-decoration: none;
+}
+/* Section heading is the active link when the user is on the
+   section's `_index` page. Mirrors the .juicerdocs-nav-link.is-active
+   colour treatment (without the border-left accent, since the heading
+   sits outside the bordered child list). */
+.juicerdocs-nav-heading.is-active {
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .juicerdocs-nav-children {
