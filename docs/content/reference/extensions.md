@@ -64,6 +64,32 @@ $$
 $$
 ````
 
+This site has KaTeX wired up (juicerdocs theme, `[juicerdocs] math = true` in `site.toml`), so the same source above renders as:
+
+The Pythagorean theorem: $a^2 + b^2 = c^2$.
+
+$$
+\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}
+$$
+
+A few more shapes — quadratic formula, a matrix, a sum, and a limit:
+
+$$
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+$$
+
+$$
+A = \begin{pmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{pmatrix}
+$$
+
+$$
+\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+$$
+
+$$
+\lim_{x \to 0} \frac{\sin x}{x} = 1
+$$
+
 ## Callouts (`callouts`)
 
 Obsidian / GFM admonition syntax: a blockquote whose first line is `[!TYPE]` or `[!TYPE] Title`. Common types: `note`, `tip`, `info`, `warning`, `danger`.

@@ -27,6 +27,12 @@ htmlDir         = ""
 [juicerdocs]
 version         = "v0.4.4"
 
+# Load KaTeX from CDN so the markdown library's math-extension output
+# renders in the browser. Off by default in the theme; opted in here
+# because this is the docs site for the parser that produces math
+# output, so we want to demo what it looks like end-to-end.
+math            = true
+
 # Brand palette — slate-ink + warm paper, evoking a printed manuscript.
 # Distinct from juicer's plum and squiggly's cyan so the three sites read
 # as siblings, not clones.
