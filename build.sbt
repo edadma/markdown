@@ -59,7 +59,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "io.github.edadma" %%% "cross_platform" % "0.1.6",
       "io.github.edadma" %%% "logger"         % "0.0.11",
       "io.github.edadma" %%% "dllist"         % "0.0.6",
-      "io.github.edadma" %%% "highlighter"    % "0.0.6" % "test",
+      "io.github.edadma" %%% "highlighter"    % "0.0.8" % "test",
     ),
     publishMavenStyle      := true,
     Test / publishArtifact := false,
