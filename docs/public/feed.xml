@@ -1,0 +1,964 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>markdown</title>
+  <link href="https://edadma.github.io/markdown/feed.xml" rel="self"/>
+  <link href="https://edadma.github.io/markdown/"/>
+  <id>https://edadma.github.io/markdown/feed.xml</id>
+  <updated>2026-05-10T11:48:57.894158Z</updated>
+  <author><name>Ed Maxedon</name></author>
+  <entry>
+    <title>Rendering</title>
+    <link href="https://edadma.github.io/markdown/concepts/rendering/"/>
+    <id>https://edadma.github.io/markdown/concepts/rendering/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>How blocks and inlines become HTML — escaping, raw HTML, code highlighters, and the XML alternative.</summary>
+    <content type="html">&lt;p&gt;&lt;code&gt;renderToHTML&lt;/code&gt; is the default emitter, but the AST is not bound to it. There’s also an XML emitter, and the public helpers (&lt;code&gt;renderBlockToHTML&lt;/code&gt;, &lt;code&gt;renderInlines&lt;/code&gt;, &lt;code&gt;plainText&lt;/code&gt;) let you compose your own pipeline.&lt;/p&gt;
+&lt;h2 id=&quot;two-entry-points&quot;&gt;Two entry points&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;    config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;node&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Node&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;    config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The string overload parses then renders. The node overload skips parsing — useful when you’ve built or transformed the AST yourself.&lt;/p&gt;
+&lt;h2 id=&quot;escape-rules&quot;&gt;Escape rules&lt;/h2&gt;
+&lt;p&gt;Inline &lt;code&gt;Text&lt;/code&gt; is escaped via &lt;code&gt;escapeXml&lt;/code&gt;, which encodes &lt;code&gt;&amp;amp;&lt;/code&gt;, &lt;code&gt;&amp;lt;&lt;/code&gt;, &lt;code&gt;&amp;gt;&lt;/code&gt;, and &lt;code&gt;&amp;quot;&lt;/code&gt;. Single quotes are not escaped (they’re safe in attribute values when those values are double-quoted, which the renderer guarantees).&lt;/p&gt;
+&lt;p&gt;Code spans and code blocks are escaped the same way — never raw-passed. This is deliberate: an &lt;code&gt;&amp;lt;code&amp;gt;&lt;/code&gt; span containing &lt;code&gt;&amp;lt;script&amp;gt;&lt;/code&gt; should render as visible text, not execute.&lt;/p&gt;
+&lt;p&gt;URLs in &lt;code&gt;&amp;lt;a href=&amp;quot;…&amp;quot;&amp;gt;&lt;/code&gt; and &lt;code&gt;&amp;lt;img src=&amp;quot;…&amp;quot;&amp;gt;&lt;/code&gt; go through &lt;code&gt;percentEncode&lt;/code&gt; first. The function intentionally treats &lt;code&gt;%&lt;/code&gt; as already-safe, so a hand-written &lt;code&gt;https://example.com/foo%20bar&lt;/code&gt; stays as &lt;code&gt;%20&lt;/code&gt; rather than getting double-encoded to &lt;code&gt;%2520&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;raw-html&quot;&gt;Raw HTML&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;HTMLBlock&lt;/code&gt; (block-level) and &lt;code&gt;RawHTML&lt;/code&gt; (inline) pass through verbatim — no escaping, no transformation. This is the standard CommonMark behavior. If you’re rendering untrusted input, sanitize the output yourself; this library does not pretend to be a sanitizer.&lt;/p&gt;
+&lt;h2 id=&quot;custom-code-highlighting&quot;&gt;Custom code highlighting&lt;/h2&gt;
+&lt;p&gt;Set &lt;code&gt;codeHighlighter&lt;/code&gt; on the config to plug in syntax highlighting:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;codeHighlighter&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]]&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;//                       ^^ code     ^^ language&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;//                                              ^^ highlighted HTML or None&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When the function returns &lt;code&gt;None&lt;/code&gt;, the renderer falls back to plain &lt;code&gt;&amp;lt;pre&amp;gt;&amp;lt;code&amp;gt;…&amp;lt;/code&amp;gt;&amp;lt;/pre&amp;gt;&lt;/code&gt;. When it returns &lt;code&gt;Some(html)&lt;/code&gt;, that html is dropped in directly — your highlighter is responsible for any escaping.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;highlighter&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; mode &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ClassMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;hl-&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; scalaHl &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Highlighter&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;fromJson&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;scalaGrammarJson&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; mode&lt;span class=&quot;hl-punctuation&quot;&gt;).&lt;/span&gt;toOption&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;get
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;all&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  codeHighlighter      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Some&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;((&lt;/span&gt;code&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; lang&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt;
+                           &lt;span class=&quot;hl-keyword&quot;&gt;if&lt;/span&gt; lang &lt;span class=&quot;hl-keyword&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;scala&amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;then&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Some&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;scalaHl&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;highlight&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;code&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;
+                         &lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+  indentedCodeLanguage &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Some&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;scala&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;hl-comment&quot;&gt;// assume indented blocks are Scala&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;```scala&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;val x = 42&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;```&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Works with &lt;a href=&quot;https://github.com/edadma/highlighter&quot;&gt;highlighter&lt;/a&gt; or any function with the right shape.&lt;/p&gt;
+&lt;h2 id=&quot;helpers-for-ast-consumers&quot;&gt;Helpers for AST consumers&lt;/h2&gt;
+&lt;p&gt;The renderer exposes its block- and inline-level workers as public functions:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderBlockToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;node&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderInlines&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; plainText&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;],&lt;/span&gt; escape&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;renderInlines&lt;/code&gt; is what you reach for to render heading or link-text content as HTML &lt;em&gt;without&lt;/em&gt; a surrounding &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt; wrapper — the building block for table-of-contents items, anchor labels, summary excerpts.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;plainText&lt;/code&gt; flattens an inline list to its textual content, stripping all formatting. &lt;code&gt;escape = true&lt;/code&gt; runs the result through &lt;code&gt;escapeXml&lt;/code&gt;, which is what you want when emitting into &lt;code&gt;alt=&amp;quot;…&amp;quot;&lt;/code&gt;, &lt;code&gt;title=&amp;quot;…&amp;quot;&lt;/code&gt;, or a &lt;code&gt;&amp;lt;title&amp;gt;&lt;/code&gt; tag.&lt;/p&gt;
+&lt;h2 id=&quot;xml-output&quot;&gt;XML output&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToXML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; system&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;document&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Emits CommonMark XML format with &lt;code&gt;&amp;lt;?xml … ?&amp;gt;&lt;/code&gt; declaration and a DTD reference. Heading rendering is simplified to plain text — the XML form is intended for spec conformance and AST-diffing tools, not for downstream HTML.&lt;/p&gt;
+&lt;h2 id=&quot;heading-ids-and-slugs&quot;&gt;Heading IDs and slugs&lt;/h2&gt;
+&lt;p&gt;When &lt;code&gt;autoHeadingIds = true&lt;/code&gt;, the parser populates each heading’s &lt;code&gt;id&lt;/code&gt; from its plain-text content via the &lt;code&gt;slugify&lt;/code&gt; callback. The renderer just emits whatever’s already on the node — it doesn’t slug-ify at render time. This means slug behaviour is controlled at &lt;em&gt;parse&lt;/em&gt; time, and the same &lt;code&gt;Document&lt;/code&gt; value will always render with the same ids.&lt;/p&gt;
+&lt;p&gt;Explicit ids set via the &lt;code&gt;attributes&lt;/code&gt; extension always win:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;## Hello, World! {#my-explicit-id}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;renders to &lt;code&gt;&amp;lt;h2 id=&amp;quot;my-explicit-id&amp;quot;&amp;gt;Hello, World!&amp;lt;/h2&amp;gt;&lt;/code&gt; regardless of whether &lt;code&gt;autoHeadingIds&lt;/code&gt; is on.&lt;/p&gt;
+&lt;h2 id=&quot;render-to-your-own-format&quot;&gt;Render to your own format&lt;/h2&gt;
+&lt;p&gt;The renderers are not magic — they’re pattern matches on &lt;code&gt;Block&lt;/code&gt; and &lt;code&gt;Inline&lt;/code&gt;. To target a different format, write your own walker. See &lt;a href=&quot;/markdown/recipes/custom-renderer/&quot;&gt;Recipes → Custom renderer&lt;/a&gt; for a worked example.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Quickstart</title>
+    <link href="https://edadma.github.io/markdown/getting-started/quickstart/"/>
+    <id>https://edadma.github.io/markdown/getting-started/quickstart/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Render markdown to HTML, walk the AST, enable extensions — the three things every caller does.</summary>
+    <content type="html">&lt;p&gt;This walkthrough shows the three things you’ll do with the library 95 % of the time: render to HTML, parse to an AST, and turn on extensions.&lt;/p&gt;
+&lt;h2 id=&quot;1-render-markdown-to-html&quot;&gt;1. Render markdown to HTML&lt;/h2&gt;
+&lt;p&gt;The one-line case:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;    |# Hello, CommonMark!&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;    |&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;    |This is **bold**, *italic*, and `code`.&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;    |&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;stripMargin
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Output:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-html&quot;&gt;&amp;lt;h1&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;Hello,&lt;/span&gt; &lt;span class=&quot;hl-function&quot;&gt;CommonMark!&lt;/span&gt;&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;This&lt;/span&gt; &lt;span class=&quot;hl-function&quot;&gt;is&lt;/span&gt; &amp;lt;strong&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;bold&lt;/span&gt;&amp;lt;/strong&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;,&lt;/span&gt; &amp;lt;em&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;italic&lt;/span&gt;&amp;lt;/em&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-function&quot;&gt;and&lt;/span&gt; &amp;lt;code&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;code&lt;/span&gt;&amp;lt;/code&amp;gt;&lt;span class=&quot;hl-function&quot;&gt;.&lt;/span&gt;&amp;lt;/p&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The default config follows the CommonMark spec exactly — no GFM tables, no math, no emoji. Predictable output for any input.&lt;/p&gt;
+&lt;h2 id=&quot;2-parse-to-an-ast&quot;&gt;2. Parse to an AST&lt;/h2&gt;
+&lt;p&gt;When you want the structured form rather than HTML:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; doc&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; parseDocumentContent&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;# Hello&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;World.&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-comment&quot;&gt;// All top-level Heading blocks, in source order.&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; titles&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; doc&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;headings
+
+&lt;span class=&quot;hl-comment&quot;&gt;// Plain-text projection of a list of inlines (strips formatting).&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; title&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; plainText&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;titles&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;head&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;// → &amp;quot;Hello&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;Document.children&lt;/code&gt; is a &lt;code&gt;List[Block]&lt;/code&gt;; each &lt;code&gt;Heading&lt;/code&gt;, &lt;code&gt;Paragraph&lt;/code&gt;, &lt;code&gt;ListBlock&lt;/code&gt;, etc. carries its own typed children. See &lt;a href=&quot;/markdown/concepts/ast/&quot;&gt;AST&lt;/a&gt; for the full hierarchy.&lt;/p&gt;
+&lt;h2 id=&quot;3-turn-on-extensions&quot;&gt;3. Turn on extensions&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;MarkdownConfig.default&lt;/code&gt; is pure CommonMark. &lt;code&gt;MarkdownConfig.all&lt;/code&gt; flips on every extension at once:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;all
+
+renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;| a | b |&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;|---|---|&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;| 1 | 2 |&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;// → &amp;quot;&amp;lt;table&amp;gt;...&amp;lt;/table&amp;gt;&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Or pick the ones you actually want:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  tables          &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  strikethrough   &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  taskListItems   &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  autoHeadingIds  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;## Hello, World!&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;// → &amp;lt;h2 id=&amp;quot;hello-world&amp;quot;&amp;gt;Hello, World!&amp;lt;/h2&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The full list of flags lives on the &lt;a href=&quot;/markdown/reference/options/&quot;&gt;Options&lt;/a&gt; page.&lt;/p&gt;
+&lt;h2 id=&quot;where-to-go-next&quot;&gt;Where to go next&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;/concepts/ast/&quot;&gt;Concepts → AST&lt;/a&gt; — the node hierarchy you walk after parsing.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/concepts/rendering/&quot;&gt;Concepts → Rendering&lt;/a&gt; — escape rules, raw-HTML pass-through, custom highlighters.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/reference/api/&quot;&gt;Reference → API&lt;/a&gt; — every public function, signature, and return type.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/recipes/custom-renderer/&quot;&gt;Recipes → Custom renderer&lt;/a&gt; — turn the AST into your own format.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Parsing</title>
+    <link href="https://edadma.github.io/markdown/concepts/parsing/"/>
+    <id>https://edadma.github.io/markdown/concepts/parsing/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>The pipeline from source string to Document — InputReader, block parsers, inline parsers.</summary>
+    <content type="html">&lt;p&gt;The parser is structured as a pipeline. Each stage has one job and produces input for the next:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;String
+   │
+   ▼  InputReader
+LazyList[C]                    cursors carrying char + position + isLiteral
+   │
+   ▼  groupIntoLines
+LazyList[List[C]]              one list per line, with leading tabs expanded
+   │
+   ▼  block parsers (priority-ordered registry)
+List[Block]                    blocks containing raw List[Inline] of cursors
+   │
+   ▼  processInlines
+Document                       inlines resolved, entities decoded, link refs bound
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;1-input-normalization&quot;&gt;1. Input normalization&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;new InputReader(input)&lt;/code&gt; produces the cursor stream &lt;code&gt;LazyList[C]&lt;/code&gt;. Each &lt;code&gt;C&lt;/code&gt; carries a single character plus its source position, line, column, and an &lt;code&gt;isLiteral&lt;/code&gt; flag (true if the character was backslash-escaped). The reader normalizes line endings (CR / CRLF → LF) and replaces null with U+FFFD. Backslash escapes of ASCII punctuation are resolved here — the escaped character gets &lt;code&gt;isLiteral = true&lt;/code&gt; so downstream parsers know not to treat it as syntax.&lt;/p&gt;
+&lt;p&gt;You won’t usually call &lt;code&gt;InputReader&lt;/code&gt; directly; &lt;code&gt;parseDocumentContent&lt;/code&gt; wraps it.&lt;/p&gt;
+&lt;h2 id=&quot;2-line-grouping&quot;&gt;2. Line grouping&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;groupIntoLines&lt;/code&gt; chunks the cursor stream into lines. It uses &lt;code&gt;LazyList.unfold&lt;/code&gt; to stay lazy, and &lt;code&gt;expandLeadingTabs&lt;/code&gt; to expand tabs to spaces in leading whitespace only (CommonMark requires column-based indent semantics).&lt;/p&gt;
+&lt;h2 id=&quot;3-block-parsing&quot;&gt;3. Block parsing&lt;/h2&gt;
+&lt;p&gt;Block parsers form a priority-ordered registry. For each line, the parser walks the registry calling &lt;code&gt;canStart()&lt;/code&gt; then &lt;code&gt;parse()&lt;/code&gt; on each entry. Whichever parser claims the line consumes one or more lines and returns a &lt;code&gt;Block&lt;/code&gt;. Returning zero lines means “not me, try the next parser.” Returning a &lt;code&gt;null&lt;/code&gt; block means “I consumed lines but produced no output” — the only parser that does this is &lt;code&gt;LinkReferenceDefinitionParser&lt;/code&gt;, which accumulates link reference definitions into a side table for later resolution.&lt;/p&gt;
+&lt;p&gt;Priority order (top wins):&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;LinkReferenceDefinitionParser&lt;/code&gt; — &lt;code&gt;[label]: dest &amp;quot;title&amp;quot;&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ThematicBreakBlockParser&lt;/code&gt; — &lt;code&gt;***&lt;/code&gt;, &lt;code&gt;---&lt;/code&gt;, &lt;code&gt;___&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ListBlockParser&lt;/code&gt; — unordered (&lt;code&gt;-&lt;/code&gt;, &lt;code&gt;+&lt;/code&gt;, &lt;code&gt;*&lt;/code&gt;) and ordered (&lt;code&gt;1.&lt;/code&gt;, &lt;code&gt;1)&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;IndentedCodeBlockParser&lt;/code&gt; — 4+ space indent&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;SetextHeadingBlockParser&lt;/code&gt; — looks ahead for &lt;code&gt;===&lt;/code&gt; or &lt;code&gt;---&lt;/code&gt; underline&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ATXHeadingBlockParser&lt;/code&gt; — &lt;code&gt;#&lt;/code&gt;–&lt;code&gt;######&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;HTMLBlockParser&lt;/code&gt; — types 1–7 per CommonMark §4.6&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;TableBlockParser&lt;/code&gt; — GFM tables (requires &lt;code&gt;tables&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;CollapsibleBlockParser&lt;/code&gt; — &lt;code&gt;::: title&lt;/code&gt; … &lt;code&gt;:::&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;DefinitionListBlockParser&lt;/code&gt; — term + &lt;code&gt;: definition&lt;/code&gt; (requires &lt;code&gt;definitionLists&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FencedCodeBlockParser&lt;/code&gt; — &lt;code&gt;```&lt;/code&gt; or &lt;code&gt;~~~&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;MathBlockParser&lt;/code&gt; — &lt;code&gt;$$&lt;/code&gt; fences (requires &lt;code&gt;math&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;CalloutBlockParser&lt;/code&gt; — &lt;code&gt;&amp;gt; [!TYPE]&lt;/code&gt; admonitions (requires &lt;code&gt;callouts&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;BlockQuoteParser&lt;/code&gt; — &lt;code&gt;&amp;gt; &lt;/code&gt; prefixed blocks with lazy continuation&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ParagraphBlockParser&lt;/code&gt; — fallback, absorbs continuation lines until interrupted&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The fallback at the end is critical: anything not claimed by an earlier parser becomes a &lt;code&gt;Paragraph&lt;/code&gt;. &lt;code&gt;ParagraphBlockParser&lt;/code&gt;‘s notion of when it gets &lt;em&gt;interrupted&lt;/em&gt; by a later block construct (ATX heading, thematic break, HTML block 1–6, fence, blockquote, list-that-can-interrupt, math block) is what makes the spec’s “no blank line needed” rules work.&lt;/p&gt;
+&lt;h2 id=&quot;4-inline-parsing&quot;&gt;4. Inline parsing&lt;/h2&gt;
+&lt;p&gt;After the block tree is built, &lt;code&gt;processInlines(linkRefs, config)&lt;/code&gt; is called on the &lt;code&gt;Document&lt;/code&gt;. It walks every block recursively and calls &lt;code&gt;parseInline&lt;/code&gt; on the &lt;code&gt;List[Inline]&lt;/code&gt; it finds.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;parseInline&lt;/code&gt; is a single-pass algorithm operating on a doubly-linked list. Its main loop checks each &lt;code&gt;C&lt;/code&gt; cursor against a fixed set of trigger characters in spec-defined precedence order:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Char&lt;/th&gt;&lt;th&gt;Triggers&lt;/th&gt;&lt;th&gt;Guarded by&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;`&lt;/code&gt;&lt;/td&gt;&lt;td&gt;code spans (highest precedence)&lt;/td&gt;&lt;td&gt;always on&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;:&lt;/code&gt;&lt;/td&gt;&lt;td&gt;emoji shortcodes&lt;/td&gt;&lt;td&gt;&lt;code&gt;emoji != Disabled&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;$&lt;/code&gt;&lt;/td&gt;&lt;td&gt;inline math&lt;/td&gt;&lt;td&gt;&lt;code&gt;math&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;&amp;lt;&lt;/code&gt;&lt;/td&gt;&lt;td&gt;autolinks and raw HTML tags&lt;/td&gt;&lt;td&gt;always on&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;*&lt;/code&gt;, &lt;code&gt;_&lt;/code&gt;&lt;/td&gt;&lt;td&gt;emphasis / strong (deferred via delimiter stack)&lt;/td&gt;&lt;td&gt;always on&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;~&lt;/code&gt;&lt;/td&gt;&lt;td&gt;strikethrough (delimiter stack)&lt;/td&gt;&lt;td&gt;&lt;code&gt;strikethrough&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;[&lt;/code&gt;&lt;/td&gt;&lt;td&gt;link / image opener&lt;/td&gt;&lt;td&gt;always on&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;link / image closer&lt;/td&gt;&lt;td&gt;always on&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;\n&lt;/code&gt;&lt;/td&gt;&lt;td&gt;hard or soft line break&lt;/td&gt;&lt;td&gt;always on&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;h&lt;/code&gt;, &lt;code&gt;w&lt;/code&gt;&lt;/td&gt;&lt;td&gt;extended autolinks (bare URLs)&lt;/td&gt;&lt;td&gt;&lt;code&gt;extendedAutolinks&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;After the main loop, &lt;code&gt;processEmphasis&lt;/code&gt; walks the delimiter stack and resolves emphasis pairs using the CommonMark “rule of 3” (&lt;code&gt;isValidEmphasisPair&lt;/code&gt;). Then &lt;code&gt;consolidateCharacters&lt;/code&gt; merges adjacent &lt;code&gt;C&lt;/code&gt; cursors into &lt;code&gt;Text&lt;/code&gt; nodes, and &lt;code&gt;decodeHtmlEntities&lt;/code&gt; resolves named, decimal, and hex entity references.&lt;/p&gt;
+&lt;h2 id=&quot;5-link-references&quot;&gt;5. Link references&lt;/h2&gt;
+&lt;p&gt;Link reference definitions are accumulated during block parsing into an &lt;code&gt;immutable.Map[String, LinkReference]&lt;/code&gt;. They’re passed into &lt;code&gt;processInlines&lt;/code&gt;, where &lt;code&gt;lookForLinkOrImage&lt;/code&gt; consults them when resolving full reference (&lt;code&gt;[text][label]&lt;/code&gt;), collapsed reference (&lt;code&gt;[text][]&lt;/code&gt;), and shortcut reference (&lt;code&gt;[text]&lt;/code&gt;) link forms — in addition to inline &lt;code&gt;[text](url)&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Labels are normalized via Unicode case-folding (&lt;code&gt;toLowerCase&lt;/code&gt; plus &lt;code&gt;ß → ss&lt;/code&gt;) and whitespace collapsing before comparison.&lt;/p&gt;
+&lt;h2 id=&quot;what-you-actually-call&quot;&gt;What you actually call&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-comment&quot;&gt;// Most common:&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; html&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;     &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; config&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; doc&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;   &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; parseDocumentContent&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; config&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-comment&quot;&gt;// Need the link reference table back? (e.g. for cross-document analysis)&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc2&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; refs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; parseDocumentContentWithRefs&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; config&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;See &lt;a href=&quot;/markdown/reference/api/&quot;&gt;Reference → API&lt;/a&gt; for every entry point with full signatures.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Options</title>
+    <link href="https://edadma.github.io/markdown/reference/options/"/>
+    <id>https://edadma.github.io/markdown/reference/options/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>The full MarkdownConfig surface — every flag, callback, and prefab — in one table.</summary>
+    <content type="html">&lt;p&gt;&lt;code&gt;MarkdownConfig&lt;/code&gt; is the single source of truth for parser and renderer behaviour. Construct one explicitly, or copy &lt;code&gt;MarkdownConfig.default&lt;/code&gt; (pure CommonMark) or &lt;code&gt;MarkdownConfig.all&lt;/code&gt; (every extension on).&lt;/p&gt;
+&lt;h2 id=&quot;prefabs&quot;&gt;Prefabs&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Value&lt;/th&gt;&lt;th&gt;Meaning&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;MarkdownConfig.default&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Pure CommonMark. No extensions. Predictable spec-only output.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;MarkdownConfig.all&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Every boolean extension on; &lt;code&gt;emoji = Unicode&lt;/code&gt;; &lt;code&gt;autoHeadingIds = true&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;full-reference&quot;&gt;Full reference&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Option&lt;/th&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Default&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;tables&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;GFM-style pipe tables.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;definitionLists&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Term\n: defn&lt;/code&gt; style definition lists.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;math&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;$$…$$&lt;/code&gt; block math, &lt;code&gt;$…$&lt;/code&gt; inline math.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;callouts&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;gt; [!TYPE]&lt;/code&gt; admonition blocks.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;strikethrough&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;GFM &lt;code&gt;~~strikethrough~~&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;taskListItems&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;GFM &lt;code&gt;- [ ]&lt;/code&gt; / &lt;code&gt;- [x]&lt;/code&gt; checkbox list items.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;extendedAutolinks&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Bare URL / &lt;code&gt;www.&lt;/code&gt; autolinks (no &lt;code&gt;&amp;lt;&amp;gt;&lt;/code&gt; brackets needed).&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;footnotes&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;[^label]&lt;/code&gt; references with &lt;code&gt;[^label]: …&lt;/code&gt; definitions.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;smartPunctuation&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Curly quotes, en/em-dashes, ellipsis.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;attributes&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;{#id .class key=value}&lt;/code&gt; on headings, fenced blocks, images.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;autoHeadingIds&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Auto-populate heading &lt;code&gt;id&lt;/code&gt;s. Explicit ids (via &lt;code&gt;attributes&lt;/code&gt;) win.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;slugify&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String =&amp;gt; String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;defaultSlugify&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Slug function used by &lt;code&gt;autoHeadingIds&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;emoji&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;EmojiConfig&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Disabled&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Disabled&lt;/code&gt; / &lt;code&gt;Unicode&lt;/code&gt; / &lt;code&gt;Image(baseURL)&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;docTags&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;DocTagConfig&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;disabled&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;@name [target] — body&lt;/code&gt; annotation parsing.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;codeHighlighter&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Option[(String, String) =&amp;gt; Option[String]]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;None&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Pluggable code-block syntax highlighter.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;indentedCodeLanguage&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Option[String]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;None&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Default language tag applied to indented code blocks.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;indentedCodeBreaksList&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Boolean&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;&lt;td&gt;If true, an indented code block after a blank line ends the enclosing list item instead of being absorbed.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;emojiconfig&quot;&gt;&lt;code&gt;EmojiConfig&lt;/code&gt;&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;EmojiConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Disabled&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Unicode&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;baseURL&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;Unicode&lt;/code&gt; substitutes the Unicode glyph (e.g. &lt;code&gt;:smile:&lt;/code&gt; → &lt;code&gt;😄&lt;/code&gt;). &lt;code&gt;Image(&amp;quot;/emoji&amp;quot;)&lt;/code&gt; substitutes &lt;code&gt;&amp;lt;img src=&amp;quot;/emoji/smile.svg&amp;quot; alt=&amp;quot;:smile:&amp;quot; /&amp;gt;&lt;/code&gt; — the &lt;code&gt;baseURL&lt;/code&gt; is prefixed verbatim.&lt;/p&gt;
+&lt;h2 id=&quot;slugify&quot;&gt;&lt;code&gt;slugify&lt;/code&gt;&lt;/h2&gt;
+&lt;p&gt;Default behaviour (&lt;code&gt;MarkdownConfig.defaultSlugify&lt;/code&gt;):&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;lowercase the input&lt;/li&gt;
+&lt;li&gt;collapse runs of non-alphanumeric characters into a single &lt;code&gt;-&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;strip leading and trailing &lt;code&gt;-&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;return &lt;code&gt;&amp;quot;&amp;quot;&lt;/code&gt; if the input has no letter/digit content&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Same algorithm Hugo, mkdocs, and GitHub use. Override when your URL scheme differs:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  autoHeadingIds &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  slugify &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; s &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; s&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;toLowerCase&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;replaceAll&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[^a-z0-9]+&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;_&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;).&lt;/span&gt;stripPrefix&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;_&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;).&lt;/span&gt;stripSuffix&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;_&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;codehighlighter&quot;&gt;&lt;code&gt;codeHighlighter&lt;/code&gt;&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;codeHighlighter&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The function receives the raw code body and the language tag (from the info string, or from &lt;code&gt;indentedCodeLanguage&lt;/code&gt; for indented blocks). Return &lt;code&gt;Some(html)&lt;/code&gt; to inject custom HTML inside &lt;code&gt;&amp;lt;code&amp;gt;…&amp;lt;/code&amp;gt;&lt;/code&gt;; return &lt;code&gt;None&lt;/code&gt; to fall back to the default &lt;code&gt;&amp;lt;pre&amp;gt;&amp;lt;code&amp;gt;{escaped}&amp;lt;/code&amp;gt;&amp;lt;/pre&amp;gt;&lt;/code&gt; output.&lt;/p&gt;
+&lt;p&gt;The renderer does &lt;strong&gt;not&lt;/strong&gt; escape your highlighter’s output — it’s assumed to be valid HTML already.&lt;/p&gt;
+&lt;h2 id=&quot;doctagconfig&quot;&gt;&lt;code&gt;DocTagConfig&lt;/code&gt;&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;DocTagConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  enabled&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;           &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  registry&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;          &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;empty&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  strictUnknownTags&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;See &lt;a href=&quot;/markdown/reference/extensions/#doc-tags&quot;&gt;Extensions → Doc-tags&lt;/a&gt; for the integration model and a full example.&lt;/p&gt;
+&lt;h2 id=&quot;worked-configurations&quot;&gt;Worked configurations&lt;/h2&gt;
+&lt;h3 id=&quot;hugo-flavoured-tables-autolinks-smart-quotes-heading-ids&quot;&gt;“Hugo-flavoured”: tables, autolinks, smart quotes, heading ids&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  tables             &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  extendedAutolinks  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  smartPunctuation   &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  autoHeadingIds     &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;obsidian-flavoured-callouts-footnotes-math-tables&quot;&gt;“Obsidian-flavoured”: callouts, footnotes, math, tables&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  tables    &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  callouts  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  footnotes &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  math      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;gfm-flavoured-tables-strikethrough-task-lists-autolinks&quot;&gt;“GFM-flavoured”: tables, strikethrough, task lists, autolinks&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  tables             &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  strikethrough      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  taskListItems      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  extendedAutolinks  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&quot;everything&quot;&gt;Everything&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;all&lt;/code&gt;&lt;/pre&gt;</content>
+  </entry>
+  <entry>
+    <title>Juicer integration</title>
+    <link href="https://edadma.github.io/markdown/recipes/juicer-integration/"/>
+    <id>https://edadma.github.io/markdown/recipes/juicer-integration/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Juicer — the static site generator powering this very site — uses this library to render content. Here&apos;s how the pieces fit.</summary>
+    <content type="html">&lt;p&gt;&lt;a href=&quot;https://juicer.run/&quot;&gt;Juicer&lt;/a&gt; is a Hugo-style static site generator written in Scala 3. It uses this library as its sole markdown engine — meaning every &lt;code&gt;.md&lt;/code&gt; file under your site’s &lt;code&gt;content/&lt;/code&gt; tree is parsed and rendered by exactly the code documented here.&lt;/p&gt;
+&lt;h2 id=&quot;where-it-sits&quot;&gt;Where it sits&lt;/h2&gt;
+&lt;p&gt;Juicer’s pipeline is roughly:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;content/*.md → frontmatter parse → parseDocumentContent (this library) → template render → HTML files
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;Document&lt;/code&gt; AST is exposed to templates as &lt;code&gt;.page.content&lt;/code&gt; (rendered HTML) and via individual heading / TOC accessors. Juicer also walks the AST to:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;build per-page tables of contents from &lt;code&gt;Document.headings&lt;/code&gt;;&lt;/li&gt;
+&lt;li&gt;generate stable URL slugs via &lt;code&gt;autoHeadingIds&lt;/code&gt; + the configured &lt;code&gt;slugify&lt;/code&gt;;&lt;/li&gt;
+&lt;li&gt;produce the search index (&lt;code&gt;search.json&lt;/code&gt;) from &lt;code&gt;plainText(...)&lt;/code&gt; of each page;&lt;/li&gt;
+&lt;li&gt;detect link reference targets across the content tree.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;configuration&quot;&gt;Configuration&lt;/h2&gt;
+&lt;p&gt;Juicer’s site-level config exposes the relevant &lt;code&gt;MarkdownConfig&lt;/code&gt; flags directly. From a &lt;code&gt;site.toml&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-toml&quot;&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;
+tables             &lt;span class=&quot;hl-punctuation&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;
+strikethrough      &lt;span class=&quot;hl-punctuation&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;
+taskListItems      &lt;span class=&quot;hl-punctuation&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;
+extendedAutolinks  &lt;span class=&quot;hl-punctuation&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;
+smartPunctuation   &lt;span class=&quot;hl-punctuation&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;
+autoHeadingIds     &lt;span class=&quot;hl-punctuation&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Those keys map 1-to-1 onto fields of &lt;code&gt;MarkdownConfig&lt;/code&gt;. Flags not listed default to &lt;code&gt;false&lt;/code&gt; (pure CommonMark). See &lt;a href=&quot;/markdown/reference/options/&quot;&gt;Options&lt;/a&gt; for the full set.&lt;/p&gt;
+&lt;h2 id=&quot;code-highlighting&quot;&gt;Code highlighting&lt;/h2&gt;
+&lt;p&gt;Juicer wires &lt;code&gt;codeHighlighter&lt;/code&gt; to its bundled &lt;a href=&quot;https://github.com/edadma/highlighter&quot;&gt;highlighter&lt;/a&gt; library. Authoring a fenced block with a known language tag picks up syntax highlighting automatically; with no tag (or an unknown one), you get plain &lt;code&gt;&amp;lt;pre&amp;gt;&amp;lt;code&amp;gt;&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;shortcodes&quot;&gt;Shortcodes&lt;/h2&gt;
+&lt;p&gt;Juicer adds an extra layer &lt;em&gt;above&lt;/em&gt; this library — its &lt;code&gt;[= shortcode =]…[= /shortcode =]&lt;/code&gt; syntax is processed before markdown parsing. The result of expanding a shortcode is markdown text that this library then parses normally. So shortcodes don’t change the spec compliance of the underlying parse.&lt;/p&gt;
+&lt;h2 id=&quot;cross-linking&quot;&gt;Cross-linking&lt;/h2&gt;
+&lt;p&gt;Juicer treats unresolved markdown links as the SSG’s job, not the parser’s. A &lt;code&gt;[Page](page-slug)&lt;/code&gt; in source goes through this library as a normal &lt;code&gt;Link(destination = &amp;quot;page-slug&amp;quot;, ...)&lt;/code&gt;; juicer rewrites the destination at render time to whatever URL the slug resolves to in the content tree. From this library’s point of view, link resolution is purely string-level.&lt;/p&gt;
+&lt;h2 id=&quot;a-minimal-juicer-like-loop&quot;&gt;A minimal juicer-like loop&lt;/h2&gt;
+&lt;p&gt;The skeleton of “render every &lt;code&gt;.md&lt;/code&gt; in &lt;code&gt;content/&lt;/code&gt; to &lt;code&gt;public/&lt;/code&gt;“ is just:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; java&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;nio&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;file&lt;span class=&quot;hl-punctuation&quot;&gt;.{&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Files&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Path&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paths&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; scala&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;jdk&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;CollectionConverters&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  tables &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; autoHeadingIds &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; smartPunctuation &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-type&quot;&gt;Files&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;walk&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Paths&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;get&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;content&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)).&lt;/span&gt;iterator&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;asScala
+  &lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;filter&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;p &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; p&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;toString&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;endsWith&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;.md&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+  &lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach &lt;span class=&quot;hl-punctuation&quot;&gt;{&lt;/span&gt; src &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; md   &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Files&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;readString&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;src&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; html &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; out  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paths&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;get&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;public&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; src&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;getFileName&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;toString&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;replace&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;.md&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;.html&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;hl-type&quot;&gt;Files&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;createDirectories&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;out&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;getParent&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-type&quot;&gt;Files&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;writeString&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;out&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; html&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;hl-punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Real SSGs add frontmatter parsing, templating, asset copying, and a full link-resolution pass — but the &lt;code&gt;parseDocumentContent&lt;/code&gt; / &lt;code&gt;renderToHTML&lt;/code&gt; pair is the unchanged core of the markdown step. The rest is plumbing.&lt;/p&gt;
+&lt;h2 id=&quot;further-reading&quot;&gt;Further reading&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://juicer.run/concepts/&quot;&gt;Juicer — concepts&lt;/a&gt; — content-files, layouts, partials, themes.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://juicer.run/concepts/markdown/&quot;&gt;Juicer — markdown&lt;/a&gt; — juicer’s view of how content is parsed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>Installation</title>
+    <link href="https://edadma.github.io/markdown/getting-started/installation/"/>
+    <id>https://edadma.github.io/markdown/getting-started/installation/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Add the library as an sbt dependency, an npm package, or check out the repo.</summary>
+    <content type="html">&lt;h2 id=&quot;scala-sbt&quot;&gt;Scala (sbt)&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;libraryDependencies &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;io.github.edadma&amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;%%%&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;markdown&amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;0.4.3&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;%%%&lt;/code&gt; form picks the right artifact for whichever Scala platform you’re on — JVM, Scala.js, or Scala Native — so the same line works in any cross-built project.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; html &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;# Hello, CommonMark!&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;// → &amp;quot;&amp;lt;h1&amp;gt;Hello, CommonMark!&amp;lt;/h1&amp;gt;\n&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The package object exposes everything via &lt;code&gt;io.github.edadma.markdown.*&lt;/code&gt;. There’s no other namespace to learn.&lt;/p&gt;
+&lt;h2 id=&quot;javascript-typescript-npm&quot;&gt;JavaScript / TypeScript (npm)&lt;/h2&gt;
+&lt;p&gt;The Scala.js build is also published as an npm package, with TypeScript typings:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;&lt;span class=&quot;hl-string&quot;&gt;npm&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;edadma/markdown&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&quot;language-js&quot;&gt;import &lt;span class=&quot;hl-punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;renderToHTML&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;extractHeadings&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;plainText&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;}&lt;/span&gt; from &amp;quot;@edadma/markdown&amp;quot;
+
+renderToHTML(&amp;quot;# Hello&amp;quot;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;autoHeadingIds&lt;/span&gt;: true &lt;span class=&quot;hl-punctuation&quot;&gt;}&lt;/span&gt;)
+&lt;span class=&quot;hl-comment&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;hl-comment&quot;&gt; → &apos;&amp;lt;h1 id=&amp;quot;hello&amp;quot;&amp;gt;Hello&amp;lt;/h1&amp;gt;&apos;&lt;/span&gt;
+
+extractHeadings(&amp;quot;# Intro\n## Setup&amp;quot;)
+&lt;span class=&quot;hl-comment&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;hl-comment&quot;&gt; → [{ level: 1, text: &amp;quot;Intro&amp;quot;, id: &amp;quot;intro&amp;quot; },&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;hl-comment&quot;&gt;    { level: 2, text: &amp;quot;Setup&amp;quot;, id: &amp;quot;setup&amp;quot; }]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The npm bundle’s exact API surface lives in &lt;a href=&quot;https://github.com/edadma/markdown/blob/main/npm/README.md&quot;&gt;&lt;code&gt;npm/README.md&lt;/code&gt;&lt;/a&gt; inside the repo.&lt;/p&gt;
+&lt;h2 id=&quot;from-source&quot;&gt;From source&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;&lt;span class=&quot;hl-string&quot;&gt;git&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;clone&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;https://github.com/edadma/markdown.git&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;cd&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;markdown&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;sbt&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;test&lt;/span&gt;                                              &lt;span class=&quot;hl-string&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;all&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;tests,&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;all&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;platforms&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;sbt&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;project markdownJVM&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;test&lt;/span&gt;                        &lt;span class=&quot;hl-string&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;JVM&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;only&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;sbt&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;project markdownJS&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;test&lt;/span&gt;                         &lt;span class=&quot;hl-string&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;JS&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;Node&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-string&quot;&gt;sbt&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;project markdownNative&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;test&lt;/span&gt;                     &lt;span class=&quot;hl-string&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;Scala&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;Native&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The aggregate &lt;code&gt;sbt test&lt;/code&gt; runs the full 652-test CommonMark spec on every platform plus the unit tests.&lt;/p&gt;
+&lt;h2 id=&quot;cross-build-matrix&quot;&gt;Cross-build matrix&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Target&lt;/th&gt;&lt;th&gt;Version&lt;/th&gt;&lt;th&gt;Runtime requirement&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;Scala&lt;/td&gt;&lt;td&gt;3.8.3&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;JVM&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Java 17 or newer&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;Scala.js&lt;/td&gt;&lt;td&gt;1.21.0&lt;/td&gt;&lt;td&gt;Node.js 20+&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;Scala Native&lt;/td&gt;&lt;td&gt;0.5.11&lt;/td&gt;&lt;td&gt;Clang&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;CommonMark spec&lt;/td&gt;&lt;td&gt;0.31.2&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;verifying-the-install&quot;&gt;Verifying the install&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+@main &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; smoke&lt;span class=&quot;hl-punctuation&quot;&gt;():&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Unit&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt;
+  println&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;**hello**&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+  &lt;span class=&quot;hl-comment&quot;&gt;// &amp;lt;p&amp;gt;&amp;lt;strong&amp;gt;hello&amp;lt;/strong&amp;gt;&amp;lt;/p&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;If you see the &lt;code&gt;&amp;lt;strong&amp;gt;&lt;/code&gt; tag, you’re done. Move on to the &lt;a href=&quot;/markdown/getting-started/quickstart/&quot;&gt;Quickstart&lt;/a&gt; for a tour of the API surface most callers actually use.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Extensions</title>
+    <link href="https://edadma.github.io/markdown/reference/extensions/"/>
+    <id>https://edadma.github.io/markdown/reference/extensions/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Every opt-in syntax extension — tables, math, callouts, footnotes, emoji, doc-tags, and more.</summary>
+    <content type="html">&lt;p&gt;CommonMark itself is conservative: anything not in the spec is off by default. The library ships every popular extension as a flag on &lt;code&gt;MarkdownConfig&lt;/code&gt;. Set &lt;code&gt;MarkdownConfig.all&lt;/code&gt; to turn them all on at once, or copy the default and enable just what you need.&lt;/p&gt;
+&lt;h2 id=&quot;tables-tables&quot;&gt;Tables (&lt;code&gt;tables&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;GFM-style pipe tables. Header row, separator row, body rows. Per-column alignment via &lt;code&gt;:---&lt;/code&gt;, &lt;code&gt;:---:&lt;/code&gt;, &lt;code&gt;---:&lt;/code&gt;.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;| Name     | Status |
+|----------|:------:|
+| ready    |   ✓    |
+| pending  |   …    |&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;strikethrough-strikethrough&quot;&gt;Strikethrough (&lt;code&gt;strikethrough&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;GFM &lt;code&gt;~~text~~&lt;/code&gt; renders to &lt;code&gt;&amp;lt;del&amp;gt;text&amp;lt;/del&amp;gt;&lt;/code&gt;. Two-tilde delimiters; a single &lt;code&gt;~&lt;/code&gt; does nothing.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;This is ~~deleted~~ text.&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;task-list-items-tasklistitems&quot;&gt;Task list items (&lt;code&gt;taskListItems&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;GFM &lt;code&gt;- [ ]&lt;/code&gt; and &lt;code&gt;- [x]&lt;/code&gt; (or &lt;code&gt;- [X]&lt;/code&gt;) at the start of a list item render with a disabled checkbox. Works in both ordered and unordered lists.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt; write docs
+- [ ] ship docs&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;extended-autolinks-extendedautolinks&quot;&gt;Extended autolinks (&lt;code&gt;extendedAutolinks&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;Bare URLs and &lt;code&gt;www.&lt;/code&gt;-prefixed hostnames become links without &lt;code&gt;&amp;lt;&amp;gt;&lt;/code&gt; brackets:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;visit https://example.com or www.example.com&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;footnotes-footnotes&quot;&gt;Footnotes (&lt;code&gt;footnotes&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;[^label]&lt;/code&gt; references with &lt;code&gt;[^label]: …&lt;/code&gt; definitions. References are renumbered in document order; definitions are collected and emitted as a &lt;code&gt;&amp;lt;section class=&amp;quot;footnotes&amp;quot;&amp;gt;&lt;/code&gt; at the end of the document, with backrefs.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;Here is a claim.[^src]
+
+[^src]: Source: *The Big Book of Claims*, p. 42.&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;math-math&quot;&gt;Math (&lt;code&gt;math&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;Block math with &lt;code&gt;$$…$$&lt;/code&gt; fences and inline math with &lt;code&gt;$…$&lt;/code&gt;. Renders to &lt;code&gt;&amp;lt;div class=&amp;quot;math display&amp;quot;&amp;gt;\[…\]&amp;lt;/div&amp;gt;&lt;/code&gt; and &lt;code&gt;&amp;lt;span class=&amp;quot;math inline&amp;quot;&amp;gt;\(…\)&amp;lt;/span&amp;gt;&lt;/code&gt; — pair with KaTeX or MathJax client-side.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;The Pythagorean theorem: $a^2 + b^2 = c^2$.
+
+$$
+\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}
+$$&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;callouts-callouts&quot;&gt;Callouts (&lt;code&gt;callouts&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;Obsidian / GFM admonition syntax: a blockquote whose first line is &lt;code&gt;[!TYPE]&lt;/code&gt; or &lt;code&gt;[!TYPE] Title&lt;/code&gt;. Common types: &lt;code&gt;note&lt;/code&gt;, &lt;code&gt;tip&lt;/code&gt;, &lt;code&gt;info&lt;/code&gt;, &lt;code&gt;warning&lt;/code&gt;, &lt;code&gt;danger&lt;/code&gt;.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;&amp;gt; [!warning] Heads up
+&amp;gt; This kills the build.&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Renders as &lt;code&gt;&amp;lt;div class=&amp;quot;callout callout-warning&amp;quot;&amp;gt;…&amp;lt;/div&amp;gt;&lt;/code&gt; with a &lt;code&gt;&amp;lt;div class=&amp;quot;callout-title&amp;quot;&amp;gt;&lt;/code&gt; for the title and &lt;code&gt;&amp;lt;div class=&amp;quot;callout-content&amp;quot;&amp;gt;&lt;/code&gt; for the body.&lt;/p&gt;
+&lt;h2 id=&quot;smart-punctuation-smartpunctuation&quot;&gt;Smart punctuation (&lt;code&gt;smartPunctuation&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;&amp;quot;...&amp;quot;&lt;/code&gt; becomes &lt;code&gt;“…”&lt;/code&gt;, &lt;code&gt;&apos;...&apos;&lt;/code&gt; becomes &lt;code&gt;‘…’&lt;/code&gt;, &lt;code&gt;--&lt;/code&gt; becomes &lt;code&gt;–&lt;/code&gt; (en-dash), &lt;code&gt;---&lt;/code&gt; becomes &lt;code&gt;—&lt;/code&gt; (em-dash), &lt;code&gt;...&lt;/code&gt; becomes &lt;code&gt;…&lt;/code&gt; (ellipsis). Off by default to keep CommonMark output character-for-character predictable.&lt;/p&gt;
+&lt;h2 id=&quot;attributes-attributes&quot;&gt;Attributes (&lt;code&gt;attributes&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;{#id .class key=value}&lt;/code&gt; after a heading, fenced code block, or image populates the node’s &lt;code&gt;Attributes&lt;/code&gt; value. Multiple classes and arbitrary key-value pairs are supported.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;## Hello {#hello-id .lead key=&amp;quot;some value&amp;quot;}
+
+![alt](/img.png){.figure width=400}
+
+```scala {#example1 .runnable}
+val x = 42&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;
+## Auto heading IDs (`autoHeadingIds`)
+
+Every heading gets an `id` attribute generated from its plain-text content via `slugify`. Default algorithm: lowercase, runs of non-alphanumerics → `-`, strip leading/trailing `-`. Same algorithm Hugo, mkdocs, and GitHub use.
+
+```scala
+val cfg = MarkdownConfig.default.copy(autoHeadingIds = true)
+renderToHTML(&amp;quot;## Hello, World!&amp;quot;, cfg)
+// → &amp;lt;h2 id=&amp;quot;hello-world&amp;quot;&amp;gt;Hello, World!&amp;lt;/h2&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Plug in a custom slug function:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  autoHeadingIds &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  slugify &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; s &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; s&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;toLowerCase&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;replaceAll&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[^a-z0-9]+&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;_&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;).&lt;/span&gt;stripPrefix&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;_&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;).&lt;/span&gt;stripSuffix&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;_&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Explicit ids set via the &lt;code&gt;attributes&lt;/code&gt; extension (&lt;code&gt;## Heading {#explicit}&lt;/code&gt;) always win.&lt;/p&gt;
+&lt;h2 id=&quot;emoji-emoji&quot;&gt;Emoji (&lt;code&gt;emoji&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;Three modes:&lt;/p&gt;
+&lt;p&gt;| &lt;code&gt;EmojiConfig.Disabled&lt;/code&gt;        | &lt;code&gt;:smile:&lt;/code&gt; is left as text.                          |
+| &lt;code&gt;EmojiConfig.Unicode&lt;/code&gt;         | &lt;code&gt;:smile:&lt;/code&gt; becomes &lt;code&gt;😄&lt;/code&gt;.                             |
+| &lt;code&gt;EmojiConfig.Image(baseURL)&lt;/code&gt;  | &lt;code&gt;:smile:&lt;/code&gt; becomes &lt;code&gt;&amp;lt;img src=&amp;quot;{baseURL}/smile.svg&amp;quot; /&amp;gt;&lt;/code&gt;. |&lt;/p&gt;
+&lt;p&gt;The shortcode set is the standard GitHub / Slack list.&lt;/p&gt;
+&lt;h2 id=&quot;definition-lists-definitionlists&quot;&gt;Definition lists (&lt;code&gt;definitionLists&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;A term followed by one or more &lt;code&gt;: definition&lt;/code&gt; lines:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-markdown&quot;&gt;Term
+: A succinct definition.
+: Another sense of the term.&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Renders to &lt;code&gt;&amp;lt;dl&amp;gt;&amp;lt;dt&amp;gt;Term&amp;lt;/dt&amp;gt;&amp;lt;dd&amp;gt;…&amp;lt;/dd&amp;gt;&amp;lt;dd&amp;gt;…&amp;lt;/dd&amp;gt;&amp;lt;/dl&amp;gt;&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;indented-code-language-indentedcodelanguage&quot;&gt;Indented code language (&lt;code&gt;indentedCodeLanguage&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;Indented code blocks (4-space) carry no language tag in CommonMark. Set &lt;code&gt;indentedCodeLanguage = Some(&amp;quot;scala&amp;quot;)&lt;/code&gt; (or any other) to default them to a language for highlighting:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  indentedCodeLanguage &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Some&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;scala&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+  codeHighlighter      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Some&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;myHighlighter&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;indented-code-breaks-list-indentedcodebreakslist&quot;&gt;Indented code breaks list (&lt;code&gt;indentedCodeBreaksList&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;A subtle one. CommonMark says an indented code block following a blank line &lt;em&gt;inside a list item&lt;/em&gt; is absorbed into the list item. Set &lt;code&gt;indentedCodeBreaksList = true&lt;/code&gt; to make the indented code block instead &lt;strong&gt;end&lt;/strong&gt; the enclosing list item. Useful when you’re using indented blocks as section breaks rather than list-internal code.&lt;/p&gt;
+&lt;h2 id=&quot;doc-tags-doctags&quot;&gt;Doc-tags (&lt;code&gt;docTags&lt;/code&gt;)&lt;/h2&gt;
+&lt;p&gt;Block-level &lt;code&gt;@name [target] — body&lt;/code&gt; annotations. Designed for documentation tools built on top of the AST. The processor parses the syntax and renders a sensible default (&lt;code&gt;&amp;lt;dl class=&amp;quot;doc-tag doc-tag-{name}&amp;quot;&amp;gt;&lt;/code&gt;); binding tags to code declarations and resolving cross-references is the downstream tool’s job.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; registry &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  &lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;api&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;     acceptsTarget &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ContentMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;InlineMarkdown&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+  &lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;param&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;   acceptsTarget &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;ContentMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;InlineMarkdown&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+  &lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;example&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; acceptsTarget &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ContentMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;BlockMarkdown&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  docTags &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;DocTagConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;enabled &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; registry &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; registry&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;@param msg — the error message&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;ContentMode&lt;/code&gt; controls how each tag’s body is parsed:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Mode&lt;/th&gt;&lt;th&gt;Body is&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Opaque&lt;/code&gt;&lt;/td&gt;&lt;td&gt;a single &lt;code&gt;Text&lt;/code&gt; node, not parsed&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;InlineMarkdown&lt;/code&gt;&lt;/td&gt;&lt;td&gt;parsed by the inline parser only (becomes one &lt;code&gt;Paragraph&lt;/code&gt;)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;BlockMarkdown&lt;/code&gt;&lt;/td&gt;&lt;td&gt;parsed by the block parser (arbitrary block content)&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;code&gt;strictUnknownTags = true&lt;/code&gt; causes unknown tag names to fall back to ordinary text. With the default (&lt;code&gt;false&lt;/code&gt;), unknown tags are still emitted as &lt;code&gt;DocTagBlock&lt;/code&gt; with &lt;code&gt;acceptsTarget = true&lt;/code&gt; and &lt;code&gt;InlineMarkdown&lt;/code&gt; mode — convenient for forward-compatible doc pipelines.&lt;/p&gt;
+&lt;h2 id=&quot;combined-everything-on&quot;&gt;Combined: everything on&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;all
+&lt;span class=&quot;hl-comment&quot;&gt;//                              ^ tables, math, callouts, strikethrough, taskListItems,&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;//                                extendedAutolinks, footnotes, smartPunctuation,&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;//                                attributes, definitionLists, autoHeadingIds, emoji=Unicode&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that &lt;code&gt;MarkdownConfig.all&lt;/code&gt; does &lt;strong&gt;not&lt;/strong&gt; turn on &lt;code&gt;docTags&lt;/code&gt; or set &lt;code&gt;codeHighlighter&lt;/code&gt; / &lt;code&gt;indentedCodeLanguage&lt;/code&gt; / &lt;code&gt;indentedCodeBreaksList&lt;/code&gt; — those need explicit configuration values, not just a boolean.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Embedding the parser</title>
+    <link href="https://edadma.github.io/markdown/recipes/embedding/"/>
+    <id>https://edadma.github.io/markdown/recipes/embedding/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Drop the library into your Scala app — JVM, JS, or Native — and render markdown content with the right config for your audience.</summary>
+    <content type="html">&lt;p&gt;The library has zero runtime third-party dependencies, and the same line in &lt;code&gt;build.sbt&lt;/code&gt; works on every platform. Embedding it in an existing app is a one-import change.&lt;/p&gt;
+&lt;h2 id=&quot;1-add-the-dependency&quot;&gt;1. Add the dependency&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;libraryDependencies &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;io.github.edadma&amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;%%%&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;markdown&amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;0.4.3&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;%%%&lt;/code&gt; form picks the right artifact for whichever Scala platform you’re on.&lt;/p&gt;
+&lt;h2 id=&quot;2-pick-a-config-that-fits-your-audience&quot;&gt;2. Pick a config that fits your audience&lt;/h2&gt;
+&lt;p&gt;Three common shapes:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-comment&quot;&gt;// User comments, support tickets — predictable, no surprises.&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; commentCfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default
+
+&lt;span class=&quot;hl-comment&quot;&gt;// Knowledge base / wiki — table-heavy, link-heavy, anchor-heavy.&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; wikiCfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;copy&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  tables            &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  extendedAutolinks &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  autoHeadingIds    &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  smartPunctuation  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-comment&quot;&gt;// Author-facing docs / notes — full Obsidian / Hugo flavour.&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; docsCfg &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;all&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;There’s no global config. Pass the one you want at every call site, or store one per-context.&lt;/p&gt;
+&lt;h2 id=&quot;3-render&quot;&gt;3. Render&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;CommentService&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderComment&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;body&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt;
+    renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;body&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; commentCfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;That’s the full integration for the simple case.&lt;/p&gt;
+&lt;h2 id=&quot;4-cache-the-parsed-ast-when-it-pays&quot;&gt;4. Cache the parsed AST when it pays&lt;/h2&gt;
+&lt;p&gt;For server-side rendering of frequently re-rendered content (a comment loaded a thousand times, a doc page hit on every request), cache the &lt;code&gt;Document&lt;/code&gt; rather than the rendered HTML — it’s smaller and the rendering step is cheap.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;CachedRenderer&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;cfg&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; cache &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; scala&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;collection&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;mutable&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;HashMap&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;empty&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;
+
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; render&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;key&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; body&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; doc &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; cache&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;getOrElseUpdate&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;key&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; parseDocumentContent&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;body&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+    renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Invalidation strategy is your problem; the library is referentially transparent over &lt;code&gt;(input, config)&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;5-preserve-link-references-across-documents&quot;&gt;5. Preserve link references across documents&lt;/h2&gt;
+&lt;p&gt;Cross-document analysis (a wiki where &lt;code&gt;[Page]&lt;/code&gt; resolves against another file’s link reference table) needs the references separately:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; refs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; parseDocumentContentWithRefs&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;body&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; cfg&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;refs: Map[String, LinkReference]&lt;/code&gt; carries every &lt;code&gt;[label]: dest &amp;quot;title&amp;quot;&lt;/code&gt; that appeared in the source. Hold them in your store; merge across files at render time as you see fit.&lt;/p&gt;
+&lt;h2 id=&quot;6-sanitization&quot;&gt;6. Sanitization&lt;/h2&gt;
+&lt;p&gt;The library does &lt;strong&gt;not&lt;/strong&gt; sanitize. &lt;code&gt;RawHTML&lt;/code&gt; and &lt;code&gt;HTMLBlock&lt;/code&gt; pass through verbatim — that’s the CommonMark contract. If you’re rendering untrusted input, run the output through a sanitizer (jsoup’s &lt;code&gt;Cleaner&lt;/code&gt;, OWASP HTML Sanitizer, DOMPurify on the JS side) &lt;strong&gt;after&lt;/strong&gt; rendering.&lt;/p&gt;
+&lt;p&gt;You could also walk the AST and remove raw-HTML nodes before rendering — see &lt;a href=&quot;/markdown/recipes/custom-renderer/&quot;&gt;Custom renderer&lt;/a&gt; for the walker pattern.&lt;/p&gt;
+&lt;h2 id=&quot;7-cross-platform-notes&quot;&gt;7. Cross-platform notes&lt;/h2&gt;
+&lt;p&gt;The same code runs on JVM, Scala.js (Node 20+), and Scala Native. The only platform-specific concern is filesystem I/O (&lt;code&gt;cross_platform.readFile&lt;/code&gt; / &lt;code&gt;writeFile&lt;/code&gt;), which is exposed by a sister library if you need it.&lt;/p&gt;
+&lt;p&gt;For the JS side specifically, the published &lt;code&gt;@edadma/markdown&lt;/code&gt; npm bundle gives you the same API as direct Scala-from-Scala.js consumption — pick whichever surface fits your stack.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Writing a custom renderer</title>
+    <link href="https://edadma.github.io/markdown/recipes/custom-renderer/"/>
+    <id>https://edadma.github.io/markdown/recipes/custom-renderer/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Walk the AST yourself and emit your own format — plain text, JSON, terminal ANSI, anything.</summary>
+    <content type="html">&lt;p&gt;The built-in renderers are not magic. &lt;code&gt;renderToHTML&lt;/code&gt; and &lt;code&gt;renderToXML&lt;/code&gt; are pattern matches over &lt;code&gt;Block&lt;/code&gt; and &lt;code&gt;Inline&lt;/code&gt;. To target a different format, you write the same shape of pattern match for your output.&lt;/p&gt;
+&lt;h2 id=&quot;the-walker-pattern&quot;&gt;The walker pattern&lt;/h2&gt;
+&lt;p&gt;Every &lt;code&gt;Block&lt;/code&gt; either holds child blocks (&lt;code&gt;BlockQuote&lt;/code&gt;, &lt;code&gt;ListBlock&lt;/code&gt;, …) or a &lt;code&gt;List[Inline]&lt;/code&gt; (&lt;code&gt;Paragraph&lt;/code&gt;, &lt;code&gt;Heading&lt;/code&gt;, …). Every &lt;code&gt;Inline&lt;/code&gt; either holds child inlines (&lt;code&gt;Emphasis&lt;/code&gt;, &lt;code&gt;Strong&lt;/code&gt;, &lt;code&gt;Link&lt;/code&gt;, …) or carries a leaf value (&lt;code&gt;Text&lt;/code&gt;, &lt;code&gt;CodeSpan&lt;/code&gt;, …). You walk recursively.&lt;/p&gt;
+&lt;h2 id=&quot;example-a-plain-text-dumper&quot;&gt;Example: a plain-text dumper&lt;/h2&gt;
+&lt;p&gt;A renderer that emits exactly what &lt;code&gt;plainText&lt;/code&gt; gives you for inlines, but with sensible block-level whitespace:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;import&lt;/span&gt; io&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;github&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;edadma&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;markdown&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToText&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;node&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Node&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;StringBuilder&lt;/span&gt;
+
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; block&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Unit&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; b &lt;span class=&quot;hl-keyword&quot;&gt;match&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paragraph&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;              &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; inlines&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;);&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;level&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; inlines&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt;
+      out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;#&amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt; level&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos; &apos;&lt;/span&gt;
+      inlines&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;);&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Code&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;content&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;          &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; content&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;BlockQuote&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;children&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;            &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; children&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;{&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&amp;gt; &amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; block&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;})&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ThematicBreak&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;()&lt;/span&gt;                 &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;----&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ListBlock&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;data&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; items&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;          &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt;
+      items&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;zipWithIndex&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach &lt;span class=&quot;hl-punctuation&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;item&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; i&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt;
+        out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;if&lt;/span&gt; data&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;isOrdered &lt;span class=&quot;hl-keyword&quot;&gt;then&lt;/span&gt; s&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;${i + 1}. &amp;quot;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;- &amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+        item&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;content&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;block&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+      &lt;span class=&quot;hl-punctuation&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;HTMLBlock&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;c&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;                    &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; c&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; _                               &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;hl-comment&quot;&gt;// table / callout / footnote / etc.&lt;/span&gt;
+
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;i&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Unit&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; i &lt;span class=&quot;hl-keyword&quot;&gt;match&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;c&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;                  &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; c
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;SoftLineBreak&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;()&lt;/span&gt;          &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos; &apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;HardLineBreak&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;()&lt;/span&gt;          &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;CodeSpan&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;c&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;              &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;`&apos;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; c&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&apos;`&apos;&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Emphasis&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;             &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Strong&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;               &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Strikethrough&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;        &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Link&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;           &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;       &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;AutoLink&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; text&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;        &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; text
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; _                        &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;()&lt;/span&gt;
+
+  node &lt;span class=&quot;hl-keyword&quot;&gt;match&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;children&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; children&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;block&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; b&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;           &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; block&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; i&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;          &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;i&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+  out&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;toString&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Use it:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; md &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;# Title&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;A paragraph with **bold**.&lt;/span&gt;&lt;span class=&quot;hl-variable&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; txt &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; renderToText&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;parseDocumentContent&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;hl-comment&quot;&gt;// → &amp;quot;# Title\n\nA paragraph with bold.\n\n&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;example-terminal-ansi&quot;&gt;Example: terminal ANSI&lt;/h2&gt;
+&lt;p&gt;The same pattern with ANSI escape sequences instead of HTML tags. Just substitute the inline cases:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Strong&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;        &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[1m&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;);&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[22m&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Emphasis&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[3m&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;);&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[23m&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;CodeSpan&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;c&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;       &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[7m&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; c&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[27m&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Link&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;    &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[4m&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;;&lt;/span&gt; xs&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;foreach&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;);&lt;/span&gt; out &lt;span class=&quot;hl-keyword&quot;&gt;++=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;[24m&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Same for headings (use bright color + bold), code blocks (block-level reverse-video), thematic breaks (a row of &lt;code&gt;─&lt;/code&gt;).&lt;/p&gt;
+&lt;h2 id=&quot;filtering-before-rendering&quot;&gt;Filtering before rendering&lt;/h2&gt;
+&lt;p&gt;Walking the AST also lets you &lt;em&gt;transform&lt;/em&gt; it before rendering. Strip raw HTML for safety, demote heading levels, rewrite link destinations:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; stripRawHtml&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; b&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;block&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; block &lt;span class=&quot;hl-keyword&quot;&gt;match&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;HTMLBlock&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;               &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paragraph&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Nil&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;            &lt;span class=&quot;hl-comment&quot;&gt;// drop it&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paragraph&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;         &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paragraph&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;filterNot&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;isInstanceOf&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;RawHTML&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]))&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;l&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; inlines&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; a&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;     &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;l&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; inlines&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;filterNot&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;_&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;isInstanceOf&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;RawHTML&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]),&lt;/span&gt; a&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;BlockQuote&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;children&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;       &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;BlockQuote&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;children&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;map&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ListBlock&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;data&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; items&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;     &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ListBlock&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;data&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; items&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;map&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;it &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ListItem&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;it&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;content&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;map&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;))))&lt;/span&gt;
+    &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; other                      &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; other
+  &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;children&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;map&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;))&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; safe &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;stripRawHtml&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;parseDocumentContent&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;input&lt;span class=&quot;hl-punctuation&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This is &lt;em&gt;not&lt;/em&gt; a substitute for a real HTML sanitizer — emphasis text can still contain dangerous URLs in &lt;code&gt;Link&lt;/code&gt; destinations, etc. But it’s the right shape when your goal is “this AST is what I want, render it the normal way.”&lt;/p&gt;
+&lt;h2 id=&quot;reusing-the-built-in-inline-renderer&quot;&gt;Reusing the built-in inline renderer&lt;/h2&gt;
+&lt;p&gt;If you want to keep the built-in inline rendering and only change block-level output, call &lt;code&gt;renderInlines&lt;/code&gt; directly:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; myCustomBlock&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;b&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; b &lt;span class=&quot;hl-keyword&quot;&gt;match&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;level&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; inlines&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; _&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; s&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&amp;lt;my-h$level&amp;gt;${renderInlines(inlines)}&amp;lt;/my-h$level&amp;gt;&amp;quot;&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Paragraph&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;         &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; s&lt;span class=&quot;hl-string&quot;&gt;&amp;quot;&amp;lt;my-p&amp;gt;${renderInlines(inlines)}&amp;lt;/my-p&amp;gt;&amp;quot;&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; other                      &lt;span class=&quot;hl-keyword&quot;&gt;=&amp;gt;&lt;/span&gt; renderBlockToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;other&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;   &lt;span class=&quot;hl-comment&quot;&gt;// fall back&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;That gives you “HTML, but the wrappers I want” for free.&lt;/p&gt;
+&lt;h2 id=&quot;reaching-into-processinlines&quot;&gt;Reaching into &lt;code&gt;processInlines&lt;/code&gt;&lt;/h2&gt;
+&lt;p&gt;If you build &lt;code&gt;Block&lt;/code&gt; values &lt;em&gt;programmatically&lt;/em&gt; — e.g. you constructed a &lt;code&gt;Heading(2, List(C(...)), None)&lt;/code&gt; from a non-markdown source — and want to re-resolve the inline content, call &lt;code&gt;node.processInlines(linkRefs, config)&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; raw  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-number&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-comment&quot;&gt;/* C cursors */&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; done &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; raw&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;processInlines&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Map&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;empty&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This is rarely needed in practice. &lt;code&gt;parseDocumentContent&lt;/code&gt; always returns a fully-resolved document.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>AST</title>
+    <link href="https://edadma.github.io/markdown/concepts/ast/"/>
+    <id>https://edadma.github.io/markdown/concepts/ast/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Document, Block, and Inline — the three families of nodes that come out of parseDocumentContent.</summary>
+    <content type="html">&lt;p&gt;The AST is a small set of &lt;code&gt;case class&lt;/code&gt;es organized into three families. &lt;code&gt;Document&lt;/code&gt; is the root; it holds a list of &lt;code&gt;Block&lt;/code&gt;s; each block holds either child blocks or a list of &lt;code&gt;Inline&lt;/code&gt;s.&lt;/p&gt;
+&lt;h2 id=&quot;the-hierarchy&quot;&gt;The hierarchy&lt;/h2&gt;
+&lt;pre class=&quot;juicerdocs-filetree&quot;&gt;
+Node (trait)
+├── Document
+│   └── children: List[Block]
+│
+├── Block (trait) — anything that can appear at document or list-item level
+│   ├── Paragraph(inlines)
+│   ├── Heading(level, inlines, attrs?)
+│   ├── Code(content, infoString?, indented, attrs?)
+│   ├── BlockQuote(children)
+│   ├── ThematicBreak
+│   ├── HTMLBlock(content)
+│   ├── ListBlock(data: ListData, items: List[ListItem])
+│   │   └── ListItem(content: List[Block])
+│   ├── Table(headerRow, rows, alignments)
+│   │   ├── TableRow(cells)
+│   │   └── TableCell(content)
+│   ├── DefinitionListBlock(items: List[(term, defs)])
+│   ├── MathBlock(content)
+│   ├── CalloutBlock(calloutType, title?, children)
+│   ├── CollapsibleBlock(title, isOpen, children)
+│   ├── FootnoteDefinition(label, content)
+│   └── DocTagBlock(name, target?, body, contentMode)
+│
+└── Inline (trait) — anything that can appear inside a paragraph / heading
+    ├── Text(content)
+    ├── SoftLineBreak
+    ├── HardLineBreak
+    ├── CodeSpan(content)
+    ├── Emphasis(inlines)
+    ├── Strong(inlines)
+    ├── Strikethrough(inlines)
+    ├── Link(destination, title?, inlines)
+    ├── Image(destination, title?, inlines, attrs?)
+    ├── AutoLink(destination, text)
+    ├── RawHTML(content)
+    ├── MathExpr(content)
+    ├── Emoji(name)
+    ├── FootnoteReference(label)
+    └── C(char, pos, line, column, isLiteral)
+&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;C&lt;/code&gt; is the cursor type used during parsing — you’ll only see it inside &lt;code&gt;Inline&lt;/code&gt; lists &lt;em&gt;before&lt;/em&gt; the inline parser has run. After &lt;code&gt;parseDocumentContent&lt;/code&gt;, every &lt;code&gt;C&lt;/code&gt; has been folded into &lt;code&gt;Text&lt;/code&gt;. You won’t encounter one in normal use.&lt;/p&gt;
+&lt;h2 id=&quot;document&quot;&gt;&lt;code&gt;Document&lt;/code&gt;&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;children&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Node&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; headings&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Heading&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;headings&lt;/code&gt; is a convenience accessor — &lt;code&gt;children.collect { case h: Heading =&amp;gt; h }&lt;/code&gt;. Useful for table-of-contents builders, page-title extraction, anchor generators.&lt;/p&gt;
+&lt;h2 id=&quot;block-nodes&quot;&gt;Block nodes&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Node&lt;/th&gt;&lt;th&gt;Carries&lt;/th&gt;&lt;th&gt;Renders to&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Paragraph&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;inlines: List[Inline]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;p&amp;gt;…&amp;lt;/p&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Heading&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;level: Int&lt;/code&gt;, &lt;code&gt;inlines&lt;/code&gt;, &lt;code&gt;attrs: Option[Attributes]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;h1&amp;gt;&lt;/code&gt; … &lt;code&gt;&amp;lt;h6&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Code&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;, &lt;code&gt;infoString: Option[String]&lt;/code&gt;, &lt;code&gt;indented: Boolean&lt;/code&gt;, &lt;code&gt;attrs&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;pre&amp;gt;&amp;lt;code class=&amp;quot;language-…&amp;quot;&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;BlockQuote&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;children: List[Block]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;blockquote&amp;gt;…&amp;lt;/blockquote&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;ThematicBreak&lt;/code&gt;&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;hr /&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;HTMLBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;passed through verbatim&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;ListBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;data: ListData&lt;/code&gt;, &lt;code&gt;items: List[ListItem]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;ul&amp;gt;&lt;/code&gt; / &lt;code&gt;&amp;lt;ol&amp;gt;&lt;/code&gt; with &lt;code&gt;&amp;lt;li&amp;gt;&lt;/code&gt; children&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Table&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;headerRow&lt;/code&gt;, &lt;code&gt;rows&lt;/code&gt;, &lt;code&gt;alignments&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;table&amp;gt;&lt;/code&gt; (when &lt;code&gt;tables&lt;/code&gt; is on)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;DefinitionListBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;items: List[(term, defs)]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;dl&amp;gt;&amp;lt;dt&amp;gt;…&amp;lt;dd&amp;gt;…&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;MathBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;math display&amp;quot;&amp;gt;\\[…\\]&amp;lt;/div&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;CalloutBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;calloutType&lt;/code&gt;, &lt;code&gt;title?&lt;/code&gt;, &lt;code&gt;children&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;div class=&amp;quot;callout callout-…&amp;quot;&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;CollapsibleBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;title&lt;/code&gt;, &lt;code&gt;isOpen&lt;/code&gt;, &lt;code&gt;children&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;details&amp;gt;&amp;lt;summary&amp;gt;…&amp;lt;/summary&amp;gt;…&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;FootnoteDefinition&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;label&lt;/code&gt;, &lt;code&gt;content&lt;/code&gt;&lt;/td&gt;&lt;td&gt;renumbered, emitted at end of document&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;DocTagBlock&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;name&lt;/code&gt;, &lt;code&gt;target?&lt;/code&gt;, &lt;code&gt;body&lt;/code&gt;, &lt;code&gt;contentMode&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;dl class=&amp;quot;doc-tag doc-tag-…&amp;quot;&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;code&gt;ListData&lt;/code&gt; carries &lt;code&gt;isOrdered&lt;/code&gt;, &lt;code&gt;bulletChar&lt;/code&gt;, &lt;code&gt;startNumber&lt;/code&gt;, &lt;code&gt;delimiter&lt;/code&gt;, &lt;code&gt;isTight&lt;/code&gt;, and &lt;code&gt;indent&lt;/code&gt;. It’s how the renderer knows whether to emit &lt;code&gt;&amp;lt;ul&amp;gt;&lt;/code&gt; or &lt;code&gt;&amp;lt;ol start=&amp;quot;N&amp;quot;&amp;gt;&lt;/code&gt; and whether items are tight (no &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt; wrappers) or loose.&lt;/p&gt;
+&lt;h2 id=&quot;inline-nodes&quot;&gt;Inline nodes&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Node&lt;/th&gt;&lt;th&gt;Carries&lt;/th&gt;&lt;th&gt;Renders to&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Text&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;escaped text&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;SoftLineBreak&lt;/code&gt;&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;a literal newline&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;HardLineBreak&lt;/code&gt;&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;br /&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;CodeSpan&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;code&amp;gt;…&amp;lt;/code&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Emphasis&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;inlines: List[Inline]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;em&amp;gt;…&amp;lt;/em&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Strong&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;inlines: List[Inline]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;strong&amp;gt;…&amp;lt;/strong&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Strikethrough&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;inlines: List[Inline]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;del&amp;gt;…&amp;lt;/del&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Link&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;destination&lt;/code&gt;, &lt;code&gt;title?&lt;/code&gt;, &lt;code&gt;inlines&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;a href=&amp;quot;…&amp;quot;&amp;gt;…&amp;lt;/a&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Image&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;destination&lt;/code&gt;, &lt;code&gt;title?&lt;/code&gt;, &lt;code&gt;inlines&lt;/code&gt;, &lt;code&gt;attrs?&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;img src=&amp;quot;…&amp;quot; alt=&amp;quot;…&amp;quot; /&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;AutoLink&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;destination&lt;/code&gt;, &lt;code&gt;text&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;a href=&amp;quot;…&amp;quot;&amp;gt;…&amp;lt;/a&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;RawHTML&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;passed through verbatim&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;MathExpr&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;content: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;span class=&amp;quot;math inline&amp;quot;&amp;gt;\\(…\\)&amp;lt;/span&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Emoji&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;name: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Unicode glyph or &lt;code&gt;&amp;lt;img&amp;gt;&lt;/code&gt; (per &lt;code&gt;EmojiConfig&lt;/code&gt;)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;FootnoteReference&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;label: String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;&amp;lt;sup class=&amp;quot;footnote-ref&amp;quot;&amp;gt;&amp;lt;a&amp;gt;N&amp;lt;/a&amp;gt;&amp;lt;/sup&amp;gt;&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;auxiliary-types&quot;&gt;Auxiliary types&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Attributes&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  id&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;       &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  classes&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;        &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Nil&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  kvPairs&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;Map&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Map&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;empty&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;LinkReference&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;destination&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; title&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;])&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ListData&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  isOrdered&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;   &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  bulletChar&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Char&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  startNumber&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  delimiter&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;   &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Char&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  isTight&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;     &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  indent&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;      &lt;span class=&quot;hl-type&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TableAlignment&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Left&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Center&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Right&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;None&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ContentMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Opaque&lt;/span&gt;         &lt;span class=&quot;hl-comment&quot;&gt;// body stored as a single Text node, no inline parsing&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;InlineMarkdown&lt;/span&gt; &lt;span class=&quot;hl-comment&quot;&gt;// body parsed with the inline parser&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;BlockMarkdown&lt;/span&gt;  &lt;span class=&quot;hl-comment&quot;&gt;// body parsed with the block parser&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;code&gt;Attributes&lt;/code&gt; is populated from the &lt;code&gt;attributes&lt;/code&gt; extension (&lt;code&gt;{#id .class key=value}&lt;/code&gt; after a heading, image, or fenced block) and from &lt;code&gt;autoHeadingIds&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;the-processinlines-step&quot;&gt;The &lt;code&gt;processInlines&lt;/code&gt; step&lt;/h2&gt;
+&lt;p&gt;Block parsing produces blocks whose inline content is still a raw &lt;code&gt;List[Inline]&lt;/code&gt; of &lt;code&gt;C&lt;/code&gt; cursors and the &lt;code&gt;Inline&lt;/code&gt;s the block-level parsers were able to identify (e.g. raw HTML in HTML blocks). After all blocks are parsed, the parser walks the document calling &lt;code&gt;node.processInlines(linkRefs, config)&lt;/code&gt; on every node, which:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;runs the inline parser to build &lt;code&gt;Emphasis&lt;/code&gt; / &lt;code&gt;Strong&lt;/code&gt; / &lt;code&gt;Link&lt;/code&gt; / etc. trees;&lt;/li&gt;
+&lt;li&gt;consolidates runs of &lt;code&gt;C&lt;/code&gt; cursors into single &lt;code&gt;Text&lt;/code&gt; nodes;&lt;/li&gt;
+&lt;li&gt;decodes HTML entities and resolves link references against the accumulated &lt;code&gt;linkRefs&lt;/code&gt; table;&lt;/li&gt;
+&lt;li&gt;assigns &lt;code&gt;id&lt;/code&gt; attributes to headings if &lt;code&gt;autoHeadingIds&lt;/code&gt; is on.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;code&gt;parseDocumentContent&lt;/code&gt; wraps this for you. You only need to know it exists if you’re building blocks programmatically and want them re-resolved. See &lt;a href=&quot;/markdown/concepts/parsing/&quot;&gt;Parsing&lt;/a&gt; for the pipeline.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>API</title>
+    <link href="https://edadma.github.io/markdown/reference/api/"/>
+    <id>https://edadma.github.io/markdown/reference/api/</id>
+    <updated>2026-05-10T11:48:57.894158Z</updated>
+    <summary>Every public top-level function in io.github.edadma.markdown — parsing, rendering, helpers.</summary>
+    <content type="html">&lt;p&gt;All public functions live in the package object — &lt;code&gt;import io.github.edadma.markdown.*&lt;/code&gt; and you have everything below.&lt;/p&gt;
+&lt;h2 id=&quot;parsing&quot;&gt;Parsing&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Function&lt;/th&gt;&lt;th&gt;Returns&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;parseDocumentContent(input, config?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Document&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Most common entry point. Throws away the link reference table.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;parseDocumentContentWithRefs(input, config?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;(Document, Map[String, LinkReference])&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Use when you need the link references for cross-document analysis.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;parseDocument(stream, config?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;(Document, Map[String, LinkReference])&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Lower level — takes a &lt;code&gt;LazyList[C]&lt;/code&gt; from &lt;code&gt;InputReader&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; parseDocumentContent&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+    input&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+    config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; parseDocumentContentWithRefs&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+    input&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+    config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Map&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;LinkReference&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;])&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; parseDocument&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+    stream&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;LazyList&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;C&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;],&lt;/span&gt;
+    config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Map&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;LinkReference&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;])&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;html-rendering&quot;&gt;HTML rendering&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Function&lt;/th&gt;&lt;th&gt;Returns&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;renderToHTML(md: String, config?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Parse + render. The one-line case.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;renderToHTML(node: Node, config?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Render an existing AST. Errors if &lt;code&gt;node&lt;/code&gt; is an inline.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;renderBlockToHTML(node: Block, config?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Render a single block — without the trailing newline &lt;code&gt;renderToHTML&lt;/code&gt; adds.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;renderInlines(inlines: List[Inline])&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Render inline content with &lt;strong&gt;no&lt;/strong&gt; surrounding &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;plainText(inlines, escape: Boolean = false)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Strip all formatting. &lt;code&gt;escape=true&lt;/code&gt; runs the result through &lt;code&gt;escapeXml&lt;/code&gt;.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;md&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;   &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;node&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Node&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;                                                      &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;node&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Node&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;   config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;                            &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderBlockToHTML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;node&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; config&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;MarkdownConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;default&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderInlines&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]):&lt;/span&gt;                              &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; plainText   &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;],&lt;/span&gt; escape&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;      &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;xml-rendering&quot;&gt;XML rendering&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Function&lt;/th&gt;&lt;th&gt;Returns&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;renderToXML(doc: Document, system?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Emits CommonMark XML format with &lt;code&gt;&amp;lt;?xml … ?&amp;gt;&lt;/code&gt; declaration and DTD. Headings rendered as plain text.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;escapeXml(s: String)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Encodes &lt;code&gt;&amp;amp;&lt;/code&gt;, &lt;code&gt;&amp;lt;&lt;/code&gt;, &lt;code&gt;&amp;gt;&lt;/code&gt;, &lt;code&gt;&amp;quot;&lt;/code&gt;. Used internally; exposed for renderer authors.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; renderToXML&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;doc&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; system&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-string&quot;&gt;&amp;quot;document&amp;quot;&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; escapeXml  &lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;s&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;                                  &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;url-helpers&quot;&gt;URL helpers&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Function&lt;/th&gt;&lt;th&gt;Returns&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;percentEncode(input: String)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;URI percent-encoding. Treats &lt;code&gt;%&lt;/code&gt; as already-safe to avoid double-encoding pre-encoded URLs.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;ast-walking-helpers&quot;&gt;AST walking helpers&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Function&lt;/th&gt;&lt;th&gt;Returns&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;Document.headings&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;List[Heading]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;All top-level &lt;code&gt;Heading&lt;/code&gt; blocks, in source order.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;extractHeaders(doc: Document)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;List[(Int, String)]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;(level, plain-text-content)&lt;/code&gt; pairs.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;inlinesToPlainText(inlines: List[Inline])&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Lighter alternative to &lt;code&gt;plainText&lt;/code&gt; — drops only &lt;code&gt;Text&lt;/code&gt;, &lt;code&gt;CodeSpan&lt;/code&gt;, &lt;code&gt;Emphasis&lt;/code&gt;, &lt;code&gt;Strong&lt;/code&gt;, and bare &lt;code&gt;C&lt;/code&gt; cursors.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;plainText(inlines, escape?)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Recommended. Handles every inline type and strips images, links, math, etc., to their text content.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; extractHeaders&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;document&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Document&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;       &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[(&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;)]&lt;/span&gt;
+&lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; inlinesToPlainText&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;inlines&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;Inline&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;input-layer&quot;&gt;Input layer&lt;/h2&gt;
+&lt;p&gt;You’ll rarely call these directly — &lt;code&gt;parseDocumentContent&lt;/code&gt; wraps them — but they’re public for renderer / formatter authors:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Function&lt;/th&gt;&lt;th&gt;Returns&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;new InputReader(input).stream&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;LazyList[C]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;The cursor stream. Normalizes line endings and resolves backslash escapes.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;rawText(cursors: List[C])&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;String&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Reconstruct source text, restoring backslashes for literal-flagged characters. Used by code-block parsers.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;expandLeadingTabs(line, startCol = 0)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;List[C]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Expand tabs to spaces in leading whitespace only.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;virtualIndent(line: List[C])&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;Int&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Tab-aware indent count of a line.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;dropIndent(line, n, startCol = 0)&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;List[C]&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Remove &lt;code&gt;n&lt;/code&gt; columns of (tab-aware) leading indent.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&quot;config&quot;&gt;Config&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;MarkdownConfig&lt;/code&gt; is one big &lt;code&gt;case class&lt;/code&gt; with one &lt;code&gt;copy&lt;/code&gt; constructor. Two prefab values:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;&lt;th&gt;Value&lt;/th&gt;&lt;th&gt;Meaning&lt;/th&gt;&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;MarkdownConfig.default&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Pure CommonMark — no extensions enabled.&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;MarkdownConfig.all&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Every extension enabled.&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;See &lt;a href=&quot;/markdown/reference/options/&quot;&gt;Options&lt;/a&gt; for the per-flag table.&lt;/p&gt;
+&lt;h2 id=&quot;doc-tag-extension&quot;&gt;Doc-tag extension&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&quot;language-scala&quot;&gt;&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  name&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;          &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  acceptsTarget&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  contentMode&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;   &lt;span class=&quot;hl-type&quot;&gt;ContentMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; lookup&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;name&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Option&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; isEmpty&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;  &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; nonEmpty&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; all&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;      &lt;span class=&quot;hl-type&quot;&gt;Iterable&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;object&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; empty&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; apply&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;defs&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-keyword&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;):&lt;/span&gt;           &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;def&lt;/span&gt; fromList&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;defs&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Iterable&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;hl-type&quot;&gt;TagDefinition&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;]):&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;ContentMode&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Opaque&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;InlineMarkdown&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;BlockMarkdown&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;hl-keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;DocTagConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;(&lt;/span&gt;
+  enabled&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;           &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  registry&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;          &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;  &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;TagRegistry&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;.&lt;/span&gt;empty&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+  strictUnknownTags&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;Boolean&lt;/span&gt;      &lt;span class=&quot;hl-keyword&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;hl-variable&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;hl-punctuation&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;hl-keyword&quot;&gt;object&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;DocTagConfig&lt;/span&gt;&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;hl-keyword&quot;&gt;val&lt;/span&gt; disabled&lt;span class=&quot;hl-punctuation&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;hl-type&quot;&gt;DocTagConfig&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;See &lt;a href=&quot;/markdown/reference/extensions/#doc-tags&quot;&gt;Extensions → Doc-tags&lt;/a&gt; for the integration model.&lt;/p&gt;</content>
+  </entry>
+</feed>

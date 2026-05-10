@@ -4,7 +4,11 @@
   "fileTypes": ["squiggly"],
   "patterns": [
     { "include": "#tag-comment" },
-    { "include": "#tag" }
+    { "include": "#tag" },
+    { "include": "#html-comment" },
+    { "include": "#html-doctype" },
+    { "include": "#html-tag" },
+    { "include": "#html-entity" }
   ],
   "repository": {
     "tag-comment": {
@@ -14,7 +18,8 @@
       "end": "\\*/\\s*-?\\}\\}"
     },
     "tag": {
-      "comment": "Any {{ ... }} tag — including the trim variants {{- ... -}}. Inside, all the squiggly tokens come from the #tag-body repository. The dedicated punctuation scope on the delimiters lets themes color them subtly so the tag boundaries stay readable.",
+      "comment": "Any {{ ... }} tag — including the trim variants {{- ... -}}. Inside, all the squiggly tokens come from the #tag-body repository. The `meta.embedded.squiggly` scope on the body shadows whatever the surrounding context was (e.g. an HTML attribute string), so an un-styleable bare identifier doesn't accidentally inherit `hl-string` from `<a href=\"{{ relURL '/' }}\">`-style usage.",
+      "name": "meta.embedded.squiggly",
       "begin": "(\\{\\{-?)",
       "beginCaptures": {
         "1": { "name": "punctuation.section.tag.begin.squiggly" }
@@ -31,6 +36,7 @@
       "patterns": [
         { "include": "#line-comment" },
         { "include": "#string" },
+        { "include": "#single-string" },
         { "include": "#raw-string" },
         { "include": "#number" },
         { "include": "#literal" },
@@ -55,6 +61,15 @@
       "name": "string.quoted.double.squiggly",
       "begin": "\"",
       "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.squiggly", "match": "\\\\." }
+      ]
+    },
+    "single-string": {
+      "comment": "Single-quoted string with C-style escapes — squiggly's TagLexer accepts both single and double quotes for ordinary strings (see the `(elem('\\'') | '\"')` opener), and they're the conventional choice for inline regex patterns since the regex itself often contains double-quotes. Without this rule, `'\\b\\w+'` falls through to the bare-token rules and `^`, `[`, `+`, `\\` light up as operators or punctuation inside the regex literal.",
+      "name": "string.quoted.single.squiggly",
+      "begin": "'",
+      "end": "'",
       "patterns": [
         { "name": "constant.character.escape.squiggly", "match": "\\\\." }
       ]
@@ -127,6 +142,104 @@
       "comment": "Brackets, parens, comma, colon — kept low-priority so themes can mute them.",
       "name": "punctuation.squiggly",
       "match": "[\\(\\)\\[\\],:]"
+    },
+
+    "html-comment": {
+      "comment": "HTML comment block — squiggly never appears inside, by spec.",
+      "name": "comment.block.html",
+      "begin": "<!--",
+      "end": "-->"
+    },
+    "html-doctype": {
+      "comment": "DOCTYPE declaration — typically the first non-blank line of an HTML template. Captures the punctuation, the DOCTYPE keyword itself, and the root element name separately so they each pick up a sensible scope (meta.* would map to no class via scopeCategory and the whole line would render bare).",
+      "match": "(<!)([Dd][Oo][Cc][Tt][Yy][Pp][Ee])\\s+([a-zA-Z][a-zA-Z0-9-]*)?([^>]*)(>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "keyword.other.doctype.html" },
+        "3": { "name": "entity.name.tag.html" },
+        "5": { "name": "punctuation.definition.tag.end.html" }
+      }
+    },
+    "html-tag": {
+      "comment": "HTML opening, closing, or self-closing tag. The body is a sequence of attributes; squiggly islands are allowed between attributes (handy for {{ if .x }}attr{{ end }} kinds of patterns).",
+      "begin": "(</?)([a-zA-Z][a-zA-Z0-9-]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": "(/?>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#tag-comment" },
+        { "include": "#tag" },
+        { "include": "#html-attribute" }
+      ]
+    },
+    "html-attribute": {
+      "patterns": [
+        {
+          "comment": "Attribute name immediately followed by `=`. Boolean attributes (no `=`) are matched by html-attribute-name below.",
+          "match": "([a-zA-Z_:][a-zA-Z0-9_.:-]*)(=)",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" }
+          }
+        },
+        { "include": "#html-attribute-value-dq" },
+        { "include": "#html-attribute-value-sq" },
+        { "include": "#html-attribute-value-bare" },
+        {
+          "comment": "Bare boolean attribute: `disabled`, `required`, etc.",
+          "name": "entity.other.attribute-name.html",
+          "match": "[a-zA-Z_:][a-zA-Z0-9_.:-]*"
+        }
+      ]
+    },
+    "html-attribute-value-dq": {
+      "comment": "Double-quoted attribute value. Squiggly tags inside (`href=\"{{ relURL '/' }}\"`) are common and must highlight as squiggly, not as plain string.",
+      "name": "string.quoted.double.html",
+      "begin": "\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.html" }
+      },
+      "patterns": [
+        { "include": "#tag-comment" },
+        { "include": "#tag" },
+        { "include": "#html-entity" }
+      ]
+    },
+    "html-attribute-value-sq": {
+      "comment": "Single-quoted attribute value.",
+      "name": "string.quoted.single.html",
+      "begin": "'",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "'",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.html" }
+      },
+      "patterns": [
+        { "include": "#tag-comment" },
+        { "include": "#tag" },
+        { "include": "#html-entity" }
+      ]
+    },
+    "html-attribute-value-bare": {
+      "comment": "Unquoted attribute value (legacy HTML). Stops at whitespace or `>`.",
+      "name": "string.unquoted.html",
+      "match": "[^\\s\"'=<>`]+"
+    },
+    "html-entity": {
+      "comment": "Named, decimal, or hex character reference: &amp;, &#160;, &#xA0;.",
+      "name": "constant.character.entity.html",
+      "match": "&(?:[a-zA-Z][a-zA-Z0-9]*|#\\d+|#[xX][0-9a-fA-F]+);"
     }
   }
 }

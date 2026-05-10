@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Getting Started – markdown</title>
+<meta name="description" content="Install the library, render your first document, see the AST." />
+<link rel="canonical" href="https://edadma.github.io/markdown/getting-started/" />
+
+<link rel="alternate" type="application/atom+xml" href="/markdown/feed.xml" title="markdown" />
+
+<!-- Inter font (variable) for clean typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+
+<!--
+  Apply the theme BEFORE first paint to avoid the white flash.
+  Reads localStorage ('juicerdocs-theme'), falls back to system preference.
+  Sets data-theme="dark" or data-theme="light" on <html>.
+-->
+<script>
+  (function() {
+    try {
+      var stored = localStorage.getItem('juicerdocs-theme');
+      var dark = stored
+        ? stored === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/markdown/juicerdocs.css" />
+
+<!-- Site-supplied stylesheets, loaded AFTER the bundled theme CSS so
+     they can override anything. Drop your file in static/site.css and
+     set `customCSS = ["site.css"]` in site.toml; the list takes any
+     number of paths in the order to load them. -->
+
+
+
+<!--
+  Site-supplied palette overrides — set under [juicerdocs] in site.toml:
+    brand, brandStrong, brandSoft, accent, leaf  (light defaults)
+    brandDark, brandStrongDark, brandSoftDark, accentDark, leafDark  (dark overrides)
+  Anything left unset falls through to the theme defaults in juicerdocs.css.
+-->
+<style>
+  :root {
+    --brand: #334155;
+    --brand-strong: #1e293b;
+    --brand-soft: #f1f5f9;
+    --accent: #b45309;
+    --leaf: #15803d;
+    
+    
+    
+    
+    
+    
+  }
+  [data-theme="dark"] {
+    --brand: #cbd5e1;
+    --brand-strong: #e2e8f0;
+    --brand-soft: rgb(203 213 225 / .12);
+    --accent: #fbbf24;
+    --leaf: #4ade80;
+  }
+</style>
+
+
+</head>
+<body>
+  <header class="juicerdocs-topbar">
+  <div class="juicerdocs-topbar-inner">
+    <a href="/markdown/" class="juicerdocs-brand">
+      
+      <span class="juicerdocs-brand-name">markdown</span>
+    </a>
+
+    <div class="juicerdocs-search">
+      <div class="juicerdocs-search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/>
+        </svg>
+        <input id="juicerdocs-search" class="juicerdocs-search-input" type="search" placeholder="Search docs…" autocomplete="off" />
+      </div>
+      <div id="juicerdocs-search-results" class="juicerdocs-search-popup" hidden></div>
+    </div>
+
+    
+    <a href="https://github.com/edadma/markdown" aria-label="GitHub repository" target="_blank" rel="noopener noreferrer" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.07 3.29 9.36 7.86 10.88.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.72-1.52-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.95 10.95 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.55C20.21 21.36 23.5 17.07 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+    </a>
+    
+
+    <button id="juicerdocs-sidebar-toggle" aria-label="Toggle sidebar" class="juicerdocs-icon-btn juicerdocs-sidebar-toggle">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <button id="juicerdocs-theme-toggle" aria-label="Toggle theme" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+
+  <div class="juicerdocs-page">
+    <aside class="juicerdocs-sidebar-aside">
+      <nav id="juicerdocs-sidebar" aria-label="Site navigation" class="juicerdocs-nav">
+  
+    <ul class="juicerdocs-nav-list">
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/getting-started/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Getting Started</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/getting-started/installation/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Installation</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/getting-started/quickstart/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Quickstart</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/concepts/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Concepts</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/concepts/ast/" data-juicerdocs-nav-link class="juicerdocs-nav-link">AST</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/parsing/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Parsing</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/rendering/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Rendering</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/reference/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Reference</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/reference/api/" data-juicerdocs-nav-link class="juicerdocs-nav-link">API</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/extensions/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Extensions</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/options/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Options</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/recipes/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Recipes</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/recipes/embedding/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Embedding the parser</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/custom-renderer/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Writing a custom renderer</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/juicer-integration/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Juicer integration</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+    </ul>
+  
+</nav>
+
+    </aside>
+    <div class="juicerdocs-sidebar-backdrop" aria-hidden="true"></div>
+
+    <main class="juicerdocs-main">
+      <div class="juicerdocs-content">
+        
+  <nav aria-label="Breadcrumb" class="juicerdocs-breadcrumbs">
+    <ol>
+      
+        <li>
+          <a href="/markdown/" class="juicerdocs-breadcrumbs-link">markdown</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+      <li class="juicerdocs-breadcrumbs-current">Getting Started</li>
+    </ol>
+  </nav>
+
+
+        
+
+  <article>
+    <h1>Getting Started</h1>
+    <p class="juicerdocs-lead">Install the library, render your first document, see the AST.</p>
+    <p>The fastest path from zero to rendered HTML. By the end of this section you’ll have the library on your classpath and a working <code>renderToHTML(...)</code> call returning a string of HTML.</p>
+  </article>
+
+  
+
+  
+    <section>
+      <h2 class="juicerdocs-section-heading">Pages</h2>
+      <ul class="juicerdocs-page-list">
+        
+          <li>
+            <a href="/markdown/getting-started/installation/">Installation</a>
+            <span class="juicerdocs-page-list-summary">— Add the library as an sbt dependency, an npm package, or check out the repo.</span>
+          </li>
+        
+          <li>
+            <a href="/markdown/getting-started/quickstart/">Quickstart</a>
+            <span class="juicerdocs-page-list-summary">— Render markdown to HTML, walk the AST, enable extensions — the three things every caller does.</span>
+          </li>
+        
+      </ul>
+    </section>
+  
+
+
+        
+  <nav class="juicerdocs-prevnext" aria-label="Page navigation">
+    
+      <a href="/markdown/" class="juicerdocs-prevnext-card">
+        <span class="juicerdocs-prevnext-label">← Previous</span>
+        <span class="juicerdocs-prevnext-title">markdown</span>
+      </a>
+    
+    
+      <a href="/markdown/getting-started/installation/" class="juicerdocs-prevnext-card juicerdocs-prevnext-card-next">
+        <span class="juicerdocs-prevnext-label">Next →</span>
+        <span class="juicerdocs-prevnext-title">Installation</span>
+      </a>
+    
+  </nav>
+
+
+      </div>
+    </main>
+
+    <aside class="juicerdocs-rail-aside">
+      
+
+    </aside>
+  </div>
+
+  <footer class="juicerdocs-footer">
+  <div class="juicerdocs-footer-inner">
+    <p>
+      Built with <a href="https://juicer.run/">Juicer</a>
+      &middot; Theme: <a href="https://juicer.run/concepts/themes/">juicerdocs</a>
+    </p>
+    
+  </div>
+</footer>
+
+
+  <script src="/markdown/juicerdocs.js"></script>
+</body>
+</html>

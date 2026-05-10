@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://edadma.github.io/markdown/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/concepts/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/concepts/ast/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/concepts/parsing/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/concepts/rendering/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/getting-started/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/getting-started/installation/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/getting-started/quickstart/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/recipes/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/recipes/custom-renderer/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/recipes/embedding/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/recipes/juicer-integration/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/reference/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/reference/api/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/reference/extensions/</loc></url>
+  <url><loc>https://edadma.github.io/markdown/reference/options/</loc></url>
+</urlset>

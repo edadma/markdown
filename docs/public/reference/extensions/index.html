@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Extensions – markdown</title>
+<meta name="description" content="Every opt-in syntax extension — tables, math, callouts, footnotes, emoji, doc-tags, and more." />
+<link rel="canonical" href="https://edadma.github.io/markdown/reference/extensions/" />
+
+<link rel="alternate" type="application/atom+xml" href="/markdown/feed.xml" title="markdown" />
+
+<!-- Inter font (variable) for clean typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+
+<!--
+  Apply the theme BEFORE first paint to avoid the white flash.
+  Reads localStorage ('juicerdocs-theme'), falls back to system preference.
+  Sets data-theme="dark" or data-theme="light" on <html>.
+-->
+<script>
+  (function() {
+    try {
+      var stored = localStorage.getItem('juicerdocs-theme');
+      var dark = stored
+        ? stored === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/markdown/juicerdocs.css" />
+
+<!-- Site-supplied stylesheets, loaded AFTER the bundled theme CSS so
+     they can override anything. Drop your file in static/site.css and
+     set `customCSS = ["site.css"]` in site.toml; the list takes any
+     number of paths in the order to load them. -->
+
+
+
+<!--
+  Site-supplied palette overrides — set under [juicerdocs] in site.toml:
+    brand, brandStrong, brandSoft, accent, leaf  (light defaults)
+    brandDark, brandStrongDark, brandSoftDark, accentDark, leafDark  (dark overrides)
+  Anything left unset falls through to the theme defaults in juicerdocs.css.
+-->
+<style>
+  :root {
+    --brand: #334155;
+    --brand-strong: #1e293b;
+    --brand-soft: #f1f5f9;
+    --accent: #b45309;
+    --leaf: #15803d;
+    
+    
+    
+    
+    
+    
+  }
+  [data-theme="dark"] {
+    --brand: #cbd5e1;
+    --brand-strong: #e2e8f0;
+    --brand-soft: rgb(203 213 225 / .12);
+    --accent: #fbbf24;
+    --leaf: #4ade80;
+  }
+</style>
+
+
+</head>
+<body>
+  <header class="juicerdocs-topbar">
+  <div class="juicerdocs-topbar-inner">
+    <a href="/markdown/" class="juicerdocs-brand">
+      
+      <span class="juicerdocs-brand-name">markdown</span>
+    </a>
+
+    <div class="juicerdocs-search">
+      <div class="juicerdocs-search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/>
+        </svg>
+        <input id="juicerdocs-search" class="juicerdocs-search-input" type="search" placeholder="Search docs…" autocomplete="off" />
+      </div>
+      <div id="juicerdocs-search-results" class="juicerdocs-search-popup" hidden></div>
+    </div>
+
+    
+    <a href="https://github.com/edadma/markdown" aria-label="GitHub repository" target="_blank" rel="noopener noreferrer" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.07 3.29 9.36 7.86 10.88.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.72-1.52-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.95 10.95 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.55C20.21 21.36 23.5 17.07 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+    </a>
+    
+
+    <button id="juicerdocs-sidebar-toggle" aria-label="Toggle sidebar" class="juicerdocs-icon-btn juicerdocs-sidebar-toggle">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <button id="juicerdocs-theme-toggle" aria-label="Toggle theme" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+
+  <div class="juicerdocs-page">
+    <aside class="juicerdocs-sidebar-aside">
+      <nav id="juicerdocs-sidebar" aria-label="Site navigation" class="juicerdocs-nav">
+  
+    <ul class="juicerdocs-nav-list">
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/getting-started/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Getting Started</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/getting-started/installation/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Installation</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/getting-started/quickstart/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Quickstart</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/concepts/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Concepts</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/concepts/ast/" data-juicerdocs-nav-link class="juicerdocs-nav-link">AST</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/parsing/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Parsing</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/rendering/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Rendering</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/reference/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Reference</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/reference/api/" data-juicerdocs-nav-link class="juicerdocs-nav-link">API</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/extensions/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Extensions</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/options/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Options</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/recipes/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Recipes</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/recipes/embedding/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Embedding the parser</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/custom-renderer/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Writing a custom renderer</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/juicer-integration/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Juicer integration</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+    </ul>
+  
+</nav>
+
+    </aside>
+    <div class="juicerdocs-sidebar-backdrop" aria-hidden="true"></div>
+
+    <main class="juicerdocs-main">
+      <div class="juicerdocs-content">
+        
+  <nav aria-label="Breadcrumb" class="juicerdocs-breadcrumbs">
+    <ol>
+      
+        <li>
+          <a href="/markdown/" class="juicerdocs-breadcrumbs-link">markdown</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+        <li>
+          <a href="/markdown/reference/" class="juicerdocs-breadcrumbs-link">Reference</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+      <li class="juicerdocs-breadcrumbs-current">Extensions</li>
+    </ol>
+  </nav>
+
+
+        
+<article>
+  <h1>Extensions</h1>
+  <p class="juicerdocs-lead">Every opt-in syntax extension — tables, math, callouts, footnotes, emoji, doc-tags, and more.</p>
+  <p>CommonMark itself is conservative: anything not in the spec is off by default. The library ships every popular extension as a flag on <code>MarkdownConfig</code>. Set <code>MarkdownConfig.all</code> to turn them all on at once, or copy the default and enable just what you need.</p>
+<h2 id="tables-tables">Tables (<code>tables</code>)</h2>
+<p>GFM-style pipe tables. Header row, separator row, body rows. Per-column alignment via <code>:---</code>, <code>:---:</code>, <code>---:</code>.</p>
+<pre><code class="language-markdown">| Name     | Status |
+|----------|:------:|
+| ready    |   ✓    |
+| pending  |   …    |</code></pre>
+<h2 id="strikethrough-strikethrough">Strikethrough (<code>strikethrough</code>)</h2>
+<p>GFM <code>~~text~~</code> renders to <code>&lt;del&gt;text&lt;/del&gt;</code>. Two-tilde delimiters; a single <code>~</code> does nothing.</p>
+<pre><code class="language-markdown">This is ~~deleted~~ text.</code></pre>
+<h2 id="task-list-items-tasklistitems">Task list items (<code>taskListItems</code>)</h2>
+<p>GFM <code>- [ ]</code> and <code>- [x]</code> (or <code>- [X]</code>) at the start of a list item render with a disabled checkbox. Works in both ordered and unordered lists.</p>
+<pre><code class="language-markdown"><span class="hl-punctuation">-</span> <span class="hl-punctuation">[</span><span class="hl-string">x</span><span class="hl-punctuation">]</span> write docs
+- [ ] ship docs</code></pre>
+<h2 id="extended-autolinks-extendedautolinks">Extended autolinks (<code>extendedAutolinks</code>)</h2>
+<p>Bare URLs and <code>www.</code>-prefixed hostnames become links without <code>&lt;&gt;</code> brackets:</p>
+<pre><code class="language-markdown">visit https://example.com or www.example.com</code></pre>
+<h2 id="footnotes-footnotes">Footnotes (<code>footnotes</code>)</h2>
+<p><code>[^label]</code> references with <code>[^label]: …</code> definitions. References are renumbered in document order; definitions are collected and emitted as a <code>&lt;section class=&quot;footnotes&quot;&gt;</code> at the end of the document, with backrefs.</p>
+<pre><code class="language-markdown">Here is a claim.[^src]
+
+[^src]: Source: *The Big Book of Claims*, p. 42.</code></pre>
+<h2 id="math-math">Math (<code>math</code>)</h2>
+<p>Block math with <code>$$…$$</code> fences and inline math with <code>$…$</code>. Renders to <code>&lt;div class=&quot;math display&quot;&gt;\[…\]&lt;/div&gt;</code> and <code>&lt;span class=&quot;math inline&quot;&gt;\(…\)&lt;/span&gt;</code> — pair with KaTeX or MathJax client-side.</p>
+<pre><code class="language-markdown">The Pythagorean theorem: $a^2 + b^2 = c^2$.
+
+$$
+\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}
+$$</code></pre>
+<h2 id="callouts-callouts">Callouts (<code>callouts</code>)</h2>
+<p>Obsidian / GFM admonition syntax: a blockquote whose first line is <code>[!TYPE]</code> or <code>[!TYPE] Title</code>. Common types: <code>note</code>, <code>tip</code>, <code>info</code>, <code>warning</code>, <code>danger</code>.</p>
+<pre><code class="language-markdown">&gt; [!warning] Heads up
+&gt; This kills the build.</code></pre>
+<p>Renders as <code>&lt;div class=&quot;callout callout-warning&quot;&gt;…&lt;/div&gt;</code> with a <code>&lt;div class=&quot;callout-title&quot;&gt;</code> for the title and <code>&lt;div class=&quot;callout-content&quot;&gt;</code> for the body.</p>
+<h2 id="smart-punctuation-smartpunctuation">Smart punctuation (<code>smartPunctuation</code>)</h2>
+<p><code>&quot;...&quot;</code> becomes <code>“…”</code>, <code>'...'</code> becomes <code>‘…’</code>, <code>--</code> becomes <code>–</code> (en-dash), <code>---</code> becomes <code>—</code> (em-dash), <code>...</code> becomes <code>…</code> (ellipsis). Off by default to keep CommonMark output character-for-character predictable.</p>
+<h2 id="attributes-attributes">Attributes (<code>attributes</code>)</h2>
+<p><code>{#id .class key=value}</code> after a heading, fenced code block, or image populates the node’s <code>Attributes</code> value. Multiple classes and arbitrary key-value pairs are supported.</p>
+<pre><code class="language-markdown">## Hello {#hello-id .lead key=&quot;some value&quot;}
+
+![alt](/img.png){.figure width=400}
+
+```scala {#example1 .runnable}
+val x = 42</code></pre>
+<pre><code>
+## Auto heading IDs (`autoHeadingIds`)
+
+Every heading gets an `id` attribute generated from its plain-text content via `slugify`. Default algorithm: lowercase, runs of non-alphanumerics → `-`, strip leading/trailing `-`. Same algorithm Hugo, mkdocs, and GitHub use.
+
+```scala
+val cfg = MarkdownConfig.default.copy(autoHeadingIds = true)
+renderToHTML(&quot;## Hello, World!&quot;, cfg)
+// → &lt;h2 id=&quot;hello-world&quot;&gt;Hello, World!&lt;/h2&gt;
+</code></pre>
+<p>Plug in a custom slug function:</p>
+<pre><code class="language-scala"><span class="hl-keyword">val</span> cfg <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">.</span>copy<span class="hl-punctuation">(</span>
+  autoHeadingIds <span class="hl-keyword">=</span> <span class="hl-variable">true</span><span class="hl-punctuation">,</span>
+  slugify <span class="hl-keyword">=</span> s <span class="hl-keyword">=&gt;</span> s<span class="hl-punctuation">.</span>toLowerCase<span class="hl-punctuation">.</span>replaceAll<span class="hl-punctuation">(</span><span class="hl-string">&quot;[^a-z0-9]+&quot;</span><span class="hl-punctuation">,</span> <span class="hl-string">&quot;_&quot;</span><span class="hl-punctuation">).</span>stripPrefix<span class="hl-punctuation">(</span><span class="hl-string">&quot;_&quot;</span><span class="hl-punctuation">).</span>stripSuffix<span class="hl-punctuation">(</span><span class="hl-string">&quot;_&quot;</span><span class="hl-punctuation">),</span>
+<span class="hl-punctuation">)</span></code></pre>
+<p>Explicit ids set via the <code>attributes</code> extension (<code>## Heading {#explicit}</code>) always win.</p>
+<h2 id="emoji-emoji">Emoji (<code>emoji</code>)</h2>
+<p>Three modes:</p>
+<p>| <code>EmojiConfig.Disabled</code>        | <code>:smile:</code> is left as text.                          |
+| <code>EmojiConfig.Unicode</code>         | <code>:smile:</code> becomes <code>😄</code>.                             |
+| <code>EmojiConfig.Image(baseURL)</code>  | <code>:smile:</code> becomes <code>&lt;img src=&quot;{baseURL}/smile.svg&quot; /&gt;</code>. |</p>
+<p>The shortcode set is the standard GitHub / Slack list.</p>
+<h2 id="definition-lists-definitionlists">Definition lists (<code>definitionLists</code>)</h2>
+<p>A term followed by one or more <code>: definition</code> lines:</p>
+<pre><code class="language-markdown">Term
+: A succinct definition.
+: Another sense of the term.</code></pre>
+<p>Renders to <code>&lt;dl&gt;&lt;dt&gt;Term&lt;/dt&gt;&lt;dd&gt;…&lt;/dd&gt;&lt;dd&gt;…&lt;/dd&gt;&lt;/dl&gt;</code>.</p>
+<h2 id="indented-code-language-indentedcodelanguage">Indented code language (<code>indentedCodeLanguage</code>)</h2>
+<p>Indented code blocks (4-space) carry no language tag in CommonMark. Set <code>indentedCodeLanguage = Some(&quot;scala&quot;)</code> (or any other) to default them to a language for highlighting:</p>
+<pre><code class="language-scala"><span class="hl-keyword">val</span> cfg <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">.</span>copy<span class="hl-punctuation">(</span>
+  indentedCodeLanguage <span class="hl-keyword">=</span> <span class="hl-type">Some</span><span class="hl-punctuation">(</span><span class="hl-string">&quot;scala&quot;</span><span class="hl-punctuation">),</span>
+  codeHighlighter      <span class="hl-keyword">=</span> <span class="hl-type">Some</span><span class="hl-punctuation">(</span>myHighlighter<span class="hl-punctuation">),</span>
+<span class="hl-punctuation">)</span></code></pre>
+<h2 id="indented-code-breaks-list-indentedcodebreakslist">Indented code breaks list (<code>indentedCodeBreaksList</code>)</h2>
+<p>A subtle one. CommonMark says an indented code block following a blank line <em>inside a list item</em> is absorbed into the list item. Set <code>indentedCodeBreaksList = true</code> to make the indented code block instead <strong>end</strong> the enclosing list item. Useful when you’re using indented blocks as section breaks rather than list-internal code.</p>
+<h2 id="doc-tags-doctags">Doc-tags (<code>docTags</code>)</h2>
+<p>Block-level <code>@name [target] — body</code> annotations. Designed for documentation tools built on top of the AST. The processor parses the syntax and renders a sensible default (<code>&lt;dl class=&quot;doc-tag doc-tag-{name}&quot;&gt;</code>); binding tags to code declarations and resolving cross-references is the downstream tool’s job.</p>
+<pre><code class="language-scala"><span class="hl-keyword">import</span> io<span class="hl-punctuation">.</span>github<span class="hl-punctuation">.</span>edadma<span class="hl-punctuation">.</span>markdown<span class="hl-punctuation">.</span><span class="hl-keyword">*</span>
+
+<span class="hl-keyword">val</span> registry <span class="hl-keyword">=</span> <span class="hl-type">TagRegistry</span><span class="hl-punctuation">(</span>
+  <span class="hl-type">TagDefinition</span><span class="hl-punctuation">(</span><span class="hl-string">&quot;api&quot;</span><span class="hl-punctuation">,</span>     acceptsTarget <span class="hl-keyword">=</span> <span class="hl-variable">false</span><span class="hl-punctuation">,</span> <span class="hl-type">ContentMode</span><span class="hl-punctuation">.</span><span class="hl-type">InlineMarkdown</span><span class="hl-punctuation">),</span>
+  <span class="hl-type">TagDefinition</span><span class="hl-punctuation">(</span><span class="hl-string">&quot;param&quot;</span><span class="hl-punctuation">,</span>   acceptsTarget <span class="hl-keyword">=</span> <span class="hl-variable">true</span><span class="hl-punctuation">,</span>  <span class="hl-type">ContentMode</span><span class="hl-punctuation">.</span><span class="hl-type">InlineMarkdown</span><span class="hl-punctuation">),</span>
+  <span class="hl-type">TagDefinition</span><span class="hl-punctuation">(</span><span class="hl-string">&quot;example&quot;</span><span class="hl-punctuation">,</span> acceptsTarget <span class="hl-keyword">=</span> <span class="hl-variable">false</span><span class="hl-punctuation">,</span> <span class="hl-type">ContentMode</span><span class="hl-punctuation">.</span><span class="hl-type">BlockMarkdown</span><span class="hl-punctuation">),</span>
+<span class="hl-punctuation">)</span>
+
+<span class="hl-keyword">val</span> cfg <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">.</span>copy<span class="hl-punctuation">(</span>
+  docTags <span class="hl-keyword">=</span> <span class="hl-type">DocTagConfig</span><span class="hl-punctuation">(</span>enabled <span class="hl-keyword">=</span> <span class="hl-variable">true</span><span class="hl-punctuation">,</span> registry <span class="hl-keyword">=</span> registry<span class="hl-punctuation">),</span>
+<span class="hl-punctuation">)</span>
+
+renderToHTML<span class="hl-punctuation">(</span><span class="hl-string">&quot;@param msg — the error message</span><span class="hl-variable">\n</span><span class="hl-string">&quot;</span><span class="hl-punctuation">,</span> cfg<span class="hl-punctuation">)</span></code></pre>
+<p><code>ContentMode</code> controls how each tag’s body is parsed:</p>
+<table>
+<thead>
+<tr><th>Mode</th><th>Body is</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Opaque</code></td><td>a single <code>Text</code> node, not parsed</td></tr>
+<tr><td><code>InlineMarkdown</code></td><td>parsed by the inline parser only (becomes one <code>Paragraph</code>)</td></tr>
+<tr><td><code>BlockMarkdown</code></td><td>parsed by the block parser (arbitrary block content)</td></tr>
+</tbody>
+</table>
+<p><code>strictUnknownTags = true</code> causes unknown tag names to fall back to ordinary text. With the default (<code>false</code>), unknown tags are still emitted as <code>DocTagBlock</code> with <code>acceptsTarget = true</code> and <code>InlineMarkdown</code> mode — convenient for forward-compatible doc pipelines.</p>
+<h2 id="combined-everything-on">Combined: everything on</h2>
+<pre><code class="language-scala"><span class="hl-keyword">val</span> cfg <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>all
+<span class="hl-comment">//                              ^ tables, math, callouts, strikethrough, taskListItems,</span>
+<span class="hl-comment">//                                extendedAutolinks, footnotes, smartPunctuation,</span>
+<span class="hl-comment">//                                attributes, definitionLists, autoHeadingIds, emoji=Unicode</span></code></pre>
+<p>Note that <code>MarkdownConfig.all</code> does <strong>not</strong> turn on <code>docTags</code> or set <code>codeHighlighter</code> / <code>indentedCodeLanguage</code> / <code>indentedCodeBreaksList</code> — those need explicit configuration values, not just a boolean.</p>
+</article>
+
+        
+  <nav class="juicerdocs-prevnext" aria-label="Page navigation">
+    
+      <a href="/markdown/reference/api/" class="juicerdocs-prevnext-card">
+        <span class="juicerdocs-prevnext-label">← Previous</span>
+        <span class="juicerdocs-prevnext-title">API</span>
+      </a>
+    
+    
+      <a href="/markdown/reference/options/" class="juicerdocs-prevnext-card juicerdocs-prevnext-card-next">
+        <span class="juicerdocs-prevnext-label">Next →</span>
+        <span class="juicerdocs-prevnext-title">Options</span>
+      </a>
+    
+  </nav>
+
+
+      </div>
+    </main>
+
+    <aside class="juicerdocs-rail-aside">
+      
+  <nav id="juicerdocs-page-toc" aria-label="On this page" class="juicerdocs-toc-wrap">
+    <p class="juicerdocs-toc-title">On this page</p>
+    <ul class="juicerdocs-toc">
+      
+  <li>
+    <a href="#tables-tables" data-juicerdocs-toc-link data-jd-toc-id="tables-tables"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Tables (<code>tables</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#strikethrough-strikethrough" data-juicerdocs-toc-link data-jd-toc-id="strikethrough-strikethrough"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Strikethrough (<code>strikethrough</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#task-list-items-tasklistitems" data-juicerdocs-toc-link data-jd-toc-id="task-list-items-tasklistitems"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Task list items (<code>taskListItems</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#extended-autolinks-extendedautolinks" data-juicerdocs-toc-link data-jd-toc-id="extended-autolinks-extendedautolinks"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Extended autolinks (<code>extendedAutolinks</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#footnotes-footnotes" data-juicerdocs-toc-link data-jd-toc-id="footnotes-footnotes"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Footnotes (<code>footnotes</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#math-math" data-juicerdocs-toc-link data-jd-toc-id="math-math"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Math (<code>math</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#callouts-callouts" data-juicerdocs-toc-link data-jd-toc-id="callouts-callouts"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Callouts (<code>callouts</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#smart-punctuation-smartpunctuation" data-juicerdocs-toc-link data-jd-toc-id="smart-punctuation-smartpunctuation"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Smart punctuation (<code>smartPunctuation</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#attributes-attributes" data-juicerdocs-toc-link data-jd-toc-id="attributes-attributes"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Attributes (<code>attributes</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#emoji-emoji" data-juicerdocs-toc-link data-jd-toc-id="emoji-emoji"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Emoji (<code>emoji</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#definition-lists-definitionlists" data-juicerdocs-toc-link data-jd-toc-id="definition-lists-definitionlists"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Definition lists (<code>definitionLists</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#indented-code-language-indentedcodelanguage" data-juicerdocs-toc-link data-jd-toc-id="indented-code-language-indentedcodelanguage"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Indented code language (<code>indentedCodeLanguage</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#indented-code-breaks-list-indentedcodebreakslist" data-juicerdocs-toc-link data-jd-toc-id="indented-code-breaks-list-indentedcodebreakslist"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Indented code breaks list (<code>indentedCodeBreaksList</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#doc-tags-doctags" data-juicerdocs-toc-link data-jd-toc-id="doc-tags-doctags"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Doc-tags (<code>docTags</code>)
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#combined-everything-on" data-juicerdocs-toc-link data-jd-toc-id="combined-everything-on"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Combined: everything on
+    </a>
+    
+  </li>
+
+
+    </ul>
+  </nav>
+
+
+    </aside>
+  </div>
+
+  <footer class="juicerdocs-footer">
+  <div class="juicerdocs-footer-inner">
+    <p>
+      Built with <a href="https://juicer.run/">Juicer</a>
+      &middot; Theme: <a href="https://juicer.run/concepts/themes/">juicerdocs</a>
+    </p>
+    
+  </div>
+</footer>
+
+
+  <script src="/markdown/juicerdocs.js"></script>
+</body>
+</html>

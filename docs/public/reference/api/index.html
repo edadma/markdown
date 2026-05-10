@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>API – markdown</title>
+<meta name="description" content="Every public top-level function in io.github.edadma.markdown — parsing, rendering, helpers." />
+<link rel="canonical" href="https://edadma.github.io/markdown/reference/api/" />
+
+<link rel="alternate" type="application/atom+xml" href="/markdown/feed.xml" title="markdown" />
+
+<!-- Inter font (variable) for clean typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+
+<!--
+  Apply the theme BEFORE first paint to avoid the white flash.
+  Reads localStorage ('juicerdocs-theme'), falls back to system preference.
+  Sets data-theme="dark" or data-theme="light" on <html>.
+-->
+<script>
+  (function() {
+    try {
+      var stored = localStorage.getItem('juicerdocs-theme');
+      var dark = stored
+        ? stored === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/markdown/juicerdocs.css" />
+
+<!-- Site-supplied stylesheets, loaded AFTER the bundled theme CSS so
+     they can override anything. Drop your file in static/site.css and
+     set `customCSS = ["site.css"]` in site.toml; the list takes any
+     number of paths in the order to load them. -->
+
+
+
+<!--
+  Site-supplied palette overrides — set under [juicerdocs] in site.toml:
+    brand, brandStrong, brandSoft, accent, leaf  (light defaults)
+    brandDark, brandStrongDark, brandSoftDark, accentDark, leafDark  (dark overrides)
+  Anything left unset falls through to the theme defaults in juicerdocs.css.
+-->
+<style>
+  :root {
+    --brand: #334155;
+    --brand-strong: #1e293b;
+    --brand-soft: #f1f5f9;
+    --accent: #b45309;
+    --leaf: #15803d;
+    
+    
+    
+    
+    
+    
+  }
+  [data-theme="dark"] {
+    --brand: #cbd5e1;
+    --brand-strong: #e2e8f0;
+    --brand-soft: rgb(203 213 225 / .12);
+    --accent: #fbbf24;
+    --leaf: #4ade80;
+  }
+</style>
+
+
+</head>
+<body>
+  <header class="juicerdocs-topbar">
+  <div class="juicerdocs-topbar-inner">
+    <a href="/markdown/" class="juicerdocs-brand">
+      
+      <span class="juicerdocs-brand-name">markdown</span>
+    </a>
+
+    <div class="juicerdocs-search">
+      <div class="juicerdocs-search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/>
+        </svg>
+        <input id="juicerdocs-search" class="juicerdocs-search-input" type="search" placeholder="Search docs…" autocomplete="off" />
+      </div>
+      <div id="juicerdocs-search-results" class="juicerdocs-search-popup" hidden></div>
+    </div>
+
+    
+    <a href="https://github.com/edadma/markdown" aria-label="GitHub repository" target="_blank" rel="noopener noreferrer" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.07 3.29 9.36 7.86 10.88.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.72-1.52-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.95 10.95 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.55C20.21 21.36 23.5 17.07 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+    </a>
+    
+
+    <button id="juicerdocs-sidebar-toggle" aria-label="Toggle sidebar" class="juicerdocs-icon-btn juicerdocs-sidebar-toggle">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <button id="juicerdocs-theme-toggle" aria-label="Toggle theme" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+
+  <div class="juicerdocs-page">
+    <aside class="juicerdocs-sidebar-aside">
+      <nav id="juicerdocs-sidebar" aria-label="Site navigation" class="juicerdocs-nav">
+  
+    <ul class="juicerdocs-nav-list">
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/getting-started/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Getting Started</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/getting-started/installation/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Installation</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/getting-started/quickstart/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Quickstart</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/concepts/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Concepts</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/concepts/ast/" data-juicerdocs-nav-link class="juicerdocs-nav-link">AST</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/parsing/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Parsing</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/rendering/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Rendering</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/reference/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Reference</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/reference/api/" data-juicerdocs-nav-link class="juicerdocs-nav-link">API</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/extensions/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Extensions</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/options/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Options</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/recipes/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Recipes</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/recipes/embedding/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Embedding the parser</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/custom-renderer/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Writing a custom renderer</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/juicer-integration/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Juicer integration</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+    </ul>
+  
+</nav>
+
+    </aside>
+    <div class="juicerdocs-sidebar-backdrop" aria-hidden="true"></div>
+
+    <main class="juicerdocs-main">
+      <div class="juicerdocs-content">
+        
+  <nav aria-label="Breadcrumb" class="juicerdocs-breadcrumbs">
+    <ol>
+      
+        <li>
+          <a href="/markdown/" class="juicerdocs-breadcrumbs-link">markdown</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+        <li>
+          <a href="/markdown/reference/" class="juicerdocs-breadcrumbs-link">Reference</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+      <li class="juicerdocs-breadcrumbs-current">API</li>
+    </ol>
+  </nav>
+
+
+        
+<article>
+  <h1>API</h1>
+  <p class="juicerdocs-lead">Every public top-level function in io.github.edadma.markdown — parsing, rendering, helpers.</p>
+  <p>All public functions live in the package object — <code>import io.github.edadma.markdown.*</code> and you have everything below.</p>
+<h2 id="parsing">Parsing</h2>
+<table>
+<thead>
+<tr><th>Function</th><th>Returns</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>parseDocumentContent(input, config?)</code></td><td><code>Document</code></td><td>Most common entry point. Throws away the link reference table.</td></tr>
+<tr><td><code>parseDocumentContentWithRefs(input, config?)</code></td><td><code>(Document, Map[String, LinkReference])</code></td><td>Use when you need the link references for cross-document analysis.</td></tr>
+<tr><td><code>parseDocument(stream, config?)</code></td><td><code>(Document, Map[String, LinkReference])</code></td><td>Lower level — takes a <code>LazyList[C]</code> from <code>InputReader</code>.</td></tr>
+</tbody>
+</table>
+<pre><code class="language-scala"><span class="hl-keyword">def</span> parseDocumentContent<span class="hl-punctuation">(</span>
+    input<span class="hl-punctuation">:</span>  <span class="hl-type">String</span><span class="hl-punctuation">,</span>
+    config<span class="hl-punctuation">:</span> <span class="hl-type">MarkdownConfig</span> <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">,</span>
+<span class="hl-punctuation">):</span> <span class="hl-type">Document</span>
+
+<span class="hl-keyword">def</span> parseDocumentContentWithRefs<span class="hl-punctuation">(</span>
+    input<span class="hl-punctuation">:</span>  <span class="hl-type">String</span><span class="hl-punctuation">,</span>
+    config<span class="hl-punctuation">:</span> <span class="hl-type">MarkdownConfig</span> <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">,</span>
+<span class="hl-punctuation">):</span> <span class="hl-punctuation">(</span><span class="hl-type">Document</span><span class="hl-punctuation">,</span> <span class="hl-type">Map</span><span class="hl-punctuation">[</span><span class="hl-type">String</span><span class="hl-punctuation">,</span> <span class="hl-type">LinkReference</span><span class="hl-punctuation">])</span>
+
+<span class="hl-keyword">def</span> parseDocument<span class="hl-punctuation">(</span>
+    stream<span class="hl-punctuation">:</span> <span class="hl-type">LazyList</span><span class="hl-punctuation">[</span><span class="hl-type">C</span><span class="hl-punctuation">],</span>
+    config<span class="hl-punctuation">:</span> <span class="hl-type">MarkdownConfig</span> <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">,</span>
+<span class="hl-punctuation">):</span> <span class="hl-punctuation">(</span><span class="hl-type">Document</span><span class="hl-punctuation">,</span> <span class="hl-type">Map</span><span class="hl-punctuation">[</span><span class="hl-type">String</span><span class="hl-punctuation">,</span> <span class="hl-type">LinkReference</span><span class="hl-punctuation">])</span></code></pre>
+<h2 id="html-rendering">HTML rendering</h2>
+<table>
+<thead>
+<tr><th>Function</th><th>Returns</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>renderToHTML(md: String, config?)</code></td><td><code>String</code></td><td>Parse + render. The one-line case.</td></tr>
+<tr><td><code>renderToHTML(node: Node, config?)</code></td><td><code>String</code></td><td>Render an existing AST. Errors if <code>node</code> is an inline.</td></tr>
+<tr><td><code>renderBlockToHTML(node: Block, config?)</code></td><td><code>String</code></td><td>Render a single block — without the trailing newline <code>renderToHTML</code> adds.</td></tr>
+<tr><td><code>renderInlines(inlines: List[Inline])</code></td><td><code>String</code></td><td>Render inline content with <strong>no</strong> surrounding <code>&lt;p&gt;</code>.</td></tr>
+<tr><td><code>plainText(inlines, escape: Boolean = false)</code></td><td><code>String</code></td><td>Strip all formatting. <code>escape=true</code> runs the result through <code>escapeXml</code>.</td></tr>
+</tbody>
+</table>
+<pre><code class="language-scala"><span class="hl-keyword">def</span> renderToHTML<span class="hl-punctuation">(</span>md<span class="hl-punctuation">:</span>   <span class="hl-type">String</span><span class="hl-punctuation">,</span> config<span class="hl-punctuation">:</span> <span class="hl-type">MarkdownConfig</span> <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">):</span> <span class="hl-type">String</span>
+<span class="hl-keyword">def</span> renderToHTML<span class="hl-punctuation">(</span>node<span class="hl-punctuation">:</span> <span class="hl-type">Node</span><span class="hl-punctuation">):</span>                                                      <span class="hl-type">String</span>
+<span class="hl-keyword">def</span> renderToHTML<span class="hl-punctuation">(</span>node<span class="hl-punctuation">:</span> <span class="hl-type">Node</span><span class="hl-punctuation">,</span>   config<span class="hl-punctuation">:</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">):</span>                            <span class="hl-type">String</span>
+
+<span class="hl-keyword">def</span> renderBlockToHTML<span class="hl-punctuation">(</span>node<span class="hl-punctuation">:</span> <span class="hl-type">Block</span><span class="hl-punctuation">,</span> config<span class="hl-punctuation">:</span> <span class="hl-type">MarkdownConfig</span> <span class="hl-keyword">=</span> <span class="hl-type">MarkdownConfig</span><span class="hl-punctuation">.</span>default<span class="hl-punctuation">):</span> <span class="hl-type">String</span>
+
+<span class="hl-keyword">def</span> renderInlines<span class="hl-punctuation">(</span>inlines<span class="hl-punctuation">:</span> <span class="hl-type">List</span><span class="hl-punctuation">[</span><span class="hl-type">Inline</span><span class="hl-punctuation">]):</span>                              <span class="hl-type">String</span>
+<span class="hl-keyword">def</span> plainText   <span class="hl-punctuation">(</span>inlines<span class="hl-punctuation">:</span> <span class="hl-type">List</span><span class="hl-punctuation">[</span><span class="hl-type">Inline</span><span class="hl-punctuation">],</span> escape<span class="hl-punctuation">:</span> <span class="hl-type">Boolean</span> <span class="hl-keyword">=</span> <span class="hl-variable">false</span><span class="hl-punctuation">):</span>      <span class="hl-type">String</span></code></pre>
+<h2 id="xml-rendering">XML rendering</h2>
+<table>
+<thead>
+<tr><th>Function</th><th>Returns</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>renderToXML(doc: Document, system?)</code></td><td><code>String</code></td><td>Emits CommonMark XML format with <code>&lt;?xml … ?&gt;</code> declaration and DTD. Headings rendered as plain text.</td></tr>
+<tr><td><code>escapeXml(s: String)</code></td><td><code>String</code></td><td>Encodes <code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&quot;</code>. Used internally; exposed for renderer authors.</td></tr>
+</tbody>
+</table>
+<pre><code class="language-scala"><span class="hl-keyword">def</span> renderToXML<span class="hl-punctuation">(</span>doc<span class="hl-punctuation">:</span> <span class="hl-type">Document</span><span class="hl-punctuation">,</span> system<span class="hl-punctuation">:</span> <span class="hl-type">String</span> <span class="hl-keyword">=</span> <span class="hl-string">&quot;document&quot;</span><span class="hl-punctuation">):</span> <span class="hl-type">String</span>
+<span class="hl-keyword">def</span> escapeXml  <span class="hl-punctuation">(</span>s<span class="hl-punctuation">:</span> <span class="hl-type">String</span><span class="hl-punctuation">):</span>                                  <span class="hl-type">String</span></code></pre>
+<h2 id="url-helpers">URL helpers</h2>
+<table>
+<thead>
+<tr><th>Function</th><th>Returns</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>percentEncode(input: String)</code></td><td><code>String</code></td><td>URI percent-encoding. Treats <code>%</code> as already-safe to avoid double-encoding pre-encoded URLs.</td></tr>
+</tbody>
+</table>
+<h2 id="ast-walking-helpers">AST walking helpers</h2>
+<table>
+<thead>
+<tr><th>Function</th><th>Returns</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Document.headings</code></td><td><code>List[Heading]</code></td><td>All top-level <code>Heading</code> blocks, in source order.</td></tr>
+<tr><td><code>extractHeaders(doc: Document)</code></td><td><code>List[(Int, String)]</code></td><td><code>(level, plain-text-content)</code> pairs.</td></tr>
+<tr><td><code>inlinesToPlainText(inlines: List[Inline])</code></td><td><code>String</code></td><td>Lighter alternative to <code>plainText</code> — drops only <code>Text</code>, <code>CodeSpan</code>, <code>Emphasis</code>, <code>Strong</code>, and bare <code>C</code> cursors.</td></tr>
+<tr><td><code>plainText(inlines, escape?)</code></td><td><code>String</code></td><td>Recommended. Handles every inline type and strips images, links, math, etc., to their text content.</td></tr>
+</tbody>
+</table>
+<pre><code class="language-scala"><span class="hl-keyword">def</span> extractHeaders<span class="hl-punctuation">(</span>document<span class="hl-punctuation">:</span> <span class="hl-type">Document</span><span class="hl-punctuation">):</span>       <span class="hl-type">List</span><span class="hl-punctuation">[(</span><span class="hl-type">Int</span><span class="hl-punctuation">,</span> <span class="hl-type">String</span><span class="hl-punctuation">)]</span>
+<span class="hl-keyword">def</span> inlinesToPlainText<span class="hl-punctuation">(</span>inlines<span class="hl-punctuation">:</span> <span class="hl-type">List</span><span class="hl-punctuation">[</span><span class="hl-type">Inline</span><span class="hl-punctuation">]):</span> <span class="hl-type">String</span></code></pre>
+<h2 id="input-layer">Input layer</h2>
+<p>You’ll rarely call these directly — <code>parseDocumentContent</code> wraps them — but they’re public for renderer / formatter authors:</p>
+<table>
+<thead>
+<tr><th>Function</th><th>Returns</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>new InputReader(input).stream</code></td><td><code>LazyList[C]</code></td><td>The cursor stream. Normalizes line endings and resolves backslash escapes.</td></tr>
+<tr><td><code>rawText(cursors: List[C])</code></td><td><code>String</code></td><td>Reconstruct source text, restoring backslashes for literal-flagged characters. Used by code-block parsers.</td></tr>
+<tr><td><code>expandLeadingTabs(line, startCol = 0)</code></td><td><code>List[C]</code></td><td>Expand tabs to spaces in leading whitespace only.</td></tr>
+<tr><td><code>virtualIndent(line: List[C])</code></td><td><code>Int</code></td><td>Tab-aware indent count of a line.</td></tr>
+<tr><td><code>dropIndent(line, n, startCol = 0)</code></td><td><code>List[C]</code></td><td>Remove <code>n</code> columns of (tab-aware) leading indent.</td></tr>
+</tbody>
+</table>
+<h2 id="config">Config</h2>
+<p><code>MarkdownConfig</code> is one big <code>case class</code> with one <code>copy</code> constructor. Two prefab values:</p>
+<table>
+<thead>
+<tr><th>Value</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>MarkdownConfig.default</code></td><td>Pure CommonMark — no extensions enabled.</td></tr>
+<tr><td><code>MarkdownConfig.all</code></td><td>Every extension enabled.</td></tr>
+</tbody>
+</table>
+<p>See <a href="/markdown/reference/options/">Options</a> for the per-flag table.</p>
+<h2 id="doc-tag-extension">Doc-tag extension</h2>
+<pre><code class="language-scala"><span class="hl-keyword">case</span> <span class="hl-keyword">class</span> <span class="hl-type">TagDefinition</span><span class="hl-punctuation">(</span>
+  name<span class="hl-punctuation">:</span>          <span class="hl-type">String</span><span class="hl-punctuation">,</span>
+  acceptsTarget<span class="hl-punctuation">:</span> <span class="hl-type">Boolean</span><span class="hl-punctuation">,</span>
+  contentMode<span class="hl-punctuation">:</span>   <span class="hl-type">ContentMode</span><span class="hl-punctuation">,</span>
+<span class="hl-punctuation">)</span>
+
+<span class="hl-keyword">final</span> <span class="hl-keyword">class</span> <span class="hl-type">TagRegistry</span><span class="hl-punctuation">:</span>
+  <span class="hl-keyword">def</span> lookup<span class="hl-punctuation">(</span>name<span class="hl-punctuation">:</span> <span class="hl-type">String</span><span class="hl-punctuation">):</span> <span class="hl-type">Option</span><span class="hl-punctuation">[</span><span class="hl-type">TagDefinition</span><span class="hl-punctuation">]</span>
+  <span class="hl-keyword">def</span> isEmpty<span class="hl-punctuation">:</span>  <span class="hl-type">Boolean</span>
+  <span class="hl-keyword">def</span> nonEmpty<span class="hl-punctuation">:</span> <span class="hl-type">Boolean</span>
+  <span class="hl-keyword">def</span> all<span class="hl-punctuation">:</span>      <span class="hl-type">Iterable</span><span class="hl-punctuation">[</span><span class="hl-type">TagDefinition</span><span class="hl-punctuation">]</span>
+
+<span class="hl-keyword">object</span> <span class="hl-type">TagRegistry</span><span class="hl-punctuation">:</span>
+  <span class="hl-keyword">val</span> empty<span class="hl-punctuation">:</span> <span class="hl-type">TagRegistry</span>
+  <span class="hl-keyword">def</span> apply<span class="hl-punctuation">(</span>defs<span class="hl-punctuation">:</span> <span class="hl-type">TagDefinition</span><span class="hl-keyword">*</span><span class="hl-punctuation">):</span>           <span class="hl-type">TagRegistry</span>
+  <span class="hl-keyword">def</span> fromList<span class="hl-punctuation">(</span>defs<span class="hl-punctuation">:</span> <span class="hl-type">Iterable</span><span class="hl-punctuation">[</span><span class="hl-type">TagDefinition</span><span class="hl-punctuation">]):</span> <span class="hl-type">TagRegistry</span>
+
+<span class="hl-keyword">enum</span> <span class="hl-type">ContentMode</span><span class="hl-punctuation">:</span>
+  <span class="hl-keyword">case</span> <span class="hl-type">Opaque</span><span class="hl-punctuation">,</span> <span class="hl-type">InlineMarkdown</span><span class="hl-punctuation">,</span> <span class="hl-type">BlockMarkdown</span>
+
+<span class="hl-keyword">case</span> <span class="hl-keyword">class</span> <span class="hl-type">DocTagConfig</span><span class="hl-punctuation">(</span>
+  enabled<span class="hl-punctuation">:</span>           <span class="hl-type">Boolean</span>      <span class="hl-keyword">=</span> <span class="hl-variable">false</span><span class="hl-punctuation">,</span>
+  registry<span class="hl-punctuation">:</span>          <span class="hl-type">TagRegistry</span>  <span class="hl-keyword">=</span> <span class="hl-type">TagRegistry</span><span class="hl-punctuation">.</span>empty<span class="hl-punctuation">,</span>
+  strictUnknownTags<span class="hl-punctuation">:</span> <span class="hl-type">Boolean</span>      <span class="hl-keyword">=</span> <span class="hl-variable">false</span><span class="hl-punctuation">,</span>
+<span class="hl-punctuation">)</span>
+
+<span class="hl-keyword">object</span> <span class="hl-type">DocTagConfig</span><span class="hl-punctuation">:</span>
+  <span class="hl-keyword">val</span> disabled<span class="hl-punctuation">:</span> <span class="hl-type">DocTagConfig</span></code></pre>
+<p>See <a href="/markdown/reference/extensions/#doc-tags">Extensions → Doc-tags</a> for the integration model.</p>
+</article>
+
+        
+  <nav class="juicerdocs-prevnext" aria-label="Page navigation">
+    
+      <a href="/markdown/reference/" class="juicerdocs-prevnext-card">
+        <span class="juicerdocs-prevnext-label">← Previous</span>
+        <span class="juicerdocs-prevnext-title">Reference</span>
+      </a>
+    
+    
+      <a href="/markdown/reference/extensions/" class="juicerdocs-prevnext-card juicerdocs-prevnext-card-next">
+        <span class="juicerdocs-prevnext-label">Next →</span>
+        <span class="juicerdocs-prevnext-title">Extensions</span>
+      </a>
+    
+  </nav>
+
+
+      </div>
+    </main>
+
+    <aside class="juicerdocs-rail-aside">
+      
+  <nav id="juicerdocs-page-toc" aria-label="On this page" class="juicerdocs-toc-wrap">
+    <p class="juicerdocs-toc-title">On this page</p>
+    <ul class="juicerdocs-toc">
+      
+  <li>
+    <a href="#parsing" data-juicerdocs-toc-link data-jd-toc-id="parsing"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Parsing
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#html-rendering" data-juicerdocs-toc-link data-jd-toc-id="html-rendering"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      HTML rendering
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#xml-rendering" data-juicerdocs-toc-link data-jd-toc-id="xml-rendering"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      XML rendering
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#url-helpers" data-juicerdocs-toc-link data-jd-toc-id="url-helpers"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      URL helpers
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#ast-walking-helpers" data-juicerdocs-toc-link data-jd-toc-id="ast-walking-helpers"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      AST walking helpers
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#input-layer" data-juicerdocs-toc-link data-jd-toc-id="input-layer"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Input layer
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#config" data-juicerdocs-toc-link data-jd-toc-id="config"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Config
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#doc-tag-extension" data-juicerdocs-toc-link data-jd-toc-id="doc-tag-extension"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      Doc-tag extension
+    </a>
+    
+  </li>
+
+
+    </ul>
+  </nav>
+
+
+    </aside>
+  </div>
+
+  <footer class="juicerdocs-footer">
+  <div class="juicerdocs-footer-inner">
+    <p>
+      Built with <a href="https://juicer.run/">Juicer</a>
+      &middot; Theme: <a href="https://juicer.run/concepts/themes/">juicerdocs</a>
+    </p>
+    
+  </div>
+</footer>
+
+
+  <script src="/markdown/juicerdocs.js"></script>
+</body>
+</html>

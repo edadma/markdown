@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Parsing – markdown</title>
+<meta name="description" content="The pipeline from source string to Document — InputReader, block parsers, inline parsers." />
+<link rel="canonical" href="https://edadma.github.io/markdown/concepts/parsing/" />
+
+<link rel="alternate" type="application/atom+xml" href="/markdown/feed.xml" title="markdown" />
+
+<!-- Inter font (variable) for clean typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+
+<!--
+  Apply the theme BEFORE first paint to avoid the white flash.
+  Reads localStorage ('juicerdocs-theme'), falls back to system preference.
+  Sets data-theme="dark" or data-theme="light" on <html>.
+-->
+<script>
+  (function() {
+    try {
+      var stored = localStorage.getItem('juicerdocs-theme');
+      var dark = stored
+        ? stored === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) {}
+  })();
+</script>
+
+<link rel="stylesheet" href="/markdown/juicerdocs.css" />
+
+<!-- Site-supplied stylesheets, loaded AFTER the bundled theme CSS so
+     they can override anything. Drop your file in static/site.css and
+     set `customCSS = ["site.css"]` in site.toml; the list takes any
+     number of paths in the order to load them. -->
+
+
+
+<!--
+  Site-supplied palette overrides — set under [juicerdocs] in site.toml:
+    brand, brandStrong, brandSoft, accent, leaf  (light defaults)
+    brandDark, brandStrongDark, brandSoftDark, accentDark, leafDark  (dark overrides)
+  Anything left unset falls through to the theme defaults in juicerdocs.css.
+-->
+<style>
+  :root {
+    --brand: #334155;
+    --brand-strong: #1e293b;
+    --brand-soft: #f1f5f9;
+    --accent: #b45309;
+    --leaf: #15803d;
+    
+    
+    
+    
+    
+    
+  }
+  [data-theme="dark"] {
+    --brand: #cbd5e1;
+    --brand-strong: #e2e8f0;
+    --brand-soft: rgb(203 213 225 / .12);
+    --accent: #fbbf24;
+    --leaf: #4ade80;
+  }
+</style>
+
+
+</head>
+<body>
+  <header class="juicerdocs-topbar">
+  <div class="juicerdocs-topbar-inner">
+    <a href="/markdown/" class="juicerdocs-brand">
+      
+      <span class="juicerdocs-brand-name">markdown</span>
+    </a>
+
+    <div class="juicerdocs-search">
+      <div class="juicerdocs-search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/>
+        </svg>
+        <input id="juicerdocs-search" class="juicerdocs-search-input" type="search" placeholder="Search docs…" autocomplete="off" />
+      </div>
+      <div id="juicerdocs-search-results" class="juicerdocs-search-popup" hidden></div>
+    </div>
+
+    
+    <a href="https://github.com/edadma/markdown" aria-label="GitHub repository" target="_blank" rel="noopener noreferrer" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.07 3.29 9.36 7.86 10.88.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.72-1.52-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.95 10.95 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.55C20.21 21.36 23.5 17.07 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+    </a>
+    
+
+    <button id="juicerdocs-sidebar-toggle" aria-label="Toggle sidebar" class="juicerdocs-icon-btn juicerdocs-sidebar-toggle">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <button id="juicerdocs-theme-toggle" aria-label="Toggle theme" class="juicerdocs-icon-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-icon-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+
+  <div class="juicerdocs-page">
+    <aside class="juicerdocs-sidebar-aside">
+      <nav id="juicerdocs-sidebar" aria-label="Site navigation" class="juicerdocs-nav">
+  
+    <ul class="juicerdocs-nav-list">
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/getting-started/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Getting Started</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/getting-started/installation/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Installation</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/getting-started/quickstart/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Quickstart</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/concepts/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Concepts</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/concepts/ast/" data-juicerdocs-nav-link class="juicerdocs-nav-link">AST</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/parsing/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Parsing</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/concepts/rendering/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Rendering</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/reference/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Reference</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/reference/api/" data-juicerdocs-nav-link class="juicerdocs-nav-link">API</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/extensions/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Extensions</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/reference/options/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Options</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+        <li class="juicerdocs-nav-section">
+          <a href="/markdown/recipes/" data-juicerdocs-nav-link class="juicerdocs-nav-heading">Recipes</a>
+          
+  <ul class="juicerdocs-nav-children">
+    
+      <li>
+        <a href="/markdown/recipes/embedding/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Embedding the parser</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/custom-renderer/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Writing a custom renderer</a>
+      </li>
+    
+      <li>
+        <a href="/markdown/recipes/juicer-integration/" data-juicerdocs-nav-link class="juicerdocs-nav-link">Juicer integration</a>
+      </li>
+    
+  </ul>
+
+
+
+        </li>
+      
+    </ul>
+  
+</nav>
+
+    </aside>
+    <div class="juicerdocs-sidebar-backdrop" aria-hidden="true"></div>
+
+    <main class="juicerdocs-main">
+      <div class="juicerdocs-content">
+        
+  <nav aria-label="Breadcrumb" class="juicerdocs-breadcrumbs">
+    <ol>
+      
+        <li>
+          <a href="/markdown/" class="juicerdocs-breadcrumbs-link">markdown</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+        <li>
+          <a href="/markdown/concepts/" class="juicerdocs-breadcrumbs-link">Concepts</a>
+          <svg xmlns="http://www.w3.org/2000/svg" class="juicerdocs-breadcrumbs-sep" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </li>
+      
+      <li class="juicerdocs-breadcrumbs-current">Parsing</li>
+    </ol>
+  </nav>
+
+
+        
+<article>
+  <h1>Parsing</h1>
+  <p class="juicerdocs-lead">The pipeline from source string to Document — InputReader, block parsers, inline parsers.</p>
+  <p>The parser is structured as a pipeline. Each stage has one job and produces input for the next:</p>
+<pre><code>String
+   │
+   ▼  InputReader
+LazyList[C]                    cursors carrying char + position + isLiteral
+   │
+   ▼  groupIntoLines
+LazyList[List[C]]              one list per line, with leading tabs expanded
+   │
+   ▼  block parsers (priority-ordered registry)
+List[Block]                    blocks containing raw List[Inline] of cursors
+   │
+   ▼  processInlines
+Document                       inlines resolved, entities decoded, link refs bound
+</code></pre>
+<h2 id="1-input-normalization">1. Input normalization</h2>
+<p><code>new InputReader(input)</code> produces the cursor stream <code>LazyList[C]</code>. Each <code>C</code> carries a single character plus its source position, line, column, and an <code>isLiteral</code> flag (true if the character was backslash-escaped). The reader normalizes line endings (CR / CRLF → LF) and replaces null with U+FFFD. Backslash escapes of ASCII punctuation are resolved here — the escaped character gets <code>isLiteral = true</code> so downstream parsers know not to treat it as syntax.</p>
+<p>You won’t usually call <code>InputReader</code> directly; <code>parseDocumentContent</code> wraps it.</p>
+<h2 id="2-line-grouping">2. Line grouping</h2>
+<p><code>groupIntoLines</code> chunks the cursor stream into lines. It uses <code>LazyList.unfold</code> to stay lazy, and <code>expandLeadingTabs</code> to expand tabs to spaces in leading whitespace only (CommonMark requires column-based indent semantics).</p>
+<h2 id="3-block-parsing">3. Block parsing</h2>
+<p>Block parsers form a priority-ordered registry. For each line, the parser walks the registry calling <code>canStart()</code> then <code>parse()</code> on each entry. Whichever parser claims the line consumes one or more lines and returns a <code>Block</code>. Returning zero lines means “not me, try the next parser.” Returning a <code>null</code> block means “I consumed lines but produced no output” — the only parser that does this is <code>LinkReferenceDefinitionParser</code>, which accumulates link reference definitions into a side table for later resolution.</p>
+<p>Priority order (top wins):</p>
+<ol>
+<li><code>LinkReferenceDefinitionParser</code> — <code>[label]: dest &quot;title&quot;</code></li>
+<li><code>ThematicBreakBlockParser</code> — <code>***</code>, <code>---</code>, <code>___</code></li>
+<li><code>ListBlockParser</code> — unordered (<code>-</code>, <code>+</code>, <code>*</code>) and ordered (<code>1.</code>, <code>1)</code>)</li>
+<li><code>IndentedCodeBlockParser</code> — 4+ space indent</li>
+<li><code>SetextHeadingBlockParser</code> — looks ahead for <code>===</code> or <code>---</code> underline</li>
+<li><code>ATXHeadingBlockParser</code> — <code>#</code>–<code>######</code></li>
+<li><code>HTMLBlockParser</code> — types 1–7 per CommonMark §4.6</li>
+<li><code>TableBlockParser</code> — GFM tables (requires <code>tables</code>)</li>
+<li><code>CollapsibleBlockParser</code> — <code>::: title</code> … <code>:::</code></li>
+<li><code>DefinitionListBlockParser</code> — term + <code>: definition</code> (requires <code>definitionLists</code>)</li>
+<li><code>FencedCodeBlockParser</code> — <code>```</code> or <code>~~~</code></li>
+<li><code>MathBlockParser</code> — <code>$$</code> fences (requires <code>math</code>)</li>
+<li><code>CalloutBlockParser</code> — <code>&gt; [!TYPE]</code> admonitions (requires <code>callouts</code>)</li>
+<li><code>BlockQuoteParser</code> — <code>&gt; </code> prefixed blocks with lazy continuation</li>
+<li><code>ParagraphBlockParser</code> — fallback, absorbs continuation lines until interrupted</li>
+</ol>
+<p>The fallback at the end is critical: anything not claimed by an earlier parser becomes a <code>Paragraph</code>. <code>ParagraphBlockParser</code>‘s notion of when it gets <em>interrupted</em> by a later block construct (ATX heading, thematic break, HTML block 1–6, fence, blockquote, list-that-can-interrupt, math block) is what makes the spec’s “no blank line needed” rules work.</p>
+<h2 id="4-inline-parsing">4. Inline parsing</h2>
+<p>After the block tree is built, <code>processInlines(linkRefs, config)</code> is called on the <code>Document</code>. It walks every block recursively and calls <code>parseInline</code> on the <code>List[Inline]</code> it finds.</p>
+<p><code>parseInline</code> is a single-pass algorithm operating on a doubly-linked list. Its main loop checks each <code>C</code> cursor against a fixed set of trigger characters in spec-defined precedence order:</p>
+<table>
+<thead>
+<tr><th>Char</th><th>Triggers</th><th>Guarded by</th></tr>
+</thead>
+<tbody>
+<tr><td><code>`</code></td><td>code spans (highest precedence)</td><td>always on</td></tr>
+<tr><td><code>:</code></td><td>emoji shortcodes</td><td><code>emoji != Disabled</code></td></tr>
+<tr><td><code>$</code></td><td>inline math</td><td><code>math</code></td></tr>
+<tr><td><code>&lt;</code></td><td>autolinks and raw HTML tags</td><td>always on</td></tr>
+<tr><td><code>*</code>, <code>_</code></td><td>emphasis / strong (deferred via delimiter stack)</td><td>always on</td></tr>
+<tr><td><code>~</code></td><td>strikethrough (delimiter stack)</td><td><code>strikethrough</code></td></tr>
+<tr><td><code>[</code></td><td>link / image opener</td><td>always on</td></tr>
+<tr><td><code>]</code></td><td>link / image closer</td><td>always on</td></tr>
+<tr><td><code>\n</code></td><td>hard or soft line break</td><td>always on</td></tr>
+<tr><td><code>h</code>, <code>w</code></td><td>extended autolinks (bare URLs)</td><td><code>extendedAutolinks</code></td></tr>
+</tbody>
+</table>
+<p>After the main loop, <code>processEmphasis</code> walks the delimiter stack and resolves emphasis pairs using the CommonMark “rule of 3” (<code>isValidEmphasisPair</code>). Then <code>consolidateCharacters</code> merges adjacent <code>C</code> cursors into <code>Text</code> nodes, and <code>decodeHtmlEntities</code> resolves named, decimal, and hex entity references.</p>
+<h2 id="5-link-references">5. Link references</h2>
+<p>Link reference definitions are accumulated during block parsing into an <code>immutable.Map[String, LinkReference]</code>. They’re passed into <code>processInlines</code>, where <code>lookForLinkOrImage</code> consults them when resolving full reference (<code>[text][label]</code>), collapsed reference (<code>[text][]</code>), and shortcut reference (<code>[text]</code>) link forms — in addition to inline <code>[text](url)</code>.</p>
+<p>Labels are normalized via Unicode case-folding (<code>toLowerCase</code> plus <code>ß → ss</code>) and whitespace collapsing before comparison.</p>
+<h2 id="what-you-actually-call">What you actually call</h2>
+<pre><code class="language-scala"><span class="hl-keyword">import</span> io<span class="hl-punctuation">.</span>github<span class="hl-punctuation">.</span>edadma<span class="hl-punctuation">.</span>markdown<span class="hl-punctuation">.</span><span class="hl-keyword">*</span>
+
+<span class="hl-comment">// Most common:</span>
+<span class="hl-keyword">val</span> html<span class="hl-punctuation">:</span> <span class="hl-type">String</span>     <span class="hl-keyword">=</span> renderToHTML<span class="hl-punctuation">(</span>md<span class="hl-punctuation">,</span> config<span class="hl-punctuation">)</span>
+<span class="hl-keyword">val</span> doc<span class="hl-punctuation">:</span>  <span class="hl-type">Document</span>   <span class="hl-keyword">=</span> parseDocumentContent<span class="hl-punctuation">(</span>md<span class="hl-punctuation">,</span> config<span class="hl-punctuation">)</span>
+
+<span class="hl-comment">// Need the link reference table back? (e.g. for cross-document analysis)</span>
+<span class="hl-keyword">val</span> <span class="hl-punctuation">(</span>doc2<span class="hl-punctuation">,</span> refs<span class="hl-punctuation">)</span> <span class="hl-keyword">=</span> parseDocumentContentWithRefs<span class="hl-punctuation">(</span>md<span class="hl-punctuation">,</span> config<span class="hl-punctuation">)</span></code></pre>
+<p>See <a href="/markdown/reference/api/">Reference → API</a> for every entry point with full signatures.</p>
+</article>
+
+        
+  <nav class="juicerdocs-prevnext" aria-label="Page navigation">
+    
+      <a href="/markdown/concepts/ast/" class="juicerdocs-prevnext-card">
+        <span class="juicerdocs-prevnext-label">← Previous</span>
+        <span class="juicerdocs-prevnext-title">AST</span>
+      </a>
+    
+    
+      <a href="/markdown/concepts/rendering/" class="juicerdocs-prevnext-card juicerdocs-prevnext-card-next">
+        <span class="juicerdocs-prevnext-label">Next →</span>
+        <span class="juicerdocs-prevnext-title">Rendering</span>
+      </a>
+    
+  </nav>
+
+
+      </div>
+    </main>
+
+    <aside class="juicerdocs-rail-aside">
+      
+  <nav id="juicerdocs-page-toc" aria-label="On this page" class="juicerdocs-toc-wrap">
+    <p class="juicerdocs-toc-title">On this page</p>
+    <ul class="juicerdocs-toc">
+      
+  <li>
+    <a href="#1-input-normalization" data-juicerdocs-toc-link data-jd-toc-id="1-input-normalization"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      1. Input normalization
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#2-line-grouping" data-juicerdocs-toc-link data-jd-toc-id="2-line-grouping"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      2. Line grouping
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#3-block-parsing" data-juicerdocs-toc-link data-jd-toc-id="3-block-parsing"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      3. Block parsing
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#4-inline-parsing" data-juicerdocs-toc-link data-jd-toc-id="4-inline-parsing"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      4. Inline parsing
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#5-link-references" data-juicerdocs-toc-link data-jd-toc-id="5-link-references"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      5. Link references
+    </a>
+    
+  </li>
+
+  <li>
+    <a href="#what-you-actually-call" data-juicerdocs-toc-link data-jd-toc-id="what-you-actually-call"
+       class="juicerdocs-toc-link" data-toc-level="2">
+      What you actually call
+    </a>
+    
+  </li>
+
+
+    </ul>
+  </nav>
+
+
+    </aside>
+  </div>
+
+  <footer class="juicerdocs-footer">
+  <div class="juicerdocs-footer-inner">
+    <p>
+      Built with <a href="https://juicer.run/">Juicer</a>
+      &middot; Theme: <a href="https://juicer.run/concepts/themes/">juicerdocs</a>
+    </p>
+    
+  </div>
+</footer>
+
+
+  <script src="/markdown/juicerdocs.js"></script>
+</body>
+</html>
