@@ -3,9 +3,11 @@
 <title>{{ if .page.title }}{{ .page.title }} – {{ end }}{{ .site.title }}</title>
 {{ if .page.summary }}<meta name="description" content="{{ .page.summary }}" />{{ end }}
 <link rel="canonical" href="{{ .page.permalink }}" />
-{{ if .site.juicerdocs.logo }}
+{{ if .site.favicon }}
+<link rel="icon" href="{{ relURL .site.favicon }}" />
+{{ else }}{{ if .site.juicerdocs.logo }}
 <link rel="icon" type="image/png" href="{{ relURL .site.juicerdocs.logo }}" />
-{{ end }}
+{{ end }}{{ end }}
 <link rel="alternate" type="application/atom+xml" href="{{ relURL '/feed.xml' }}" title="{{ .site.title }}" />
 
 <!-- Inter font (variable) for clean typography -->
@@ -32,6 +34,13 @@
 
 <link rel="stylesheet" href="{{ relURL '/juicerdocs.css' }}" />
 
+<!-- Site-supplied stylesheets, loaded AFTER the bundled theme CSS so
+     they can override anything. Drop your file in static/site.css and
+     set `customCSS = ["site.css"]` in site.toml; the list takes any
+     number of paths in the order to load them. -->
+{{ if .site.customCSS }}{{ for css <- .site.customCSS }}<link rel="stylesheet" href="{{ relURL css }}" />
+{{ end }}{{ end }}
+
 {{ if .site.juicerdocs }}
 <!--
   Site-supplied palette overrides — set under [juicerdocs] in site.toml:
@@ -46,6 +55,12 @@
     {{ if .site.juicerdocs.brandSoft    }}--brand-soft: {{ .site.juicerdocs.brandSoft }};{{ end }}
     {{ if .site.juicerdocs.accent       }}--accent: {{ .site.juicerdocs.accent }};{{ end }}
     {{ if .site.juicerdocs.leaf         }}--leaf: {{ .site.juicerdocs.leaf }};{{ end }}
+    {{ if .site.juicerdocs.fontSans     }}--font-sans: {{ .site.juicerdocs.fontSans }};{{ end }}
+    {{ if .site.juicerdocs.fontMono     }}--font-mono: {{ .site.juicerdocs.fontMono }};{{ end }}
+    {{ if .site.juicerdocs.contentMax   }}--content-max: {{ .site.juicerdocs.contentMax }};{{ end }}
+    {{ if .site.juicerdocs.sidebarW     }}--sidebar-w: {{ .site.juicerdocs.sidebarW }};{{ end }}
+    {{ if .site.juicerdocs.railW        }}--rail-w: {{ .site.juicerdocs.railW }};{{ end }}
+    {{ if .site.juicerdocs.radiusLg     }}--radius-lg: {{ .site.juicerdocs.radiusLg }};{{ end }}
   }
   [data-theme="dark"] {
     {{ if .site.juicerdocs.brandDark        }}--brand: {{ .site.juicerdocs.brandDark }};{{ end }}

@@ -1,9 +1,9 @@
 <footer class="juicerdocs-footer">
   <div class="juicerdocs-footer-inner">
-    <p>
+    {{ if not .site.hideJuicerCredit }}<p>
       Built with <a href="https://juicer.run/">Juicer</a>
       &middot; Theme: <a href="https://juicer.run/concepts/themes/">juicerdocs</a>
-    </p>
+    </p>{{ end }}
     {{ if .site.showCopyright and .site.author }}<p>© {{ .site.author }}</p>{{ end }}
   </div>
 </footer>

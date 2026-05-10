@@ -11,6 +11,9 @@
 title           = "markdown"
 author          = "Ed Maxedon"
 baseURL         = "https://edadma.github.io/markdown/"
+# repoURL drives the topbar GitHub icon and the "Star on GitHub" hero
+# button — both rendered conditionally by juicerdocs when this is set.
+repoURL         = "https://github.com/edadma/markdown"
 
 theme           = "juicerdocs"
 

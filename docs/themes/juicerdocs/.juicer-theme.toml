@@ -1,0 +1,6 @@
+# Written by `juicer theme add`. Do not edit by hand — change
+# values via `juicer theme upgrade --ref <new-ref>` etc., or remove
+# this file to detach the theme from its install source.
+
+url = "https://github.com/edadma/juicer.git"
+subdir = "docs/themes/juicerdocs"

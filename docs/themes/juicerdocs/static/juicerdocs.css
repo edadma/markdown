@@ -205,6 +205,35 @@ hr {
   width: var(--rail-w);
 }
 
+/* Sidebar / rail scrollbars — keep them visually quiet so the side
+   columns feel like ambient navigation, not chrome. The OS-default
+   scrollbar is too bulky and (in dark mode) too bright. Firefox uses
+   the standard `scrollbar-*` properties; Chromium/Safari use the
+   ::-webkit-scrollbar pseudo-element. Both target `--border` for the
+   thumb, which is already token-aware so dark mode auto-dims. */
+.juicerdocs-sidebar-aside,
+.juicerdocs-rail-aside {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.juicerdocs-sidebar-aside::-webkit-scrollbar,
+.juicerdocs-rail-aside::-webkit-scrollbar {
+  width: 8px;
+}
+.juicerdocs-sidebar-aside::-webkit-scrollbar-track,
+.juicerdocs-rail-aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+.juicerdocs-sidebar-aside::-webkit-scrollbar-thumb,
+.juicerdocs-rail-aside::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.juicerdocs-sidebar-aside::-webkit-scrollbar-thumb:hover,
+.juicerdocs-rail-aside::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-soft);
+}
+
 @media (max-width: 1023px) {
   .juicerdocs-sidebar-aside { display: none; }
 }
@@ -958,6 +987,41 @@ hr {
 .juicerdocs-content pre[data-language] {
   padding-top: 1.75rem;
 }
+
+/* ============================================================
+   Syntax highlighting
+   ============================================================
+   Server-side via the `highlighter` lib (TextMate grammars). When juicer
+   sees a `<src>/grammars/<lang>.tmLanguage.json`, it parses each one
+   once, wires markdown's `codeHighlighter` callback, and emits
+   `<span class="hl-keyword">…</span>` etc. inside the existing
+   `<pre><code>`. The theme owns the colors via these classes; sites
+   without a grammars/ dir get plain `<pre><code>` and these styles
+   are inert.
+
+   Palette lives in juicerdocs's magenta/purple/leaf color space —
+   keywords carry the brand magenta, strings stay leaf-green, types
+   pick up the accent violet so the page reads as one piece. Dark-mode
+   swaps to lighter, slightly cooler tones so the accents don't burn
+   against the deep code background. */
+.juicerdocs-content .hl-keyword     { color: #a30d57; font-weight: 600; }
+.juicerdocs-content .hl-string      { color: #4d7c0f; }
+.juicerdocs-content .hl-comment     { color: #71717a; font-style: italic; }
+.juicerdocs-content .hl-number      { color: #b91c1c; }
+.juicerdocs-content .hl-type        { color: #6f1f9e; }
+.juicerdocs-content .hl-function    { color: #1d4ed8; }
+.juicerdocs-content .hl-variable    { color: inherit; }
+.juicerdocs-content .hl-operator    { color: #52525b; }
+.juicerdocs-content .hl-punctuation { color: #71717a; }
+
+[data-theme="dark"] .juicerdocs-content .hl-keyword     { color: #f472b6; }
+[data-theme="dark"] .juicerdocs-content .hl-string      { color: #a3e635; }
+[data-theme="dark"] .juicerdocs-content .hl-comment     { color: #a1a1aa; }
+[data-theme="dark"] .juicerdocs-content .hl-number      { color: #fb7185; }
+[data-theme="dark"] .juicerdocs-content .hl-type        { color: #c084fc; }
+[data-theme="dark"] .juicerdocs-content .hl-function    { color: #93c5fd; }
+[data-theme="dark"] .juicerdocs-content .hl-operator    { color: #d4d4d8; }
+[data-theme="dark"] .juicerdocs-content .hl-punctuation { color: #a1a1aa; }
 
 /* Tables */
 .juicerdocs-content table {

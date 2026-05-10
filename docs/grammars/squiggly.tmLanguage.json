@@ -1,0 +1,132 @@
+{
+  "scopeName": "source.squiggly",
+  "name": "Squiggly",
+  "fileTypes": ["squiggly"],
+  "patterns": [
+    { "include": "#tag-comment" },
+    { "include": "#tag" }
+  ],
+  "repository": {
+    "tag-comment": {
+      "comment": "Block comment: {{/* ... */}} — kept distinct from tag bodies so the comment text doesn't get tokenised as keywords/strings.",
+      "name": "comment.block.squiggly",
+      "begin": "\\{\\{-?\\s*/\\*",
+      "end": "\\*/\\s*-?\\}\\}"
+    },
+    "tag": {
+      "comment": "Any {{ ... }} tag — including the trim variants {{- ... -}}. Inside, all the squiggly tokens come from the #tag-body repository. The dedicated punctuation scope on the delimiters lets themes color them subtly so the tag boundaries stay readable.",
+      "begin": "(\\{\\{-?)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.tag.begin.squiggly" }
+      },
+      "end": "(-?\\}\\})",
+      "endCaptures": {
+        "1": { "name": "punctuation.section.tag.end.squiggly" }
+      },
+      "patterns": [
+        { "include": "#tag-body" }
+      ]
+    },
+    "tag-body": {
+      "patterns": [
+        { "include": "#line-comment" },
+        { "include": "#string" },
+        { "include": "#raw-string" },
+        { "include": "#number" },
+        { "include": "#literal" },
+        { "include": "#keyword" },
+        { "include": "#operator-word" },
+        { "include": "#assignment" },
+        { "include": "#variable" },
+        { "include": "#dot-path" },
+        { "include": "#function-call" },
+        { "include": "#pipe" },
+        { "include": "#operator" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "line-comment": {
+      "comment": "Inline tag-local comment: {{ // ... }} — squiggly's TagParser routes this to a CommentAST.",
+      "name": "comment.line.double-slash.squiggly",
+      "match": "//.*$"
+    },
+    "string": {
+      "comment": "Double-quoted string with C-style escapes.",
+      "name": "string.quoted.double.squiggly",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.squiggly", "match": "\\\\." }
+      ]
+    },
+    "raw-string": {
+      "comment": "Backtick-quoted raw string — no escape processing.",
+      "name": "string.quoted.other.squiggly",
+      "begin": "`",
+      "end": "`"
+    },
+    "number": {
+      "comment": "Integer or floating-point literal.",
+      "name": "constant.numeric.squiggly",
+      "match": "\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b"
+    },
+    "literal": {
+      "comment": "true / false / null.",
+      "name": "constant.language.squiggly",
+      "match": "\\b(?:true|false|null)\\b"
+    },
+    "keyword": {
+      "comment": "Block-control keywords from squiggly's reserved list.",
+      "name": "keyword.control.squiggly",
+      "match": "\\b(?:if|then|else|elsif|end|for|with|match|case|define|block|return|template|partial)\\b"
+    },
+    "operator-word": {
+      "comment": "Word-form operators that share the reserved list with keywords.",
+      "name": "keyword.operator.word.squiggly",
+      "match": "\\b(?:and|or|not|div|mod)\\b"
+    },
+    "assignment": {
+      "comment": "Variable declaration / assignment: $x := expr or $x = expr.",
+      "match": "(\\$[A-Za-z_][A-Za-z0-9_]*)\\s*(:=|=)",
+      "captures": {
+        "1": { "name": "variable.other.assignment.squiggly" },
+        "2": { "name": "keyword.operator.assignment.squiggly" }
+      }
+    },
+    "variable": {
+      "comment": "User-bound variable reference: $x.",
+      "name": "variable.other.squiggly",
+      "match": "\\$[A-Za-z_][A-Za-z0-9_]*"
+    },
+    "dot-path": {
+      "comment": "Context dot-path: .foo, .foo.bar, or bare . (the cursor). The leading dot lights up as punctuation; the names get the variable scope so themes treat them like fields.",
+      "match": "(\\.)([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)?",
+      "captures": {
+        "1": { "name": "punctuation.accessor.squiggly" },
+        "2": { "name": "variable.other.member.squiggly" }
+      }
+    },
+    "function-call": {
+      "comment": "Identifier immediately followed by '(' is the call form for built-ins (printf, len, slice, ...).",
+      "match": "([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.squiggly" }
+      }
+    },
+    "pipe": {
+      "comment": "Pipeline operator. After this, the next identifier is typically a built-in fed by the previous expression.",
+      "name": "keyword.operator.pipe.squiggly",
+      "match": "\\|"
+    },
+    "operator": {
+      "comment": "Symbolic operators: arithmetic, comparison, range. Order matters — multi-char first so '<=' doesn't tokenise as '<' '='.",
+      "name": "keyword.operator.squiggly",
+      "match": "<=|>=|!=|==|<-|<|>|\\+\\+|\\+|-|\\*|/|\\\\|%|\\^"
+    },
+    "punctuation": {
+      "comment": "Brackets, parens, comma, colon — kept low-priority so themes can mute them.",
+      "name": "punctuation.squiggly",
+      "match": "[\\(\\)\\[\\],:]"
+    }
+  }
+}
