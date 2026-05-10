@@ -118,8 +118,10 @@ Explicit ids set via the `attributes` extension (`## Heading {#explicit}`) alway
 
 Three modes:
 
-| `EmojiConfig.Disabled`        | `:smile:` is left as text.                          |
-| `EmojiConfig.Unicode`         | `:smile:` becomes `😄`.                             |
+| Config                        | Behavior |
+|-------------------------------|----------|
+| `EmojiConfig.Disabled`        | `:smile:` is left as text. |
+| `EmojiConfig.Unicode`         | `:smile:` becomes `😄`. |
 | `EmojiConfig.Image(baseURL)`  | `:smile:` becomes `<img src="{baseURL}/smile.svg" />`. |
 
 The shortcode set is the standard GitHub / Slack list.
