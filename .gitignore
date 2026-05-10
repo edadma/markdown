@@ -26,3 +26,6 @@ log_*
 
 # docs site build output (rendered by juicer; CI deploys)
 _site/
+
+# juicer build output
+docs/public/
