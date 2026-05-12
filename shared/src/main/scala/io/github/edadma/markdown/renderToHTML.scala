@@ -236,12 +236,17 @@ def renderToHTML(node: Node, config: MarkdownConfig): String = node match {
             case Some(fd) => fd.content.map(renderBlockToHTML(_, config)).mkString("\n")
             case None     => ""
           }
-          // Inject backref into last paragraph if present, otherwise append
+          // Inject backref into the last paragraph if one exists, otherwise wrap
+          // it in a fresh paragraph. The earlier `content.reverse / replaceFirst /
+          // reverse` trick emitted a stray `>` after `</a>` (the leading `>` in
+          // the reverse-space replacement reappeared as a trailing `>` once the
+          // whole string was un-reversed) and would also have been bitten by
+          // regex-replacement specials in the backref string. lastIndexOf is
+          // clearer and robust to either failure mode.
           val backref = s""" <a href="#fnref-$label" class="footnote-backref">&#8617;</a>"""
-          val withBackref = if (content.contains("</p>")) {
-            content.reverse.replaceFirst(">p/<", s">${backref.reverse}>p/<").reverse
-          } else {
-            content + s"\n<p>$backref</p>"
+          val withBackref = content.lastIndexOf("</p>") match {
+            case -1 => content + s"\n<p>$backref</p>"
+            case i  => content.substring(0, i) + backref + content.substring(i)
           }
           s"""<li id="fn-$label">\n$withBackref\n</li>"""
         }.mkString("\n")

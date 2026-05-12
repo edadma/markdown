@@ -63,4 +63,38 @@ class FootnoteTest extends AnyFreeSpec with Matchers:
       val html  = renderToHTML(input, config)
       html should not include """<sup"""
     }
+
+    // Regression — earlier the backref-injection used a reverse-string trick
+    // whose replacement carried an extra `>` that fell out the right-hand
+    // side of the substitution after the un-reverse, producing `...</a>></li>`
+    // instead of `...</a></li>`. The existing tests above only used `include`
+    // substring matching and so kept passing through the bug.
+    "backref does not emit a stray '>' after </a>" in {
+      val input = "Text[^1].\n\n[^1]: Footnote.\n"
+      val html  = renderToHTML(input, config)
+      html should not include """</a>></li>"""
+      html should not include """</a>>"""
+    }
+
+    // Regression — the original implementation passed `backref` through
+    // String.replaceFirst, which interprets `$` and `\` in the replacement
+    // specially. A backref whose label contains `$` or `\` would have either
+    // thrown IllegalArgumentException or produced garbled output. The
+    // lastIndexOf rewrite handles arbitrary text verbatim.
+    "backref is robust to regex-replacement specials in the label" in {
+      // Footnote labels can be arbitrary text. The earlier reverse-trick
+      // routed `backref` through String.replaceFirst, where the replacement
+      // string treats `$` and `\` specially — a label containing either
+      // would have thrown IllegalArgumentException or produced garbled
+      // output. Driving the renderer through the AST avoids the parser's
+      // label restrictions and exercises only the emit path.
+      val doc = Document(List(
+        Paragraph(List(Text("See "), FootnoteReference("a$b"), Text("."))),
+        FootnoteDefinition("a$b", List(Paragraph(List(Text("Note."))))),
+      ))
+      val html = renderToHTML(doc, config)
+      html should include("""<li id="fn-a$b">""")
+      html should include("""class="footnote-backref"""")
+      html should not include """</a>>"""
+    }
   }
