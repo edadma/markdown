@@ -2,7 +2,12 @@
 {{ if .page.parent }}
   <article>
     <h1>{{ .page.title }}</h1>
-    {{ if .page.summary }}<p class="juicerdocs-lead">{{ .page.summary }}</p>{{ end }}
+    {{ // Lead paragraph runs through markdownify so authors can drop
+       // inline code, links, and emphasis into the summary. Wrapped in a
+       // <div> because markdownify emits its own <p>, and <p>-inside-<p>
+       // is invalid HTML. CSS rule `.juicerdocs-lead p { margin: 0 }`
+       // keeps the visual rhythm identical to the old plain-text version. }}
+    {{ if .page.summary }}<div class="juicerdocs-lead">{{ markdownify .page.summary }}</div>{{ end }}
     {{ .content }}
   </article>
 

@@ -1013,6 +1013,12 @@ hr {
   margin: 0 0 2rem 0;
   line-height: 1.6;
 }
+/* Lead is now a <div> wrapping markdownify output. The inner <p>s carry
+ * their default margins, which would double-up against the lead's own
+ * bottom margin; flatten them so the lead reads as a single block of
+ * text the way it did when it was a plain <p>. */
+.juicerdocs-lead p { margin: 0; }
+.juicerdocs-lead p + p { margin-top: 0.6em; }
 
 
 /* ============================================================
