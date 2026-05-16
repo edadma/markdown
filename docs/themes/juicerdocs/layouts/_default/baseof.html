@@ -6,6 +6,25 @@
 <body>
   {{ partial 'topbar' . }}
 
+  {{ if .page.splash }}
+  {{ // Splash layout — used by the landing page (and any other page that
+     // opts in via `splash: true` frontmatter). Drops the sidebar, the
+     // right-rail page-TOC, breadcrumbs, and the prev/next pager so the
+     // hero + cards take the full width. Modeled after Starlight's splash
+     // template. }}
+  <div class="juicerdocs-page juicerdocs-page-splash">
+    <main class="juicerdocs-main">
+      <div class="juicerdocs-content">
+        {{ block main . }}
+          <article>
+            <h1>{{ .page.title }}</h1>
+            {{ .content }}
+          </article>
+        {{ end }}
+      </div>
+    </main>
+  </div>
+  {{ else }}
   <div class="juicerdocs-page">
     <aside class="juicerdocs-sidebar-aside">
       {{ partial 'sidebar' . }}
@@ -29,8 +48,11 @@
       {{ partial 'page-toc' . }}
     </aside>
   </div>
+  {{ end }}
 
   {{ partial 'footer' . }}
+
+  {{ partial 'search-modal' . }}
 
   <script src="{{ relURL '/juicerdocs.js' }}"></script>
 </body>

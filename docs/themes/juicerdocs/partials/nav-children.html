@@ -1,3 +1,10 @@
+{{ // Recursive partial — descends through `.pages` and `.subsections`
+   // to render an arbitrarily-deep nav tree. Leaf pages get
+   // `.juicerdocs-nav-link`; intermediate subsection links additionally
+   // get `.is-section` so the CSS can give them a slightly heavier
+   // visual weight. Indentation per level is handled in CSS via the
+   // `.juicerdocs-nav-children .juicerdocs-nav-children` descendant
+   // selector — no markup-side bookkeeping needed. }}
 {{ if .pages }}
   <ul class="juicerdocs-nav-children">
     {{ for p <- .pages }}
@@ -11,7 +18,7 @@
   <ul class="juicerdocs-nav-children">
     {{ for sub <- .subsections }}
       <li>
-        <a href="{{ sub.url }}" data-juicerdocs-nav-link class="juicerdocs-nav-link">{{ sub.title }}</a>
+        <a href="{{ sub.url }}" data-juicerdocs-nav-link class="juicerdocs-nav-link juicerdocs-nav-link-section">{{ sub.title }}</a>
         {{ partial 'nav-children' sub }}
       </li>
     {{ end }}
