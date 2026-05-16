@@ -52,7 +52,13 @@
       {{ end }}
     </h1>
     {{ if .page.summary }}
-      <p class="juicerdocs-hero-summary">{{ .page.summary }}</p>
+      {{ // The summary is run through markdownify so authors can drop
+         // inline links / emphasis / code spans into the hero subhead.
+         // Wrapped in a <div> rather than a <p> because markdownify
+         // emits its own <p>, and <p>-inside-<p> is invalid HTML. The
+         // CSS rule `.juicerdocs-hero-summary p { margin: 0 }` keeps
+         // the visual rhythm identical to the old plain-text version. }}
+      <div class="juicerdocs-hero-summary">{{ markdownify .page.summary }}</div>
     {{ end }}
     {{ // Hero call-to-action row. "Get started" is ON BY DEFAULT — set
        // `[juicerdocs].getStarted = false` in site.toml to hide it (use

@@ -849,6 +849,11 @@ hr {
   color: var(--fg-soft);
   line-height: 1.6;
 }
+/* markdownify emits the summary text wrapped in its own <p>; reset
+   browser defaults so the visual rhythm matches the old plain-text
+   version. */
+.juicerdocs-hero-summary p { margin: 0; }
+.juicerdocs-hero-summary p + p { margin-top: 0.6em; }
 
 .juicerdocs-hero-actions {
   display: flex;
