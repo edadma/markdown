@@ -1,5 +1,6 @@
 ---
 title: markdown
+splash: true
 heroTitle: A fast, minimal Scala 3
 heroHighlight: Markdown parser
 summary: Full CommonMark 0.31.2 compliance — 652 / 652 spec tests passing — across JVM, Scala.js, and Scala Native. Zero runtime dependencies, opt-in extensions for tables, math, callouts, footnotes, emoji, and more.
