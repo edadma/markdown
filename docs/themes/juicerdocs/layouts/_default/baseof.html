@@ -6,12 +6,18 @@
 <body>
   {{ partial 'topbar' . }}
 
-  {{ if .page.splash }}
-  {{ // Splash layout — used by the landing page (and any other page that
-     // opts in via `splash: true` frontmatter). Drops the sidebar, the
-     // right-rail page-TOC, breadcrumbs, and the prev/next pager so the
-     // hero + cards take the full width. Modeled after Starlight's splash
-     // template. }}
+  {{ // Splash layout — drops the sidebar, the right-rail page-TOC,
+     // breadcrumbs, and the prev/next pager so the hero + cards take
+     // the full width. Modeled after Starlight's splash template.
+     //
+     // Defaults to TRUE on the root section index (root _index.md) so
+     // a fresh juicerdocs site gets the landing-page hero without
+     // remembering to add `splash: true` to frontmatter. Other pages
+     // default to FALSE.
+     //
+     // Set `splash: false` explicitly to opt OUT on the root, or
+     // `splash: true` to opt IN on a non-root page. }}
+  {{ if .page.splash or (.page.isSection and not .page.ancestors and .page.splash != false) }}
   <div class="juicerdocs-page juicerdocs-page-splash">
     <main class="juicerdocs-main">
       <div class="juicerdocs-content">
