@@ -7,7 +7,7 @@ weight: 10
 ## Scala (sbt)
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.3"
+libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.6"
 ```
 
 The `%%%` form picks the right artifact for whichever Scala platform you're on — JVM, Scala.js, or Scala Native — so the same line works in any cross-built project.

@@ -12,6 +12,10 @@ object DefinitionListBlockParser extends BlockParser {
     // Need at least two lines to start a definition list
     if (lines.isEmpty || lines.tail.isEmpty) return false
 
+    // A fenced code block opener takes precedence — its content (e.g. `:root {`)
+    // must not be mistaken for a definition line.
+    if (FencedCodeBlockParser.canStart(lines, config)) return false
+
     // First line should not be blank and not start with a colon
     val firstLine = lines.head.takeWhile(_.char != '\n').map(_.char).mkString.trim
     if (firstLine.isEmpty || firstLine.startsWith(":")) return false

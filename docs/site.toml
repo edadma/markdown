@@ -25,7 +25,7 @@ headingShift    = 0
 htmlDir         = ""
 
 [juicerdocs]
-version         = "v0.4.4"
+version         = "v0.4.6"
 
 # Load KaTeX from CDN so the markdown library's math-extension output
 # renders in the browser. Off by default in the theme; opted in here

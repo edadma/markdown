@@ -164,6 +164,8 @@ Term
 
 Renders to `<dl><dt>Term</dt><dd>…</dd><dd>…</dd></dl>`.
 
+Fenced code blocks take precedence: a fence opener whose first content line starts with `:` (for example a CSS block beginning `:root {`) is rendered as code, not mistaken for a definition.
+
 ## Indented code language (`indentedCodeLanguage`)
 
 Indented code blocks (4-space) carry no language tag in CommonMark. Set `indentedCodeLanguage = Some("scala")` (or any other) to default them to a language for highlighting:
