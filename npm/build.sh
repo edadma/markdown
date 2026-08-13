@@ -35,7 +35,7 @@ esac
 echo ">>> linking ($mode) ..."
 ( cd "$repo_root" && sbt -batch "$sbt_task" )
 
-linked="$repo_root/js/target/scala-3.8.3/$out_subdir/main.js"
+linked="$repo_root/js/target/scala-3.8.4/$out_subdir/main.js"
 if [[ ! -f "$linked" ]]; then
   echo "linked output not found: $linked" >&2
   exit 1

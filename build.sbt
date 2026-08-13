@@ -3,7 +3,7 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 ThisBuild / licenses               := Seq("ISC" -> url("https://opensource.org/licenses/ISC"))
 ThisBuild / versionScheme          := Some("semver-spec")
 ThisBuild / evictionErrorLevel     := Level.Warn
-ThisBuild / scalaVersion           := "3.8.3"
+ThisBuild / scalaVersion           := "3.8.4"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
@@ -54,12 +54,12 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "org.scalatest"    %%% "scalatest"      % "3.2.19" % "test",
       "com.github.scopt" %%% "scopt"          % "4.1.0",
-      "com.lihaoyi"      %%% "pprint"         % "0.9.0"  % "test",
-      "dev.zio"          %%% "zio-json"       % "0.7.42" % "test",
-      "io.github.edadma" %%% "cross_platform" % "0.1.6",
+      "com.lihaoyi"      %%% "pprint"         % "0.9.6"  % "test",
+      "dev.zio"          %%% "zio-json"       % "0.10.0" % "test",
+      "io.github.edadma" %%% "cross_platform" % "0.1.9",
       "io.github.edadma" %%% "logger"         % "0.0.11",
       "io.github.edadma" %%% "dllist"         % "0.0.6",
-      "io.github.edadma" %%% "highlighter"    % "0.0.8" % "test",
+      "io.github.edadma" %%% "highlighter"    % "0.0.10" % "test",
     ),
     publishMavenStyle      := true,
     Test / publishArtifact := false,
@@ -68,7 +68,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies += "org.scala-js" %% "scalajs-stubs" % "1.1.0" % "provided",
   )
   .nativeSettings(
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
     libraryDependencies += "org.scala-js"       %% "scalajs-stubs"   % "1.1.0" % "provided",
   )
   .jsSettings(
@@ -83,7 +83,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     // `import { renderToHTML } from '@edadma/markdown'` rather than the
     // module being run at load time.
     scalaJSUseMainModuleInitializer        := false,
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
   )
 
 lazy val root = project
