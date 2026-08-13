@@ -9,7 +9,7 @@ The library has zero runtime third-party dependencies, and the same line in `bui
 ## 1. Add the dependency
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.6"
+libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.7"
 ```
 
 The `%%%` form picks the right artifact for whichever Scala platform you're on.

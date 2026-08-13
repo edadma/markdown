@@ -7,7 +7,7 @@ ThisBuild / scalaVersion           := "3.8.4"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.4.6"
+ThisBuild / version                := "0.4.7"
 ThisBuild / description            := "A fast, cross-platform Scala 3 CommonMark 0.31.2 Markdown parser with extensions"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 

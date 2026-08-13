@@ -36,7 +36,7 @@ Try out the Markdown parser in your browser using the [Dingus](https://edadma.gi
 ### Scala (sbt)
 
 ```scala
-libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.6"
+libraryDependencies += "io.github.edadma" %%% "markdown" % "0.4.7"
 ```
 
 ```scala
