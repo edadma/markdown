@@ -76,5 +76,5 @@ export function extractHeadings(md: string, options?: MarkdownOptions): Heading[
  */
 export function plainText(md: string, options?: MarkdownOptions): string;
 
-/** Library version, e.g. `"0.4.2"`. */
+/** Library version, e.g. `"0.4.7"`. */
 export const version: string;

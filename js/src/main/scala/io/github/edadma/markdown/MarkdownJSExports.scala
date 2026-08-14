@@ -90,9 +90,9 @@ object MarkdownJSExports {
   }
 
   /** Library version. Useful for npm consumers that want to display "powered
-    * by markdown 0.x.y" or similar. Updated alongside `ThisBuild / version`
-    * in `build.sbt`.
+    * by markdown 0.x.y" or similar. Comes from `ThisBuild / version` by way of
+    * the generated `BuildVersion`, so it cannot drift from what was published.
     */
   @JSExportTopLevel("version")
-  val versionJS: String = "0.4.3"
+  val versionJS: String = BuildVersion.value
 }
