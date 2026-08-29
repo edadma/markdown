@@ -7,7 +7,7 @@ ThisBuild / scalaVersion           := "3.8.4"
 ThisBuild / organization           := "io.github.edadma"
 ThisBuild / organizationName       := "edadma"
 ThisBuild / organizationHomepage   := Some(url("https://github.com/edadma"))
-ThisBuild / version                := "0.4.7"
+ThisBuild / version                := "0.4.8"
 ThisBuild / description            := "A fast, cross-platform Scala 3 CommonMark 0.31.2 Markdown parser with extensions"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
@@ -57,9 +57,9 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "com.lihaoyi"      %%% "pprint"         % "0.9.6"  % "test",
       "dev.zio"          %%% "zio-json"       % "0.10.0" % "test",
       "io.github.edadma" %%% "cross_platform" % "0.1.9",
-      "io.github.edadma" %%% "logger"         % "0.0.11",
-      "io.github.edadma" %%% "dllist"         % "0.0.6",
-      "io.github.edadma" %%% "highlighter"    % "0.0.11" % "test",
+      "io.github.edadma" %%% "logger" % "0.0.12",
+      "io.github.edadma" %%% "dllist" % "0.0.7",
+      "io.github.edadma" %%% "highlighter" % "0.0.12" % "test",
     ),
     // The version has to be readable from Scala — the npm distribution exports
     // it to JS consumers — so generate it rather than keeping a hand-edited
