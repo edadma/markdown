@@ -59,7 +59,7 @@ lazy val markdown = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "io.github.edadma" %%% "cross_platform" % "0.1.9",
       "io.github.edadma" %%% "logger"         % "0.0.11",
       "io.github.edadma" %%% "dllist"         % "0.0.6",
-      "io.github.edadma" %%% "highlighter"    % "0.0.10" % "test",
+      "io.github.edadma" %%% "highlighter"    % "0.0.11" % "test",
     ),
     // The version has to be readable from Scala — the npm distribution exports
     // it to JS consumers — so generate it rather than keeping a hand-edited
